@@ -1,0 +1,9 @@
+vendor/
+dist/
+composer.lock
+composer-unit-test.json
+composer-unit-test.lock
+phpunit.xml
+packages/
+*.zip
+.DS_Store
