@@ -8,9 +8,9 @@ Connect your Magento Open Source or Adobe Commerce store to AI shopping agents v
 |-----------|-------------|-------------|
 | ![Dashboard](docs/screenshots/screenshot-02-dashboard.png) | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Sales](docs/screenshots/screenshot-04-ventas.png) |
 
-| Setup Config | Trust Receipts |
-|-------------|---------------|
-| ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) | ![Receipts](docs/screenshots/screenshot-03-trust-receipts.png) |
+| Setup Config |
+|-------------|
+| ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
 ## Features
 
