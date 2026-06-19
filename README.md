@@ -1,6 +1,13 @@
 # Trusteed Agentic Commerce for Magento 2
 
-Connect your Magento Open Source or Adobe Commerce store to AI shopping agents via the [MCP protocol](https://trusteed.xyz). Let Claude, ChatGPT, and other AI agents browse your catalog, manage carts, and complete purchases on behalf of customers — with cryptographically signed Trust Receipts for every transaction.
+Enable new online shoppers, AI agents, to make purchases in your store securely and reliably thanks to Trusteed: the network that fosters trust between businesses and agents.
+
+- **Set your business rules**: who you allow to buy, up to what amount, which categories you don't want to offer to agents, set price limits, maintain stock levels to protect yourself against potential fraudulent agents, and more.
+- **Tamper-proof receipts**: we generate electronically signed and cryptographically tamper-proof receipts that serve as proof of the actual transaction in case of any dispute. Compatible with eIDAS (EU, UK) and eSIGN (USA) regulations.
+- **Agent analytics**: view statistics on agent purchases — how much they spend, what products they buy, and how often.
+- **Agent blocking**: block potentially dangerous or problematic agents.
+- **Digital currencies**: enables purchases in digital currencies thanks to the X402 protocol.
+- **Peer-to-peer transactions**: enables direct peer-to-peer commerce between agents and merchants.
 
 ## Screenshots
 
