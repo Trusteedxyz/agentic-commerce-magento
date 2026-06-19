@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+
+    <!-- Webhook outbox table for reliable delivery -->
+    <table name="trusteed_webhook_outbox" resource="default" engine="innodb" comment="Trusteed webhook outbox for reliable delivery">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="Entry ID"/>
+        <column xsi:type="varchar" name="event_id" nullable="false" length="36" comment="UUID v4 event identifier"/>
+        <column xsi:type="varchar" name="event_type" nullable="false" length="32" comment="Event type (order.created etc)"/>
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" comment="Magento order entity ID"/>
+        <column xsi:type="varchar" name="increment_id" nullable="false" length="32" comment="Magento order increment ID"/>
+        <column xsi:type="varchar" name="composite_id" nullable="false" length="64" comment="Composite order ID (MAG:XXXXXX)"/>
+        <column xsi:type="varchar" name="store_view_code" nullable="false" length="32" comment="Store view code"/>
+        <column xsi:type="text" name="payload" nullable="false" comment="Serialized order payload"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="16" default="pending" comment="pending|delivered|dead"/>
+        <column xsi:type="int" name="retry_count" unsigned="true" nullable="false" default="0" comment="Delivery retry count"/>
+        <column xsi:type="int" name="secret_version" unsigned="true" nullable="false" default="1" comment="Webhook secret version at time of enqueue"/>
+        <column xsi:type="timestamp" name="next_attempt_at" nullable="true" comment="Earliest time this entry is eligible for the next delivery attempt (backoff schedule). NULL = eligible immediately"/>
+        <column xsi:type="timestamp" name="locked_until" nullable="true" comment="Lease lock expiry timestamp"/>
+        <column xsi:type="varchar" name="locked_by" nullable="true" length="64" comment="Process that holds the lease"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created at"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated at"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="TRUSTEED_WEBHOOK_OUTBOX_EVENT_ID">
+            <column name="event_id"/>
+        </constraint>
+        <index referenceId="TRUSTEED_WEBHOOK_OUTBOX_STATUS_CREATED_AT" indexType="btree">
+            <column name="status"/>
+            <column name="created_at"/>
+        </index>
+        <index referenceId="TRUSTEED_WEBHOOK_OUTBOX_LOCKED_UNTIL" indexType="btree">
+            <column name="locked_until"/>
+        </index>
+        <index referenceId="TRUSTEED_WEBHOOK_OUTBOX_STATUS_NEXT_ATTEMPT" indexType="btree">
+            <column name="status"/>
+            <column name="next_attempt_at"/>
+            <column name="created_at"/>
+        </index>
+    </table>
+
+    <!-- Add trusteed_receipt_uri and trusteed_receipt_status to sales_order -->
+    <table name="sales_order" resource="sales" comment="Sales Order">
+        <column xsi:type="varchar" name="trusteed_receipt_uri" nullable="true" length="1024" comment="Trusteed TrustReceipt URI (immutable once set)"/>
+        <column xsi:type="varchar" name="trusteed_receipt_status" nullable="true" length="16" comment="Trusteed receipt status"/>
+    </table>
+</schema>

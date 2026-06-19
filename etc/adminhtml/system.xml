@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="trusteed" translate="label" sortOrder="300">
+            <label>Trusteed</label>
+        </tab>
+        <section id="trusteed_general" translate="label" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+            <tab>trusteed</tab>
+            <label>Agentic Commerce</label>
+            <resource>Trusteed_AgenticCommerce::config</resource>
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>API Connection</label>
+                <field id="api_base_url" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>API Base URL</label>
+                    <comment>MCPWebStore API base URL (e.g. https://api.trusteed.xyz)</comment>
+                    <validate>required-entry validate-url</validate>
+                </field>
+                <field id="merchant_id" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Merchant ID</label>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="integration_token" translate="label" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Integration Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="webhook_secret" translate="label" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Webhook Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="internal_hmac_secret" translate="label comment" type="obscure" sortOrder="42" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Internal HMAC Secret</label>
+                    <comment>Shared secret used to sign internal heartbeat/admin calls to the Trusteed API (X-Internal-Auth HMAC-SHA256). Provisioned by Trusteed ops; must match API env INTERNAL_API_SECRET.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="webhook_secret_version" translate="label" type="text" sortOrder="45" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Webhook Secret Version</label>
+                    <comment>Increment when rotating the webhook secret. Current: 1</comment>
+                </field>
+                <field id="connection_id" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Connection ID</label>
+                    <comment>Provided by MCPWebStore after store connection. Used to identify this store in webhook delivery.</comment>
+                </field>
+            </group>
+            <group id="features" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+                <label>Features</label>
+                <field id="webmcp_enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Enable WebMCP Bridge</label>
+                    <comment>Injects storefront JavaScript bridge. Auto-disabled on Hyvä/PWA Studio themes.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="phase_b_enabled" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enable Phase B (Embedded SPA)</label>
+                    <comment>Reserved for future Phase B release. Do not enable unless instructed.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

@@ -1,0 +1,38 @@
+{
+  "trusteed_webhook_outbox": {
+    "column": {
+      "id": true,
+      "event_id": true,
+      "event_type": true,
+      "entity_id": true,
+      "increment_id": true,
+      "composite_id": true,
+      "store_view_code": true,
+      "payload": true,
+      "status": true,
+      "retry_count": true,
+      "secret_version": true,
+      "next_attempt_at": true,
+      "locked_until": true,
+      "locked_by": true,
+      "created_at": true,
+      "updated_at": true
+    },
+    "index": {
+      "TRUSTEED_WEBHOOK_OUTBOX_EVENT_ID": true,
+      "TRUSTEED_WEBHOOK_OUTBOX_STATUS_CREATED_AT": true,
+      "TRUSTEED_WEBHOOK_OUTBOX_LOCKED_UNTIL": true,
+      "TRUSTEED_WEBHOOK_OUTBOX_STATUS_NEXT_ATTEMPT": true
+    },
+    "constraint": {
+      "PRIMARY": true,
+      "TRUSTEED_WEBHOOK_OUTBOX_EVENT_ID": true
+    }
+  },
+  "sales_order": {
+    "column": {
+      "trusteed_receipt_uri": true,
+      "trusteed_receipt_status": true
+    }
+  }
+}

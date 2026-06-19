@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Trusteed\AgenticCommerce\Block\Adminhtml\Dashboard"
+                   name="trusteed.seguridad"
+                   template="Trusteed_AgenticCommerce::seguridad.phtml"/>
+            <block class="Magento\Backend\Block\Template"
+                   name="trusteed.support.widget"
+                   template="Trusteed_AgenticCommerce::support_widget.phtml"/>
+        </referenceContainer>
+    </body>
+</page>

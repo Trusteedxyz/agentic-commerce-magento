@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Trusteed_AgenticCommerce::config"
+                          title="Trusteed Agentic Commerce"
+                          translate="title"
+                          sortOrder="70">
+                    <resource id="Trusteed_AgenticCommerce::token"
+                              title="Trusteed Embed Token Relay"
+                              translate="title"
+                              sortOrder="10"/>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>

@@ -1,0 +1,39 @@
+{
+  "name": "trusteed/agentic-commerce-magento",
+  "description": "Trusteed Agentic Commerce integration for Magento Open Source 2.4.7+",
+  "type": "magento2-module",
+  "version": "1.0.0",
+  "license": "OSL-3.0",
+  "require": {
+    "php": ">=8.2",
+    "magento/framework": ">=103.0",
+    "magento/module-store": "*",
+    "magento/module-catalog": "*",
+    "magento/module-sales": "*",
+    "magento/module-customer": "*",
+    "magento/module-checkout": "*",
+    "magento/module-config": "*",
+    "magento/module-backend": "*"
+  },
+  "require-dev": {
+    "magento/magento-coding-standard": "^32",
+    "magento/magento2-mess-detector-rules": "^4",
+    "phpunit/phpunit": "^10"
+  },
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "Trusteed\\AgenticCommerce\\": ""
+    }
+  },
+  "extra": {
+    "map": [
+      [
+        "*",
+        "Trusteed_AgenticCommerce"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Trusteed\AgenticCommerce\Block\Adminhtml\SpaShell"
+                   name="trusteed.pagos"
+                   template="Trusteed_AgenticCommerce::reglas.phtml">
+                <arguments>
+                    <argument name="section" xsi:type="string">payment-methods</argument>
+                </arguments>
+            </block>
+            <block class="Magento\Backend\Block\Template"
+                   name="trusteed.support.widget"
+                   template="Trusteed_AgenticCommerce::support_widget.phtml"/>
+        </referenceContainer>
+    </body>
+</page>

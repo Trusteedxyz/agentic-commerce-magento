@@ -1,0 +1,182 @@
+<?php
+/**
+ * Reglas template — Phase B Admin SPA mount (spec 050).
+ *
+ * Monta la SPA Trusteed (mismo bundle que WP/PS/Odoo) en la sección
+ * "mis-reglas" con source="magento-embed" (first-class: el relay
+ * /v1/embed/magento/issue-token acuña el token opaco como magento-embed y
+ * las rutas /v1/embed/* lo aceptan vía el union EmbedSource + allowlists).
+ * El token se obtiene mediante relay S2S server-side; el HMAC nunca sale al DOM.
+ *
+ * @var \Trusteed\AgenticCommerce\Block\Adminhtml\SpaShell $block
+ */
+
+$bundleUrl    = $block->getBundleUrl();
+$isConfigured = $block->isConfigured();
+$relayUrl     = $block->getTokenRelayUrl();
+$formKey      = $block->getFormKey();
+$apiBase      = $block->getApiBase();
+$merchantId   = $block->getMerchantId();
+$section      = $block->getInitialSection();
+?>
+<div id="trusteed-admin-wrapper" style="margin:0;padding:0;">
+
+    <?php if ($bundleUrl === null): ?>
+        <div class="message message-warning" style="margin:20px;">
+            <strong>Trusteed:</strong>
+            El bundle de la SPA no está compilado. Ejecuta
+            <code>pnpm --filter @agenticmcpstores/wp-admin-spa build:magento</code>
+            desde la raíz del monorepo y recarga esta página.
+        </div>
+    <?php elseif (!$isConfigured): ?>
+        <div class="message message-notice" style="margin:20px;">
+            <strong>Trusteed:</strong>
+            Aún no has conectado tu tienda.
+            <a href="<?= $block->escapeUrl($block->getUrl('trusteed/setup/wizard')) ?>">
+                Conectar ahora →
+            </a>
+        </div>
+    <?php else: ?>
+        <script>
+            window.__AMCP_MAGENTO_CONFIG__ = {
+                relayUrl:   <?= json_encode($relayUrl, JSON_UNESCAPED_SLASHES) ?>,
+                formKey:    <?= json_encode($formKey) ?>,
+                apiBase:    <?= json_encode($apiBase, JSON_UNESCAPED_SLASHES) ?>,
+                merchantId: <?= json_encode($merchantId) ?>,
+                // The PHP admin screens are now fully localized via i18n CSVs
+                // (es_ES/en_US), so the embedded SPA follows the Magento backend
+                // interface locale too — keeping PHP screens and the SPA coherent
+                // in whichever language the admin user has selected.
+                locale:     <?= json_encode($block->getAdminLocale()) ?>
+            };
+        </script>
+
+        <style>
+            /* Aumenta tamaño de texto para vendedores no técnicos (Paco) — Magento backend
+               usa 12px base; SPA Tailwind text-sm = 14px / text-xs = 12px → muy pequeño. */
+            #amcp-root { font-size: 16px; line-height: 1.55; }
+            #amcp-root h1 { font-size: 26px; line-height: 1.3; }
+            #amcp-root h2 { font-size: 21px; line-height: 1.35; }
+            #amcp-root h3 { font-size: 18px; line-height: 1.4; }
+            #amcp-root p,
+            #amcp-root label,
+            #amcp-root button,
+            #amcp-root td,
+            #amcp-root th,
+            #amcp-root span,
+            #amcp-root div { font-size: 16px; }
+            #amcp-root .text-xs,
+            #amcp-root [class*="text-xs"] { font-size: 14px !important; }
+            #amcp-root .text-sm,
+            #amcp-root [class*="text-sm"] { font-size: 15px !important; }
+            #amcp-root .text-base,
+            #amcp-root [class*="text-base"] { font-size: 16px !important; }
+            #amcp-root .text-lg,
+            #amcp-root [class*="text-lg"] { font-size: 18px !important; }
+            #amcp-root .text-xl,
+            #amcp-root [class*="text-xl"] { font-size: 22px !important; }
+            #amcp-root .text-2xl,
+            #amcp-root [class*="text-2xl"] { font-size: 26px !important; }
+
+            /* La SPA viene con contenedores estrechos (max-w-2xl/3xl/4xl/5xl/md)
+               pensados para Shopify Admin. En Magento backend hay mucho ancho
+               disponible: aprovechamos el margen para no ver todo apretado. */
+            #trusteed-admin-wrapper { max-width: none; }
+            #amcp-root,
+            #amcp-root > div,
+            #amcp-root .max-w-md,
+            #amcp-root .max-w-2xl,
+            #amcp-root .max-w-3xl,
+            #amcp-root .max-w-4xl,
+            #amcp-root .max-w-5xl,
+            #amcp-root .max-w-6xl,
+            #amcp-root [class*="max-w-md"],
+            #amcp-root [class*="max-w-2xl"],
+            #amcp-root [class*="max-w-3xl"],
+            #amcp-root [class*="max-w-4xl"],
+            #amcp-root [class*="max-w-5xl"],
+            #amcp-root [class*="max-w-6xl"] {
+                max-width: 100% !important;
+                width: 100%;
+            }
+        </style>
+
+        <div id="amcp-root"
+             data-section="<?= $block->escapeHtmlAttr($section) ?>"
+             data-auto-mount="false"
+             style="min-height:400px;font-size:16px;">
+            <div style="padding:20px;color:#666;font-family:sans-serif;font-size:16px;">
+                Cargando Trusteed…
+            </div>
+        </div>
+
+        <script src="<?= $block->escapeUrl($bundleUrl) ?>" defer></script>
+        <script>
+            (function () {
+                'use strict';
+
+                var tokenCache = null;
+                var tokenExpiresAt = 0;
+                var EXPIRY_BUFFER_MS = 30000;
+
+                async function magentoGetToken() {
+                    var now = Date.now();
+                    if (tokenCache !== null && now < tokenExpiresAt - EXPIRY_BUFFER_MS) {
+                        return tokenCache;
+                    }
+                    var cfg = window.__AMCP_MAGENTO_CONFIG__;
+                    var body = new URLSearchParams();
+                    body.set('form_key', cfg.formKey);
+
+                    var resp = await fetch(cfg.relayUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { Accept: 'application/json' },
+                        body: body
+                    });
+
+                    if (!resp.ok) {
+                        throw new Error('[Trusteed] token relay failed: HTTP ' + resp.status);
+                    }
+                    var data = await resp.json();
+                    if (data.error) {
+                        throw new Error('[Trusteed] token error: ' + data.error);
+                    }
+                    if (!data.token) {
+                        throw new Error('[Trusteed] no token in Magento response');
+                    }
+
+                    tokenCache = data.token;
+                    tokenExpiresAt = data.expires_at
+                        ? new Date(data.expires_at).getTime()
+                        : Date.now() + 300 * 1000;
+                    return tokenCache;
+                }
+
+                function mountWhenReady() {
+                    if (typeof window.TrusteedEmbed === 'undefined') {
+                        setTimeout(mountWhenReady, 50);
+                        return;
+                    }
+                    var rootEl = document.getElementById('amcp-root');
+                    if (!rootEl) return;
+
+                    window.TrusteedEmbed.mount(rootEl, {
+                        section:  rootEl.dataset.section || 'inicio',
+                        // 'magento-embed' is now a first-class embed source end-to-end:
+                        // the /v1/embed/magento/issue-token relay stamps the opaque
+                        // token as magento-embed and the /v1/embed/* routes accept it
+                        // (EmbedSource union + per-route allowlists). The header must
+                        // match the token's stamped source, so send magento-embed.
+                        source:   'magento-embed',
+                        apiBase:  window.__AMCP_MAGENTO_CONFIG__.apiBase,
+                        getToken: magentoGetToken
+                    });
+                }
+
+                document.addEventListener('DOMContentLoaded', mountWhenReady);
+            })();
+        </script>
+    <?php endif; ?>
+
+</div>

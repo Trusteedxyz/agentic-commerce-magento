@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="sales_order_save_after">
+        <observer name="trusteed_order_save_after"
+                  instance="Trusteed\AgenticCommerce\Observer\SalesOrderSaveAfter"/>
+    </event>
+    <!-- Partial refunds (credit memos): captures R023 refund-abuse-guard data.
+         Full refunds are handled via STATE_CLOSED in sales_order_save_after. -->
+    <event name="sales_order_creditmemo_save_after">
+        <observer name="trusteed_creditmemo_save_after"
+                  instance="Trusteed\AgenticCommerce\Observer\SalesCreditmemoSaveAfter"/>
+    </event>
+    <!-- Pre-order enforcement: verify agent token + call /v1/rules/evaluate. -->
+    <event name="sales_model_service_quote_submit_before">
+        <observer name="trusteed_checkout_submit_before"
+                  instance="Trusteed\AgenticCommerce\Observer\CheckoutSubmitBefore"/>
+    </event>
+    <!-- Spec-048 P0b: R011 dedicated CheckoutFailureEvent signal. -->
+    <event name="sales_order_payment_failed">
+        <observer name="trusteed_order_payment_failed"
+                  instance="Trusteed\AgenticCommerce\Observer\SalesOrderPaymentFailedObserver"/>
+    </event>
+    <!-- Spec-050 Gap #5: shipment creation emits order_fulfilled (fulfillment
+         / delivery state advance). Previously the backend order_fulfilled
+         handler was dead-but-reserved with no Magento emitter. -->
+    <event name="sales_order_shipment_save_after">
+        <observer name="trusteed_shipment_save_after"
+                  instance="Trusteed\AgenticCommerce\Observer\ShipmentSaveAfter"/>
+    </event>
+</config>

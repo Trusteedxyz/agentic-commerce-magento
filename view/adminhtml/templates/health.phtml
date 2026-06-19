@@ -1,0 +1,223 @@
+<?php
+/** @var \Trusteed\AgenticCommerce\Block\Adminhtml\Health\Tab $block */
+$manifestAge    = $block->getManifestAge();
+$lastWebhookAge = $block->getLastWebhookAge();
+$outboxLag      = $block->getOutboxLag();
+$deadCount      = $block->getDeadCount();
+$pendingCount   = $block->getPendingCount();
+$deliveredLast5 = $block->getDeliveredLast5Min();
+$themeWarning   = $block->getThemeWarning();
+$trustScore     = $block->getTrustScore();
+
+function formatAge(int $seconds): string {
+    if ($seconds < 0)   return (string) __('Never');
+    if ($seconds < 60)  return (string) __('Less than 1 minute ago');
+    if ($seconds < 3600) return (string) __('%1 min ago', floor($seconds / 60));
+    return (string) __('%1 h ago', floor($seconds / 3600));
+}
+
+function scoreTone(?int $score): array {
+    if ($score === null) return ['#6b7280', '#f3f4f6', '#e5e7eb'];
+    if ($score >= 80)    return ['#15803d', '#f0fdf4', '#bbf7d0'];
+    if ($score >= 60)    return ['#b45309', '#fef3c7', '#fcd34d'];
+    return ['#b91c1c', '#fee2e2', '#fca5a5'];
+}
+
+function confidenceLabel(?string $level): string {
+    return (string) match ($level) {
+        'cold_start'             => __('New store (cap 60)'),
+        'human_established'      => __('With human history (cap 85)'),
+        'agent_verified_thin'    => __('First agent orders'),
+        'agent_verified'         => __('Verified with agents (cap 100)'),
+        'insufficient_data'      => __('Not enough data'),
+        default                  => __('Unclassified'),
+    };
+}
+
+$manifestOk = $manifestAge >= 0 && $manifestAge < 3600;
+$webhookOk  = $lastWebhookAge < 0 || $lastWebhookAge < 600;
+$queueOk    = $outboxLag < 300 && $deadCount === 0;
+?>
+<div style="padding:24px;max-width:1200px;font-family:system-ui,-apple-system,sans-serif;">
+
+    <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 4px;"><?= $block->escapeHtml(__('How is my store doing?')) ?></h1>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 24px;">
+        <?= $block->escapeHtml(__('Current status of the connection between your Magento and Trusteed.')) ?>
+    </p>
+
+    <?php if ($themeWarning): ?>
+    <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;margin-bottom:20px;color:#92400e;font-size:14px;">
+        ⚠️ <?= $block->escapeHtml($themeWarning) ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Mi puntuación de tienda -->
+    <?php
+    $scoreVal = $trustScore['score'] ?? null;
+    [$scoreFg, $scoreBg, $scoreBorder] = scoreTone(is_int($scoreVal) ? $scoreVal : null);
+    // Connection status is driven by configuration presence (same definition as
+    // the Inicio/Seguridad screens), NOT by trust-score availability. A connected
+    // store whose score is still pending must not be reported as "not connected".
+    $isDisconnected = !$block->isConnected();
+    $hasScore = is_int($scoreVal);
+    $statusLabel = (string) match (true) {
+        $isDisconnected => __('Your store is not yet connected'),
+        ($trustScore['status'] ?? null) === 'ready' => __('Calculated'),
+        ($trustScore['status'] ?? null) === 'stale' => __('Recalculating…'),
+        $hasScore => __('Calculated'),
+        default => __('Preparing your score…'),
+    };
+    $wizardUrl = $block->getUrl('trusteed/setup/wizard');
+    ?>
+    <div style="background:<?= $scoreBg ?>;border:1px solid <?= $scoreBorder ?>;border-radius:14px;padding:24px;margin-bottom:24px;display:flex;flex-wrap:wrap;align-items:center;gap:24px;">
+        <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;">
+            <div style="font-size:13px;font-weight:600;color:#374151;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;"><?= $block->escapeHtml(__('My score')) ?></div>
+            <div style="font-size:56px;font-weight:800;color:<?= $scoreFg ?>;line-height:1;">
+                <?php if ($isDisconnected || !isset($trustScore['score']) || $trustScore['score'] === null): ?>
+                    —
+                <?php else: ?>
+                    <?= (int)$trustScore['score'] ?>
+                <?php endif; ?>
+            </div>
+            <div style="font-size:13px;color:#6b7280;margin-top:4px;">
+                <?php if (isset($trustScore['scoreCap']) && is_int($trustScore['scoreCap'])): ?>
+                    <?= $block->escapeHtml(__('out of %1', (int)$trustScore['scoreCap'])) ?>
+                <?php else: ?>
+                    <?= $block->escapeHtml(__('out of %1', 100)) ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div style="flex:1 1 360px;min-width:280px;">
+            <div style="font-size:16px;font-weight:700;color:<?= $scoreFg ?>;margin-bottom:8px;">
+                <?= $block->escapeHtml($statusLabel) ?>
+            </div>
+            <?php if ($isDisconnected): ?>
+                <div style="font-size:14px;color:#374151;margin-bottom:12px;">
+                    <?= $block->escapeHtml(__('So that ChatGPT, Claude and other assistants can recommend your products, you still need to connect your Magento with Trusteed. You only have to do it once and no account is required beforehand.')) ?>
+                </div>
+                <ol style="margin:0 0 14px;padding-left:22px;color:#374151;font-size:14px;line-height:1.7;">
+                    <li>
+                        <?= $block->escapeHtml(__('Click')) ?> <strong><?= $block->escapeHtml(__('«Connect now»')) ?></strong> <?= $block->escapeHtml(__('right here.')) ?>
+                    </li>
+                    <li>
+                        <?= $block->escapeHtml(__('The assistant opens and you click')) ?> <strong><?= $block->escapeHtml(__('«Connect with Trusteed»')) ?></strong>. <?= $block->escapeHtml(__('Trusteed identifies you with your email and gives you the token automatically.')) ?>
+                    </li>
+                    <li>
+                        <?= $block->escapeHtml(__('You choose')) ?> <strong><?= $block->escapeHtml(__('which stores')) ?></strong> <?= $block->escapeHtml(__('you want to activate and save. Done.')) ?>
+                    </li>
+                    <li>
+                        <?= $block->escapeHtml(__('In a few minutes you will see your score calculated on this same screen.')) ?>
+                    </li>
+                </ol>
+                <div style="font-size:13px;color:#6b7280;">
+                    <?= $block->escapeHtml(__('Have questions? Write to us at')) ?> <strong>hola@trusteed.xyz</strong> <?= $block->escapeHtml(__('and we will help you.')) ?>
+                </div>
+            <?php elseif (!$hasScore): ?>
+                <div style="font-size:14px;color:#374151;margin-bottom:8px;">
+                    <?= $block->escapeHtml(__('Your store is connected. We are calculating your score; it will appear here in a few minutes.')) ?>
+                </div>
+            <?php else: ?>
+                <div style="font-size:14px;color:#374151;margin-bottom:8px;">
+                    <?= $block->escapeHtml(__('Confidence:')) ?> <?= $block->escapeHtml(confidenceLabel($trustScore['confidenceLevel'] ?? null)) ?>
+                </div>
+                <?php if (!empty($trustScore['nextMilestone'])): ?>
+                    <div style="font-size:13px;color:#374151;background:rgba(255,255,255,0.6);border:1px solid rgba(0,0,0,0.05);border-radius:8px;padding:8px 12px;">
+                        <strong><?= $block->escapeHtml(__('Next step:')) ?></strong> <?= $block->escapeHtml($trustScore['nextMilestone']) ?>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+        <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:10px;align-items:stretch;min-width:180px;">
+            <?php if ($isDisconnected): ?>
+                <a href="<?= $block->escapeUrl($wizardUrl) ?>"
+                   style="display:inline-block;background:#1d4ed8;border:1px solid #1d4ed8;border-radius:8px;padding:12px 18px;color:#fff;font-weight:700;text-decoration:none;font-size:14px;text-align:center;">
+                    <?= $block->escapeHtml(__('Connect now →')) ?>
+                </a>
+            <?php endif; ?>
+            <a href="https://trusteed.xyz/es/for-merchants/trusted-score"
+               target="_blank" rel="noopener noreferrer"
+               style="display:inline-block;background:#fff;border:1px solid <?= $scoreBorder ?>;border-radius:8px;padding:10px 16px;color:<?= $scoreFg ?>;font-weight:600;text-decoration:none;font-size:14px;text-align:center;">
+                <?= $block->escapeHtml(__('How it is calculated →')) ?>
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de estado -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px;">
+
+        <!-- Catálogo publicado -->
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
+            <div style="font-size:28px;margin-bottom:8px;"><?= $manifestOk ? '✅' : '⚠️' ?></div>
+            <div style="font-weight:600;color:#111827;margin-bottom:4px;"><?= $block->escapeHtml(__('Catalog published')) ?></div>
+            <div style="font-size:13px;color:#6b7280;">
+                <?php if ($manifestAge < 0): ?>
+                    <?= $block->escapeHtml(__('Not generated yet. Save the configuration to activate it.')) ?>
+                <?php elseif ($manifestOk): ?>
+                    <?= $block->escapeHtml(__('Updated %1', formatAge($manifestAge))) ?>
+                <?php else: ?>
+                    <?= $block->escapeHtml(__('Update pending (%1)', formatAge($manifestAge))) ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Último pedido recibido -->
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
+            <div style="font-size:28px;margin-bottom:8px;"><?= $webhookOk ? '✅' : '⏳' ?></div>
+            <div style="font-weight:600;color:#111827;margin-bottom:4px;"><?= $block->escapeHtml(__('Last event')) ?></div>
+            <div style="font-size:13px;color:#6b7280;">
+                <?php if ($lastWebhookAge < 0): ?>
+                    <?= $block->escapeHtml(__('No agent orders yet. Wait for your first AI customers!')) ?>
+                <?php else: ?>
+                    <?= $block->escapeHtml(formatAge($lastWebhookAge)) ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Cola de envíos -->
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
+            <div style="font-size:28px;margin-bottom:8px;"><?= $queueOk ? '✅' : '🔴' ?></div>
+            <div style="font-weight:600;color:#111827;margin-bottom:4px;"><?= $block->escapeHtml(__('Delivery queue')) ?></div>
+            <div style="font-size:13px;color:#6b7280;">
+                <?php if ($deadCount > 0): ?>
+                    <?= $block->escapeHtml(__('%1 failed delivery(ies) — contact support', $deadCount)) ?>
+                <?php elseif ($pendingCount > 0): ?>
+                    <?= $block->escapeHtml(__('%1 pending · %2 delivered in 5 min', $pendingCount, $deliveredLast5)) ?>
+                <?php else: ?>
+                    <?= $block->escapeHtml(__('Everything delivered correctly')) ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Entregas recientes -->
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
+            <div style="font-size:28px;margin-bottom:8px;">📦</div>
+            <div style="font-weight:600;color:#111827;margin-bottom:4px;"><?= $block->escapeHtml(__('Last 5 min')) ?></div>
+            <div style="font-size:13px;color:#6b7280;">
+                <?= $block->escapeHtml(__('%1 notification(s) sent to Trusteed', $deliveredLast5)) ?>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Enlace informativo sobre la metodología de puntuación -->
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#0369a1;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">ℹ️</span>
+        <a href="https://trusteed.xyz/es/for-merchants/trusted-score"
+           target="_blank"
+           rel="noopener noreferrer"
+           style="color:#0369a1;text-decoration:none;">
+            <?= $block->escapeHtml(__('How we set your store score →')) ?>
+        </a>
+    </div>
+
+    <!-- Guía rápida -->
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 24px;">
+        <h2 style="font-size:15px;font-weight:600;color:#166534;margin:0 0 12px;"><?= $block->escapeHtml(__('All green? Your store now accepts orders from AI assistants 🤖')) ?></h2>
+        <ul style="margin:0;padding-left:20px;color:#166534;font-size:14px;line-height:1.8;">
+            <li><?= $block->escapeHtml(__('Shoppers can search for your products from ChatGPT, Claude and other assistants.')) ?></li>
+            <li><?= $block->escapeHtml(__('Each order goes through Trusteed and appears in your Magento as a normal order.')) ?></li>
+            <li><?= $block->escapeHtml(__('If something fails, you receive a notice at')) ?> <strong>hola@trusteed.xyz</strong>.</li>
+        </ul>
+    </div>
+
+</div>

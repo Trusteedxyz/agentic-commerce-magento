@@ -1,0 +1,21 @@
+<?php
+/**
+ * WebMCP Bridge injection template.
+ *
+ * Sets window.trusteedConfig so the bridge IIFE can resolve API base URL
+ * and store view code without relying on <meta> tags.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ */
+declare(strict_types=1);
+
+$baseUrl = rtrim($block->getBaseUrl(), '/');
+$storeCode = $block->getStoreCode();
+?>
+<script>
+window.trusteedConfig = {
+    apiBase: '<?= $block->escapeJs($baseUrl) ?>',
+    storeViewCode: '<?= $block->escapeJs($storeCode) ?>'
+};
+</script>
+<script async src="<?= $block->escapeHtmlAttr($block->getViewFileUrl('Trusteed_AgenticCommerce::js/webmcp-bridge.min.js')) ?>"></script>

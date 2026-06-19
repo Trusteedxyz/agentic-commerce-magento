@@ -1,0 +1,8 @@
+{
+  "src/main.tsx": {
+    "file": "admin-spa.js",
+    "name": "main",
+    "src": "src/main.tsx",
+    "isEntry": true
+  }
+}

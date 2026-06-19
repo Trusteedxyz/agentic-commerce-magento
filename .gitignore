@@ -7,3 +7,4 @@ phpunit.xml
 packages/
 *.zip
 .DS_Store
+.phpunit.result.cache

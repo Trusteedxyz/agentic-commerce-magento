@@ -1,0 +1,204 @@
+<?php
+/** @var \Magento\Backend\Block\Template $block */
+$submitUrl = $block->getUrl('trusteed/support/submit');
+$formKey   = $block->getFormKey();
+?>
+<!-- Widget de soporte Trusteed — se incluye en cada página admin del módulo -->
+<style>
+#trusteed-support-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+#trusteed-support-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 9999;
+    display: none;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 24px;
+}
+#trusteed-support-backdrop.open { display: flex; }
+#trusteed-support-modal {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    width: 360px;
+    max-width: calc(100vw - 48px);
+    padding: 24px;
+    font-family: sans-serif;
+}
+#trusteed-support-modal h2 { margin: 0 0 12px; font-size: 1rem; font-weight: 700; }
+#trusteed-support-modal textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: .875rem;
+    resize: vertical;
+    font-family: inherit;
+    margin-bottom: 4px;
+}
+#trusteed-support-modal .hint { font-size: .75rem; color: #888; margin: 0 0 12px; }
+#trusteed-support-modal .desc { font-size: .875rem; color: #555; margin: 0 0 12px; }
+#trusteed-support-modal .actions { display: flex; gap: 8px; justify-content: flex-end; }
+#trusteed-support-modal .btn-cancel {
+    background: none; border: 1px solid #ccc; border-radius: 6px;
+    padding: 7px 16px; font-size: .875rem; cursor: pointer;
+}
+#trusteed-support-modal .btn-send {
+    background: #1a73e8; color: #fff; border: none; border-radius: 6px;
+    padding: 7px 18px; font-size: .875rem; font-weight: 600; cursor: pointer;
+}
+#trusteed-support-modal .btn-send:disabled { background: #a0c4f1; cursor: not-allowed; }
+#trusteed-support-success { text-align: center; padding: 16px 0; display: none; }
+#trusteed-support-error { color: #c0392b; font-size: .8rem; margin: 0 0 10px; display: none; }
+</style>
+
+<button id="trusteed-support-btn"
+        title="<?= $block->escapeHtmlAttr(__('Reportar un problema')) ?>"
+        aria-label="<?= $block->escapeHtmlAttr(__('Reportar un problema')) ?>">
+    ?
+</button>
+
+<div id="trusteed-support-backdrop" role="dialog"
+     aria-modal="true" aria-label="<?= $block->escapeHtmlAttr(__('¿Algo no funciona?')) ?>">
+    <div id="trusteed-support-modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2><?= $block->escapeHtml(__('¿Algo no funciona?')) ?></h2>
+            <button type="button" id="trusteed-support-close" aria-label="<?= $block->escapeHtmlAttr(__('Cerrar')) ?>"
+                    style="background:none;border:none;font-size:20px;cursor:pointer;color:#555;padding:2px 6px;">×</button>
+        </div>
+
+        <!-- Formulario -->
+        <div id="trusteed-support-form-wrap">
+            <p class="desc"><?= $block->escapeHtml(__('Cuéntanos qué pasó con tus propias palabras. Incluiremos información técnica automáticamente.')) ?></p>
+            <form id="trusteed-support-form" method="post">
+                <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($formKey) ?>"/>
+                <textarea id="trusteed-support-msg" name="message"
+                          rows="5" maxlength="2000" required
+                          placeholder="<?= $block->escapeHtmlAttr(__('Ej: Al entrar en Mis ventas la página se queda en blanco…')) ?>"></textarea>
+                <p class="hint"><?= $block->escapeHtml(__('Se adjuntará automáticamente información del panel (sin datos de clientes).')) ?></p>
+                <p id="trusteed-support-error" role="alert"></p>
+                <div class="actions">
+                    <button type="button" class="btn-cancel" id="trusteed-support-cancel">
+                        <?= $block->escapeHtml(__('Cancelar')) ?>
+                    </button>
+                    <button type="submit" class="btn-send" id="trusteed-support-submit" disabled>
+                        <?= $block->escapeHtml(__('Enviar')) ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Éxito -->
+        <div id="trusteed-support-success">
+            <div style="font-size:40px;">✅</div>
+            <p style="font-weight:700;margin:12px 0 4px;color:#1a7f4f;">
+                <?= $block->escapeHtml(__('¡Ticket enviado!')) ?>
+            </p>
+            <p id="trusteed-support-ticket-num" style="font-size:.85rem;color:#555;"></p>
+            <p style="font-size:.8rem;color:#888;margin-top:8px;">
+                <?= $block->escapeHtml(__('Recibirás respuesta en el correo de tu cuenta. Normalmente respondemos en menos de 24 h.')) ?>
+            </p>
+            <button type="button" class="btn-send" id="trusteed-support-done" style="margin-top:16px;">
+                <?= $block->escapeHtml(__('Cerrar')) ?>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var btn       = document.getElementById('trusteed-support-btn');
+    var backdrop  = document.getElementById('trusteed-support-backdrop');
+    var closeBtn  = document.getElementById('trusteed-support-close');
+    var cancelBtn = document.getElementById('trusteed-support-cancel');
+    var doneBtn   = document.getElementById('trusteed-support-done');
+    var form      = document.getElementById('trusteed-support-form');
+    var msg       = document.getElementById('trusteed-support-msg');
+    var submitBtn = document.getElementById('trusteed-support-submit');
+    var formWrap  = document.getElementById('trusteed-support-form-wrap');
+    var success   = document.getElementById('trusteed-support-success');
+    var errorEl   = document.getElementById('trusteed-support-error');
+    var ticketEl  = document.getElementById('trusteed-support-ticket-num');
+    var submitUrl = <?= json_encode($submitUrl) ?>;
+
+    function open() {
+        backdrop.classList.add('open');
+        msg.value = '';
+        submitBtn.disabled = true;
+        formWrap.style.display = '';
+        success.style.display = 'none';
+        errorEl.style.display = 'none';
+    }
+
+    function close() { backdrop.classList.remove('open'); }
+
+    btn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    cancelBtn.addEventListener('click', close);
+    doneBtn.addEventListener('click', close);
+
+    backdrop.addEventListener('click', function (e) {
+        if (e.target === backdrop) close();
+    });
+
+    msg.addEventListener('input', function () {
+        submitBtn.disabled = msg.value.trim().length < 10;
+    });
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = <?= json_encode((string)__('Enviando…')) ?>;
+        errorEl.style.display = 'none';
+
+        var fd = new FormData();
+        fd.append('form_key', form.querySelector('[name=form_key]').value);
+        fd.append('message', msg.value.trim());
+        fd.append('currentUrl', window.location.href.substring(0, 500));
+
+        fetch(submitUrl, { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.success) {
+                    formWrap.style.display = 'none';
+                    if (d.ticketNumber) {
+                        ticketEl.textContent = <?= json_encode((string)__('Número de ticket:')) ?> + ' #' + d.ticketNumber;
+                    }
+                    success.style.display = 'block';
+                } else {
+                    errorEl.textContent = d.error || <?= json_encode((string)__('Error desconocido')) ?>;
+                    errorEl.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = <?= json_encode((string)__('Enviar')) ?>;
+                }
+            })
+            .catch(function () {
+                errorEl.textContent = <?= json_encode((string)__('No pudimos conectar. Inténtalo de nuevo.')) ?>;
+                errorEl.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = <?= json_encode((string)__('Enviar')) ?>;
+            });
+    });
+}());
+</script>

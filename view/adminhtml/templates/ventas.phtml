@@ -1,0 +1,184 @@
+<?php
+/** @var \Trusteed\AgenticCommerce\Block\Adminhtml\Dashboard $block */
+$isConnected = $block->isConnected();
+$merchantId  = $block->getMerchantId();
+$setupUrl    = $block->getSetupUrl();
+?>
+<div style="padding:24px;max-width:960px;font-family:system-ui,-apple-system,sans-serif;">
+
+    <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 20px;"><?= $block->escapeHtml(__('My sales')) ?></h1>
+
+    <!-- ── Barra de pestañas ── -->
+    <div id="amcp-ventas-tabs" style="display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:24px;">
+        <?php
+        $tabs = [
+            ['id' => 'orders',   'label' => (string) __('My orders')],
+            ['id' => 'receipts', 'label' => (string) __('AI sales')],
+            ['id' => 'keys',     'label' => (string) __('Keys')],
+            ['id' => 'audit',    'label' => (string) __('Audit')],
+        ];
+        foreach ($tabs as $tab):
+        ?>
+        <button
+            onclick="amcpSwitchTab('<?= $block->escapeHtml($tab['id']) ?>')"
+            id="amcp-tab-btn-<?= $block->escapeHtml($tab['id']) ?>"
+            style="padding:10px 20px;font-size:14px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-2px;color:#6b7280;font-family:inherit;"
+        >
+            <?= $block->escapeHtml($tab['label']) ?>
+        </button>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- ── Mis pedidos ── -->
+    <div id="amcp-tab-orders" class="amcp-tab-panel">
+
+        <?php if (!$isConnected): ?>
+        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+            <strong style="color:#92400e;"><?= $block->escapeHtml(__('Your store is not yet connected.')) ?></strong>
+            <span style="color:#92400e;"> <?= $block->escapeHtml(__('Connect first to see your agent sales.')) ?></span>
+            <br><br>
+            <a href="<?= $block->escapeUrl($setupUrl) ?>"
+               style="background:#f59e0b;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
+                <?= $block->escapeHtml(__('Connect now →')) ?>
+            </a>
+        </div>
+        <?php else: ?>
+
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:40px;text-align:center;margin-bottom:24px;">
+            <div style="font-size:48px;margin-bottom:16px;">🤖</div>
+            <h2 style="font-size:18px;font-weight:600;color:#111827;margin:0 0 8px;"><?= $block->escapeHtml(__('No agent orders yet')) ?></h2>
+            <p style="color:#6b7280;font-size:14px;max-width:420px;margin:0 auto 24px;">
+                <?= $block->escapeHtml(__('When a shopper uses ChatGPT, Claude or another assistant to buy in your store, the order will appear here and also in your Magento order panel.')) ?>
+            </p>
+            <div style="background:#f0f9ff;border-radius:8px;padding:16px;text-align:left;max-width:400px;margin:0 auto;font-size:13px;color:#0369a1;">
+                <strong><?= $block->escapeHtml(__('How does it work?')) ?></strong><br>
+                <?= $block->escapeHtml(__('The assistant searches for your products, adds them to the cart and completes payment — all without the shopper having to open your website.')) ?>
+            </div>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <div style="font-weight:600;color:#111827;font-size:14px;"><?= $block->escapeHtml(__('View all orders in Magento')) ?></div>
+                <div style="color:#6b7280;font-size:13px;"><?= $block->escapeHtml(__('Agent orders appear as normal orders with the "Trusteed" label.')) ?></div>
+            </div>
+            <a href="<?= $block->escapeUrl($block->getUrl('sales/order')) ?>"
+               style="background:#4f46e5;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;white-space:nowrap;">
+                <?= $block->escapeHtml(__('View orders →')) ?>
+            </a>
+        </div>
+
+        <?php endif; ?>
+    </div>
+
+    <!-- ── Ventas IA ── -->
+    <div id="amcp-tab-receipts" class="amcp-tab-panel" style="display:none;">
+        <h2 style="font-size:16px;font-weight:700;color:#111827;margin:0 0 12px;">
+            <?= $block->escapeHtml(__('Sales receipts for automated buyers')) ?>
+        </h2>
+
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:16px 20px;margin-bottom:10px;">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#166534;">
+                <strong>✅ <?= $block->escapeHtml(__('What is it for?')) ?></strong> <?= $block->escapeHtml(__('When a robot or virtual assistant buys in your store, a signed receipt is generated — like a cash register ticket that no one can forge. If the buyer says «I did not place that order», that receipt is your proof. You can give it to your bank or lawyer. We keep it automatically for 5 to 10 years depending on your country\'s law, without you having to do anything.')) ?>
+            </p>
+        </div>
+
+        <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#92400e;">
+                <strong>🏛️ <?= $block->escapeHtml(__('Legal level:')) ?></strong> <?= $block->escapeHtml(__('Each receipt carries our platform\'s digital signature plus a timestamp from an official internet authority (like a digital notary). They comply with the European electronic signature standard (eIDAS) and are valid as evidence throughout the European Union.')) ?>
+            </p>
+        </div>
+
+        <div style="text-align:right;margin-bottom:20px;">
+            <a href="https://trusteed.xyz/es/trust/trust-receipt"
+               target="_blank"
+               rel="noopener noreferrer"
+               style="font-size:13px;color:#4f46e5;text-decoration:underline;">
+                <?= $block->escapeHtml(__('Learn how it works and what it is for →')) ?>
+            </a>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:40px;text-align:center;">
+            <div style="font-size:48px;margin-bottom:16px;">📄</div>
+            <h3 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 8px;">
+                <?= $block->escapeHtml(__('No automated sales receipts yet.')) ?>
+            </h3>
+            <p style="color:#6b7280;font-size:14px;max-width:380px;margin:0 auto;">
+                <?= $block->escapeHtml(__('When an automated buyer makes a purchase, the receipt will appear here automatically.')) ?>
+            </p>
+        </div>
+    </div>
+
+    <!-- ── Claves ── -->
+    <div id="amcp-tab-keys" class="amcp-tab-panel" style="display:none;">
+        <h2 style="font-size:16px;font-weight:700;color:#111827;margin:0 0 12px;"><?= $block->escapeHtml(__('Security seal')) ?></h2>
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+            <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#0c4a6e;">🔏 <?= $block->escapeHtml(__('What is the seal?')) ?></p>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#0369a1;">
+                <?= $block->escapeHtml(__('The digital seal protects your store. Every order that arrives carries an invisible signature — if someone tries to slip in a fake order, the seal detects it and blocks it. You do not have to do anything, it works on its own.')) ?>
+            </p>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;text-align:center;">
+            <p style="color:#6b7280;font-size:13px;margin:0 0 12px;">
+                <?= $block->escapeHtml(__('Seal management is available in the full Trusteed portal.')) ?>
+            </p>
+            <a href="https://trusteed.xyz/dashboard"
+               target="_blank"
+               style="background:#4f46e5;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;">
+                <?= $block->escapeHtml(__('Open portal →')) ?>
+            </a>
+        </div>
+    </div>
+
+    <!-- ── Auditoría ── -->
+    <div id="amcp-tab-audit" class="amcp-tab-panel" style="display:none;">
+        <h2 style="font-size:16px;font-weight:700;color:#111827;margin:0 0 12px;"><?= $block->escapeHtml(__('Activity log')) ?></h2>
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+            <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#0c4a6e;">📋 <?= $block->escapeHtml(__('What is it for?')) ?></p>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#0369a1;">
+                <?= $block->escapeHtml(__('Everything that has happened in your store is logged here: what each agent bought, when it came in, what actions it performed. If you ever have a dispute, this log is your official history — it cannot be deleted or forged.')) ?>
+            </p>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;text-align:center;">
+            <p style="color:#6b7280;font-size:13px;margin:0 0 12px;">
+                <?= $block->escapeHtml(__('The full activity log is available in the Trusteed portal.')) ?>
+            </p>
+            <a href="https://trusteed.xyz/dashboard"
+               target="_blank"
+               style="background:#4f46e5;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;">
+                <?= $block->escapeHtml(__('Open portal →')) ?>
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    var ACTIVE_COLOR  = '#2c6ecb';
+    var ACTIVE_BORDER = '2px solid #2c6ecb';
+    var INACTIVE_COLOR  = '#6b7280';
+    var INACTIVE_BORDER = '2px solid transparent';
+
+    window.amcpSwitchTab = function (id) {
+        document.querySelectorAll('.amcp-tab-panel').forEach(function (el) {
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('#amcp-ventas-tabs button').forEach(function (btn) {
+            btn.style.color       = INACTIVE_COLOR;
+            btn.style.borderBottom = INACTIVE_BORDER;
+            btn.style.fontWeight  = '400';
+        });
+        var panel = document.getElementById('amcp-tab-' + id);
+        if (panel) panel.style.display = 'block';
+        var btn = document.getElementById('amcp-tab-btn-' + id);
+        if (btn) {
+            btn.style.color       = ACTIVE_COLOR;
+            btn.style.borderBottom = ACTIVE_BORDER;
+            btn.style.fontWeight  = '600';
+        }
+    };
+
+    // Activar primera pestaña al cargar
+    amcpSwitchTab('orders');
+})();
+</script>

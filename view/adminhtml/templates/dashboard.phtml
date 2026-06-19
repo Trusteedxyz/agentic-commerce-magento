@@ -1,0 +1,91 @@
+<?php
+/** @var \Trusteed\AgenticCommerce\Block\Adminhtml\Dashboard $block */
+$connected  = $block->isConnected();
+$merchantId = $block->getMerchantId();
+$storeCount = $block->getStoreCount();
+?>
+<div style="max-width:900px;margin:24px auto;font-family:sans-serif;">
+
+<?php if (!$connected): ?>
+    <!-- No conectado -->
+    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:24px 28px;margin-bottom:24px;">
+        <h2 style="margin:0 0 8px;font-size:1.2rem;color:#856404;">
+            ⚠️ <?= $block->escapeHtml(__('Your store is not yet connected to Trusteed')) ?>
+        </h2>
+        <p style="margin:0 0 16px;color:#856404;">
+            <?= $block->escapeHtml(__('So that shoppers can find your products through AI assistants, you need to connect your store. It only takes 2 minutes.')) ?>
+        </p>
+        <a href="<?= $block->escapeUrl($block->getSetupUrl()) ?>"
+           style="display:inline-block;background:#1a73e8;color:#fff;padding:10px 22px;border-radius:5px;text-decoration:none;font-weight:bold;">
+            <?= $block->escapeHtml(__('Connect now →')) ?>
+        </a>
+    </div>
+<?php else: ?>
+    <!-- Conectado -->
+    <div style="background:#d4edda;border:1px solid #28a745;border-radius:8px;padding:20px 28px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">
+        <span style="font-size:2rem;">✅</span>
+        <div>
+            <h2 style="margin:0 0 4px;font-size:1.1rem;color:#155724;"><?= $block->escapeHtml(__('Your store is connected')) ?></h2>
+            <p style="margin:0;color:#155724;font-size:0.9rem;">
+                <?= $block->escapeHtml(__('Store ID:')) ?> <strong><?= $block->escapeHtml($merchantId) ?></strong>
+                &nbsp;·&nbsp;
+                <?= $block->escapeHtml(__('%1 active store(s)', (int)$storeCount)) ?>
+            </p>
+        </div>
+        <a href="<?= $block->escapeUrl($block->getSetupUrl()) ?>"
+           style="margin-left:auto;color:#155724;font-size:0.85rem;text-decoration:underline;">
+            <?= $block->escapeHtml(__('Change configuration')) ?>
+        </a>
+    </div>
+<?php endif; ?>
+
+    <!-- Accesos rápidos -->
+    <h3 style="font-size:1rem;color:#333;margin:0 0 16px;"><?= $block->escapeHtml(__('What do you want to do?')) ?></h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:32px;">
+
+        <a href="<?= $block->escapeUrl($block->getHealthUrl()) ?>"
+           style="display:block;background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;text-decoration:none;color:#333;transition:box-shadow .2s;"
+           onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.12)'"
+           onmouseout="this.style.boxShadow='none'">
+            <div style="font-size:1.8rem;margin-bottom:8px;">📊</div>
+            <strong><?= $block->escapeHtml(__('How is my store doing?')) ?></strong>
+            <p style="font-size:.85rem;color:#666;margin:6px 0 0;"><?= $block->escapeHtml(__('Check the status of your agentic sales.')) ?></p>
+        </a>
+
+        <a href="<?= $block->escapeUrl($block->getVentasUrl()) ?>"
+           style="display:block;background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;text-decoration:none;color:#333;"
+           onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.12)'"
+           onmouseout="this.style.boxShadow='none'">
+            <div style="font-size:1.8rem;margin-bottom:8px;">💰</div>
+            <strong><?= $block->escapeHtml(__('My sales')) ?></strong>
+            <p style="font-size:.85rem;color:#666;margin:6px 0 0;"><?= $block->escapeHtml(__('Review the orders placed by AI.')) ?></p>
+        </a>
+
+        <a href="<?= $block->escapeUrl($block->getReglasUrl()) ?>"
+           style="display:block;background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;text-decoration:none;color:#333;"
+           onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.12)'"
+           onmouseout="this.style.boxShadow='none'">
+            <div style="font-size:1.8rem;margin-bottom:8px;">⚙️</div>
+            <strong><?= $block->escapeHtml(__('My Rules')) ?></strong>
+            <p style="font-size:.85rem;color:#666;margin:6px 0 0;"><?= $block->escapeHtml(__('Define how assistants work in your store.')) ?></p>
+        </a>
+
+        <a href="<?= $block->escapeUrl($block->getSeguridadUrl()) ?>"
+           style="display:block;background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;text-decoration:none;color:#333;"
+           onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,.12)'"
+           onmouseout="this.style.boxShadow='none'">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🔒</div>
+            <strong><?= $block->escapeHtml(__('Security')) ?></strong>
+            <p style="font-size:.85rem;color:#666;margin:6px 0 0;"><?= $block->escapeHtml(__('Control who has access to your store.')) ?></p>
+        </a>
+
+    </div>
+
+    <!-- Ayuda -->
+    <div style="background:#f8f9fa;border-radius:8px;padding:18px 24px;font-size:.9rem;color:#555;">
+        <?= $block->escapeHtml(__('Have a question? Write to us at')) ?>
+        <a href="mailto:hola@trusteed.xyz" style="color:#1a73e8;">hola@trusteed.xyz</a>
+        <?= $block->escapeHtml(__('and we will help you in minutes.')) ?>
+    </div>
+
+</div>

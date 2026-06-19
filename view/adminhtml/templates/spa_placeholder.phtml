@@ -1,0 +1,18 @@
+<?php
+/**
+ * Phase B SPA mount-point placeholder (T119, US4).
+ *
+ * This div is the only entry-point for the future Phase B embed-shell SPA.
+ * The SPA will call the embed-bootstrap endpoint (spec-039) independently
+ * using the merchant_id data attribute — no bearer token is rendered here.
+ *
+ * Rendered only when trusteed_general/general/phase_b_enabled = 1 (ifconfig gate
+ * declared in trusteed_dashboard_index.xml).
+ *
+ * @var \Trusteed\AgenticCommerce\Block\Adminhtml\SpaPlaceholder $block
+ */
+?>
+<div id="trusteed-spa-root"
+     data-merchant-id="<?= $block->escapeHtmlAttr($block->getMerchantId()) ?>">
+    <!-- Phase B SPA will mount here when phase_b_enabled = 1 -->
+</div>

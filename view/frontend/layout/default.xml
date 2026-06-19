@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!--
+  Injects the WebMCP bridge script into all frontend pages.
+  Gated by trusteed_general/features/webmcp_enabled system config flag (default: 0).
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <block class="Magento\Framework\View\Element\Template"
+               name="trusteed.webmcp.bridge"
+               template="Trusteed_AgenticCommerce::webmcp/bridge.phtml"
+               ifconfig="trusteed_general/features/webmcp_enabled"
+               before="-"/>
+    </body>
+</page>

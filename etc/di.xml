@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!--
+        Plugin: persist trusteed_receipt_uri extension attribute to sales_order DB column.
+        Set-once guard: column value is never overwritten once written (FR-A-015 immutability).
+        Spec 050 T079a + T079b.
+    -->
+    <type name="Magento\Sales\Api\OrderRepositoryInterface">
+        <plugin name="trusteed_order_receipt_uri"
+                type="Trusteed\AgenticCommerce\Plugin\Repository\OrderRepositoryPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <!--
+        Plugin: manage trusteed_receipt_uri on Order at checkout place-order time.
+        Ensures extension attribute container exists before and after order placement.
+        Spec 050 T079.
+    -->
+    <type name="Magento\Sales\Model\Order\Payment">
+        <plugin name="trusteed_order_ext_attr"
+                type="Trusteed\AgenticCommerce\Plugin\Sales\OrderExtensionAttribute"
+                sortOrder="10"/>
+    </type>
+
+    <!--
+        SSRF hardening (spec-050 Stream B H1): explicitly wire the
+        ApiBaseUrlValidator into the outbound enforcement HTTP clients so the
+        admin-configurable api_base_url is allowlist/hash-checked before any
+        HMAC-signed payload leaves the store. The constructor argument is
+        nullable (legacy unit tests construct positionally) — these bindings
+        guarantee production always receives the guard.
+    -->
+    <type name="Trusteed\AgenticCommerce\Service\EnforcementClient">
+        <arguments>
+            <argument name="urlValidator" xsi:type="object">Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator</argument>
+        </arguments>
+    </type>
+    <type name="Trusteed\AgenticCommerce\Service\AgentHistoryFetcher">
+        <arguments>
+            <argument name="urlValidator" xsi:type="object">Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator</argument>
+        </arguments>
+    </type>
+
+    <!--
+        SSRF hardening (spec-050 Gap #3): outbound HMAC/token-bearing callouts
+        must allowlist/hash-check the admin-configurable api_base_url before any
+        credential leaves the store. The constructor argument is nullable (legacy
+        positional unit tests) and fails closed when null — these bindings
+        guarantee production always receives the guard.
+    -->
+    <type name="Trusteed\AgenticCommerce\Model\Webhook\SignaturePublisher">
+        <arguments>
+            <argument name="urlValidator" xsi:type="object">Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator</argument>
+        </arguments>
+    </type>
+    <type name="Trusteed\AgenticCommerce\Cron\EmitLagHeartbeat">
+        <arguments>
+            <argument name="urlValidator" xsi:type="object">Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator</argument>
+        </arguments>
+    </type>
+    <type name="Trusteed\AgenticCommerce\Setup\Patch\Data\EmitInstallEvent">
+        <arguments>
+            <argument name="urlValidator" xsi:type="object">Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator</argument>
+        </arguments>
+    </type>
+
+    <!--
+        Manifest cache: use the default Magento cache frontend so the
+        manifest is stored in the shared cache layer (Redis or file).
+    -->
+    <type name="Trusteed\AgenticCommerce\Model\Manifest\Builder">
+        <arguments>
+            <argument name="cache" xsi:type="object">Magento\Framework\App\Cache\Type\Config</argument>
+        </arguments>
+    </type>
+
+    <!--
+        Register the module's CLI commands so they are visible to bin/magento:
+          - trusteed:check-webserver   (Console\Command\CheckWebserver)
+          - trusteed:webhook:status    (Console\Command\WebhookStatus)
+    -->
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="trusteed_check_webserver" xsi:type="object">Trusteed\AgenticCommerce\Console\Command\CheckWebserver</item>
+                <item name="trusteed_webhook_status" xsi:type="object">Trusteed\AgenticCommerce\Console\Command\WebhookStatus</item>
+            </argument>
+        </arguments>
+    </type>
+
+</config>
