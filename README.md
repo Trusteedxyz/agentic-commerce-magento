@@ -11,13 +11,13 @@ Enable new online shoppers, AI agents, to make purchases in your store securely 
 
 ## Screenshots
 
-| Dashboard | Setup Wizard | Agent Sales |
-|-----------|-------------|-------------|
-| ![Dashboard](docs/screenshots/screenshot-02-dashboard.png) | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Sales](docs/screenshots/screenshot-04-ventas.png) |
+| Dashboard | Agent Sales | Business Rules |
+|-----------|------------|----------------|
+| ![Dashboard](docs/screenshots/screenshot-02-dashboard.png) | ![Sales](docs/screenshots/screenshot-04-ventas.png) | ![Rules](docs/screenshots/screenshot-05-rules.png) |
 
-| Setup Config |
-|-------------|
-| ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
+| Setup Wizard | Setup Config |
+|-------------|-------------|
+| ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
 ## Features
 
