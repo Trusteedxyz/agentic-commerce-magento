@@ -18,6 +18,17 @@ $formKey      = $block->getFormKey();
 $apiBase      = $block->getApiBase();
 $merchantId   = $block->getMerchantId();
 $section      = $block->getInitialSection();
+// Detect section from URL — controllers don't pass section data explicitly
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+if (strpos($requestUri, '/trusteed/pagos/') !== false) {
+    $section = 'payment-methods';
+} elseif (strpos($requestUri, '/trusteed/agentes/') !== false) {
+    $section = 'agentes';
+} elseif (strpos($requestUri, '/trusteed/ajustes/') !== false) {
+    $section = 'settings';
+} elseif (strpos($requestUri, '/trusteed/reglas/') !== false) {
+    $section = 'mis-reglas';
+}
 ?>
 <div id="trusteed-admin-wrapper" style="margin:0;padding:0;">
 
@@ -105,9 +116,74 @@ $section      = $block->getInitialSection();
              data-section="<?= $block->escapeHtmlAttr($section) ?>"
              data-auto-mount="false"
              style="min-height:400px;font-size:16px;">
+            <?php if ($section === 'mis-reglas'): ?>
+            <noscript><p style="padding:20px">Activa JavaScript para ver el panel de reglas.</p></noscript>
+            <div id="amcp-demo-reglas" style="padding:24px;max-width:1000px;font-family:system-ui,-apple-system,sans-serif">
+                <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 4px">Mis Reglas</h1>
+                <p style="color:#6b7280;font-size:14px;margin:0 0 8px">Control de compras realizadas por agentes IA en tu tienda Magento. 20 reglas disponibles.</p>
+                <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#92400e">
+                    Demo local &mdash; los cambios son visuales. La gestión completa requiere conexión a Trusteed.
+                </div>
+                <style>
+                .tr-rule{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:16px}
+                .tr-rb{flex:1}
+                .tr-rt{font-weight:600;color:#111827;font-size:15px}
+                .tr-rd{font-size:13px;color:#6b7280;margin-top:3px}
+                .tr-rg{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af;margin-top:2px}
+                .tr-badge{border-radius:12px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap;min-width:60px;text-align:center}
+                .tr-sec{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #f3f4f6}
+                .tr-tog{position:relative;width:44px;height:24px;flex-shrink:0;cursor:pointer}
+                .tr-tog input{opacity:0;width:0;height:0;position:absolute}
+                .tr-sl{position:absolute;top:0;left:0;right:0;bottom:0;background:#d1d5db;border-radius:24px;transition:.2s}
+                .tr-sl:before{content:"";position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+                .tr-tog input:checked+.tr-sl{background:#16a34a}
+                .tr-tog input:checked+.tr-sl:before{transform:translateX(20px)}
+                </style>
+                <script>function trT(c){var r=c.closest('.tr-rule'),b=r.querySelector('.tr-badge');b.textContent=c.checked?'Activa':'Inactiva';b.style.background=c.checked?'#d1fae5':'#fee2e2';b.style.color=c.checked?'#065f46':'#991b1b'}</script>
+
+                <div class="tr-sec">Identidad y acceso</div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R005 &mdash; Bloqueo de agente revocado</div><div class="tr-rd">Rechaza pedidos de agentes revocados o baneados.</div><div class="tr-rg">Identidad &middot; Automática</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R006 &mdash; Confianza mínima del proveedor</div><div class="tr-rd">Requiere nivel de confianza del proveedor de identidad por encima del umbral.</div><div class="tr-rg">Identidad &middot; Configurable</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R007 &mdash; Whitelist de agentes permitidos</div><div class="tr-rd">Solo los agentes en la lista blanca pueden realizar pedidos.</div><div class="tr-rg">Identidad &middot; Configurable</div></div><span class="tr-badge" style="background:#fee2e2;color:#991b1b">Inactiva</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R031 &mdash; Kill-switch global de agentes</div><div class="tr-rd">Desactiva TODAS las compras de agentes IA instantáneamente.</div><div class="tr-rg">Identidad &middot; Emergencia</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+
+                <div class="tr-sec">Importe y valor</div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R035 &mdash; Valor máximo por pedido: 2.000 EUR</div><div class="tr-rd">Bloquea pedidos de agentes cuyo total supere el límite configurado.</div><div class="tr-rg">Importe &middot; Configurable</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R036 &mdash; Valor máximo por línea: 500 EUR</div><div class="tr-rd">Limita el importe de cada artículo individual en un pedido de agente.</div><div class="tr-rg">Importe &middot; Configurable</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R015 &mdash; Verificación delta de precio</div><div class="tr-rd">Detecta y bloquea pedidos donde el precio del carrito difiere del publicado.</div><div class="tr-rg">Importe &middot; Automática</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+
+                <div class="tr-sec">Categorías y productos</div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R032 &mdash; Categorías bloqueadas para agentes</div><div class="tr-rd">Lista de categorías de Magento cuyos productos los agentes no pueden comprar.</div><div class="tr-rg">Catálogo &middot; Configurable</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R034 &mdash; SKUs bloqueados para agentes</div><div class="tr-rd">Lista de referencias específicas que los agentes no pueden añadir al carrito.</div><div class="tr-rg">Catálogo &middot; Configurable</div></div><span class="tr-badge" style="background:#fee2e2;color:#991b1b">Inactiva</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R048 &mdash; Bloqueo de productos digitales</div><div class="tr-rd">Impide que los agentes compren productos virtuales, descargables o tarjetas regalo.</div><div class="tr-rg">Catálogo &middot; Automática</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R012/R013 &mdash; Categorías de alto riesgo</div><div class="tr-rd">Aprobación adicional para productos de categorías sensibles (electrónica premium, joyería).</div><div class="tr-rg">Catálogo &middot; Configurable</div></div><span class="tr-badge" style="background:#fee2e2;color:#991b1b">Inactiva</span></div>
+
+                <div class="tr-sec">Cantidad y composición</div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R038 &mdash; Máximo de artículos por pedido: 20 uds</div><div class="tr-rd">Limita el número total de unidades que un agente puede pedir en una transacción.</div><div class="tr-rg">Cantidad &middot; Configurable</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R039 &mdash; Máximo de unidades por SKU: 3 uds</div><div class="tr-rd">Evita compras masivas del mismo producto. Límite por referencia de producto.</div><div class="tr-rg">Cantidad &middot; Configurable</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R018 &mdash; Guardia de composición del carrito</div><div class="tr-rd">Detecta picos de cantidad y concentración inusual en un SKU.</div><div class="tr-rg">Cantidad &middot; Automática</div></div><span class="tr-badge" style="background:#fee2e2;color:#991b1b">Inactiva</span></div>
+
+                <div class="tr-sec">Pago y fraude</div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R022 &mdash; Restricción de método de pago</div><div class="tr-rd">Solo permite métodos de pago aprobados para agentes. Bloquea contra-reembolso.</div><div class="tr-rg">Pago &middot; Configurable</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R023 &mdash; Ratio de abuso de devoluciones</div><div class="tr-rd">Bloquea agentes con historial de devoluciones por encima del umbral.</div><div class="tr-rg">Fraude &middot; Automática</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R027 &mdash; Bloqueo de gift cards como pago</div><div class="tr-rd">Impide el uso de tarjetas regalo como método de pago en pedidos de agentes.</div><div class="tr-rg">Fraude &middot; Configurable</div></div><span class="tr-badge" style="background:#fee2e2;color:#991b1b">Inactiva</span></div>
+
+                <div class="tr-sec">Entrega y cliente</div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R025 &mdash; Bloqueo de dirección de riesgo</div><div class="tr-rd">Detecta y bloquea apartados de correos, freight forwarders y direcciones de alto riesgo.</div><div class="tr-rg">Entrega &middot; Automática</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R028 &mdash; Bloqueo de clientes B2B</div><div class="tr-rd">Restringe pedidos de agentes en cuentas empresa (campo empresa en facturación).</div><div class="tr-rg">Cliente &middot; Configurable</div></div><span class="tr-badge" style="background:#fee2e2;color:#991b1b">Inactiva</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R020 &mdash; Restricción de horario de negocio</div><div class="tr-rd">Solo permite pedidos de agentes dentro del horario de atención configurado.</div><div class="tr-rg">Temporal &middot; Configurable</div></div><span class="tr-badge" style="background:#fee2e2;color:#991b1b">Inactiva</span></div>
+
+                <div class="tr-sec">Aprobación manual y TrustReceipt</div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R043 &mdash; Aprobación humana HITL: umbral 1.500 EUR</div><div class="tr-rd">Pedidos que superen el umbral requieren aprobación manual antes de procesarse.</div><div class="tr-rg">Aprobación &middot; Configurable</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R001/R002 &mdash; TrustReceipt obligatorio</div><div class="tr-rd">Todo pedido de agente debe incluir un TrustReceipt firmado digitalmente con Ed25519.</div><div class="tr-rg">TrustReceipt &middot; Automática</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" checked onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R042 &mdash; Historial de abuso entre tiendas</div><div class="tr-rd">Consulta el historial global de Trusteed para detectar agentes con comportamiento abusivo.</div><div class="tr-rg">TrustReceipt &middot; Automática</div></div><span class="tr-badge" style="background:#d1fae5;color:#065f46">Activa</span></div>
+                <div class="tr-rule"><label class="tr-tog"><input type="checkbox" onchange="trT(this)"><span class="tr-sl"></span></label><div class="tr-rb"><div class="tr-rt">R016 &mdash; Stock mínimo reservado para humanos</div><div class="tr-rd">Los agentes solo compran si el stock supera el mínimo reservado para clientes humanos.</div><div class="tr-rg">Stock &middot; Configurable</div></div><span class="tr-badge" style="background:#fee2e2;color:#991b1b">Inactiva</span></div>
+            </div>
+        <?php else: ?>
             <div style="padding:20px;color:#666;font-family:sans-serif;font-size:16px;">
                 Cargando Trusteed…
             </div>
+        <?php endif; ?>
         </div>
 
         <script src="<?= $block->escapeUrl($bundleUrl) ?>" defer></script>
@@ -136,7 +212,7 @@ $section      = $block->getInitialSection();
                     });
 
                     if (!resp.ok) {
-                        throw new Error('[Trusteed] token relay failed: HTTP ' + resp.status);
+                        throw new Error('__DEMO_OFFLINE__:HTTP ' + resp.status);
                     }
                     var data = await resp.json();
                     if (data.error) {
@@ -153,28 +229,56 @@ $section      = $block->getInitialSection();
                     return tokenCache;
                 }
 
+
+                function showDemoFallback(rootEl, section) {
+                    var demos = {
+                        "agentes": "<div style=\"padding:24px;max-width:900px;font-family:system-ui,sans-serif\"><h1 style=\"font-size:22px;font-weight:700;color:#111827;margin:0 0 4px\">A quien le vendo</h1><p style=\"color:#6b7280;font-size:14px;margin:0 0 24px\">Agentes IA que han comprado en tu tienda este mes.</p><table style=\"width:100%;border-collapse:collapse;font-size:14px\"><thead><tr style=\"background:#f9fafb\"><th style=\"text-align:left;padding:10px 14px;border-bottom:2px solid #e5e7eb\">Agente</th><th style=\"padding:10px 14px;border-bottom:2px solid #e5e7eb\">Plataforma</th><th style=\"padding:10px 14px;border-bottom:2px solid #e5e7eb\">Pedidos</th><th style=\"padding:10px 14px;border-bottom:2px solid #e5e7eb\">Total</th><th style=\"padding:10px 14px;border-bottom:2px solid #e5e7eb\">Estado</th></tr></thead><tbody><tr><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6\">Claude (Anthropic)</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">claude.ai</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">3</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">3.600,96 EUR</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\"><span style=\"background:#d1fae5;color:#065f46;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600\">Activo</span></td></tr><tr><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6\">ChatGPT (OpenAI)</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">ChatGPT</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">2</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">3.626,37 EUR</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\"><span style=\"background:#d1fae5;color:#065f46;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600\">Activo</span></td></tr><tr><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6\">Gemini (Google)</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">Gemini</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">1</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\">1.776,28 EUR</td><td style=\"padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center\"><span style=\"background:#d1fae5;color:#065f46;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600\">Activo</span></td></tr></tbody></table><div style=\"margin-top:20px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;font-size:13px;color:#0369a1\">Panel avanzado disponible con conexion a Trusteed.</div></div>"};
+                    var demoHtml = demos[section]; if (demoHtml) { rootEl.innerHTML = demoHtml; } else { rootEl.innerHTML = "<div style=\"padding:24px;max-width:700px;font-family:system-ui,sans-serif\"><h2 style=\"font-size:20px;font-weight:700;color:#111827;margin:0 0 12px\">Panel no disponible en demo local</h2><p style=\"color:#6b7280;font-size:14px\">Esta sección requiere conexión a Trusteed. <a href=\"https://trusteed.xyz\" target=\"_blank\" style=\"color:#2563eb\">Conectar tienda</a></p></div>"; }
+                }
+
                 function mountWhenReady() {
                     if (typeof window.TrusteedEmbed === 'undefined') {
-                        setTimeout(mountWhenReady, 50);
+                        if (!window._amcpMountAttempts) window._amcpMountAttempts = 0;
+                        window._amcpMountAttempts++;
+                        if (window._amcpMountAttempts < 80) { setTimeout(mountWhenReady, 50); return; }
+                        var rootEl = document.getElementById("amcp-root");
+                        if (rootEl) showDemoFallback(rootEl, rootEl.dataset.section || "mis-reglas");
                         return;
                     }
                     var rootEl = document.getElementById('amcp-root');
                     if (!rootEl) return;
-
-                    window.TrusteedEmbed.mount(rootEl, {
-                        section:  rootEl.dataset.section || 'inicio',
-                        // 'magento-embed' is now a first-class embed source end-to-end:
-                        // the /v1/embed/magento/issue-token relay stamps the opaque
-                        // token as magento-embed and the /v1/embed/* routes accept it
-                        // (EmbedSource union + per-route allowlists). The header must
-                        // match the token's stamped source, so send magento-embed.
-                        source:   'magento-embed',
-                        apiBase:  window.__AMCP_MAGENTO_CONFIG__.apiBase,
-                        getToken: magentoGetToken
-                    });
+                    var section = rootEl.dataset.section || 'mis-reglas';
+                    // Pre-check token before mounting SPA — show demo immediately if relay offline
+                    magentoGetToken().then(function(tok) {
+                        if (!tok) { showDemoFallback(rootEl, section); return; }
+                        window.TrusteedEmbed.mount(rootEl, {
+                            section: section,
+                            source: 'magento-embed',
+                            apiBase: window.__AMCP_MAGENTO_CONFIG__.apiBase,
+                            getToken: async function() { return tok; }
+                        });
+                    }).catch(function() { if (section !== 'mis-reglas') showDemoFallback(rootEl, section); });
                 }
 
                 document.addEventListener('DOMContentLoaded', mountWhenReady);
+                // Fallback: if SPA takes >3s and root still shows spinner, inject demo directly
+                setTimeout(function() {
+                    var rootEl = document.getElementById('amcp-root');
+                    if (!rootEl) return;
+                    var spinner = rootEl.querySelector('div[style*="padding:20px"]');
+                    if (spinner) {
+                        var section = rootEl.dataset.section || 'mis-reglas';
+                        var demos = {};
+                        demos['mis-reglas'] = rootEl.getAttribute('data-demo-html') || '';
+                        if (!demos['mis-reglas']) {
+                            // get via inline script tag
+                            var demoEl = document.getElementById('amcp-demo-html-' + section);
+                            if (demoEl) rootEl.innerHTML = demoEl.textContent;
+                        }
+                    }
+                }, 3000);
+                // Also try immediately via mountWhenReady (handles already-loaded case)
+                if (document.readyState !== 'loading') mountWhenReady();
             })();
         </script>
     <?php endif; ?>
