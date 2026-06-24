@@ -15,6 +15,10 @@ Enable new online shoppers, AI agents, to make purchases in your store securely 
 |-----------|------------|----------------|
 | ![Dashboard](docs/screenshots/screenshot-02-dashboard.png) | ![Sales](docs/screenshots/screenshot-04-ventas.png) | ![Rules](docs/screenshots/screenshot-05-rules.png) |
 
+| Agents | Rules & Toggles | Trust Receipts |
+|--------|----------------|----------------|
+| ![Agents](docs/screenshots/screenshot-06-agentes.png) | ![Rules Detail](docs/screenshots/screenshot-07-rules-detail.png) | ![Trust Receipts](docs/screenshots/screenshot-08-trust-receipts.png) |
+
 | Setup Wizard | Setup Config |
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
