@@ -128,7 +128,6 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Support
 
-- Documentation: [docs.trusteed.xyz/magento](https://docs.trusteed.xyz/magento)
 - Support email: support@trusteed.xyz
 - GitHub issues: [github.com/trusteed/magento-module](https://github.com/trusteed/magento-module)
 
