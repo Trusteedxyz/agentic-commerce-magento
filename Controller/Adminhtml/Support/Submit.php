@@ -104,7 +104,7 @@ class Submit extends Action implements HttpPostActionInterface
             'errorLogs'  => [],
         ]);
 
-        $ch = curl_init($apiBase . '/api/v1/embed/support/report');
+        $ch = curl_init($apiBase . '/v1/embed/support/report');
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,

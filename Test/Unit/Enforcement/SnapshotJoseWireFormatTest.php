@@ -18,6 +18,9 @@ use Trusteed\AgenticCommerce\Service\EnforcementClient;
  * `Accept: application/jose`. This test proves the Magento EnforcementClient:
  *   1. Sends `Accept: application/jose` (matching WP-plugin/PrestaShop/Odoo).
  *   2. Parses the raw body as a JWS string (NOT a JSON envelope).
+ *   3. (fable audit 2026-07-02, PL-F5) VERIFIES the Ed25519 signature against
+ *      the platform JWKS before trusting the payload — a snapshot signed
+ *      with an unknown/wrong key must fail-open to an empty rules array.
  *
  * Closes the cross-component wire-format drift where the client previously
  * json_decode()'d the body and read $body['jwsCompact'].
@@ -25,15 +28,19 @@ use Trusteed\AgenticCommerce\Service\EnforcementClient;
 class SnapshotJoseWireFormatTest extends TestCase
 {
     /**
-     * Build a Curl stub that returns $body with status 200 and records every
-     * header passed to addHeader() so the test can assert Accept negotiation.
+     * Build a Curl stub that routes by URL: `.well-known/jwks.json` returns
+     * $jwksBody, anything else (the snapshot endpoint) returns $snapshotBody.
+     * Both responses report status 200.
      */
-    private function makeCurl(string $body, array &$headers): Curl
+    private function makeCurl(string $snapshotBody, string $jwksBody, array &$headers): Curl
     {
-        return new class($body, $headers) extends Curl {
+        return new class($snapshotBody, $jwksBody, $headers) extends Curl {
+            private string $lastUri = '';
+
             /** @param array<string,string> $captured */
             public function __construct(
-                private readonly string $body,
+                private readonly string $snapshotBody,
+                private readonly string $jwksBody,
                 private array &$captured
             ) {}
             public function setTimeout(int $seconds): void {}
@@ -42,9 +49,17 @@ class SnapshotJoseWireFormatTest extends TestCase
             {
                 $this->captured[$name] = $value;
             }
-            public function get(string $uri): void {}
+            public function get(string $uri): void
+            {
+                $this->lastUri = $uri;
+            }
             public function getStatus(): int { return 200; }
-            public function getBody(): string { return $this->body; }
+            public function getBody(): string
+            {
+                return str_contains($this->lastUri, '.well-known/jwks.json')
+                    ? $this->jwksBody
+                    : $this->snapshotBody;
+            }
         };
     }
 
@@ -67,27 +82,48 @@ class SnapshotJoseWireFormatTest extends TestCase
         };
     }
 
-    /**
-     * Build a valid-looking JWS Compact whose payload carries a `rules` array.
-     */
-    private function makeJws(array $payload): string
+    private static function b64url(string $data): string
     {
-        $b64 = static function (array $arr): string {
-            return rtrim(strtr(base64_encode(json_encode($arr)), '+/', '-_'), '=');
-        };
-        $header = $b64(['alg' => 'EdDSA', 'kid' => 'k1']);
-        $body   = $b64($payload);
-        return $header . '.' . $body . '.' . 'c2lnbmF0dXJl';
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    /**
+     * Build a REAL Ed25519-signed JWS Compact string whose payload carries
+     * $payload, plus the matching JWKS document (kid "k1").
+     *
+     * @return array{jws: string, jwks: string}
+     */
+    private function makeSignedJws(array $payload): array
+    {
+        $keypair = sodium_crypto_sign_keypair();
+        $secret  = sodium_crypto_sign_secretkey($keypair);
+        $public  = sodium_crypto_sign_publickey($keypair);
+
+        $header = self::b64url((string)json_encode(['alg' => 'EdDSA', 'kid' => 'k1']));
+        $body   = self::b64url((string)json_encode($payload));
+        $sig    = self::b64url(sodium_crypto_sign_detached("{$header}.{$body}", $secret));
+        $jws    = "{$header}.{$body}.{$sig}";
+
+        $jwks = json_encode([
+            'keys' => [[
+                'kty' => 'OKP',
+                'crv' => 'Ed25519',
+                'kid' => 'k1',
+                'x'   => self::b64url($public),
+            ]],
+        ]);
+
+        return ['jws' => $jws, 'jwks' => (string)$jwks];
     }
 
     /** Sends Accept: application/jose. */
     public function testSendsAcceptJoseHeader(): void
     {
         $captured = [];
-        $jws = $this->makeJws(['rules' => [['ruleCode' => 'R001']]]);
+        $signed = $this->makeSignedJws(['rules' => [['ruleCode' => 'R001']]]);
         $client = new EnforcementClient(
             $this->makeScopeConfig(),
-            $this->makeCurl($jws, $captured),
+            $this->makeCurl($signed['jws'], $signed['jwks'], $captured),
             $this->createMock(LoggerInterface::class)
         );
 
@@ -97,11 +133,11 @@ class SnapshotJoseWireFormatTest extends TestCase
         $this->assertSame('application/jose', $captured['Accept']);
     }
 
-    /** Parses a BARE JWS body (not a JSON envelope) into the rules array. */
+    /** Parses a BARE JWS body (not a JSON envelope) into the rules array, once signature-verified. */
     public function testParsesBareJwsBody(): void
     {
         $captured = [];
-        $jws = $this->makeJws([
+        $signed = $this->makeSignedJws([
             'rules' => [
                 ['ruleCode' => 'R001', 'mode' => 'enforce', 'enabled' => true],
                 ['ruleCode' => 'R003', 'mode' => 'observe', 'enabled' => true],
@@ -109,7 +145,7 @@ class SnapshotJoseWireFormatTest extends TestCase
         ]);
         $client = new EnforcementClient(
             $this->makeScopeConfig(),
-            $this->makeCurl($jws, $captured),
+            $this->makeCurl($signed['jws'], $signed['jwks'], $captured),
             $this->createMock(LoggerInterface::class)
         );
 
@@ -124,10 +160,10 @@ class SnapshotJoseWireFormatTest extends TestCase
     public function testTrimsTrailingWhitespaceOnBody(): void
     {
         $captured = [];
-        $jws = $this->makeJws(['rules' => [['ruleCode' => 'R030']]]);
+        $signed = $this->makeSignedJws(['rules' => [['ruleCode' => 'R030']]]);
         $client = new EnforcementClient(
             $this->makeScopeConfig(),
-            $this->makeCurl($jws . "\n", $captured),
+            $this->makeCurl($signed['jws'] . "\n", $signed['jwks'], $captured),
             $this->createMock(LoggerInterface::class)
         );
 
@@ -135,5 +171,30 @@ class SnapshotJoseWireFormatTest extends TestCase
 
         $this->assertCount(1, $rules);
         $this->assertSame('R030', $rules[0]['ruleCode']);
+    }
+
+    /**
+     * PL-F5 regression guard — a JWS with a valid shape but a BOGUS signature
+     * (e.g. tampered payload, or signed by an unrecognized key) MUST fail
+     * open to an empty rules array, never trust the payload.
+     */
+    public function testRejectsInvalidSignature(): void
+    {
+        $captured = [];
+        $signed = $this->makeSignedJws(['rules' => [['ruleCode' => 'R999']]]);
+        // Tamper the payload segment after signing — signature no longer matches.
+        $parts = explode('.', $signed['jws']);
+        $parts[1] = self::b64url((string)json_encode(['rules' => [['ruleCode' => 'R999-TAMPERED']]]));
+        $tamperedJws = implode('.', $parts);
+
+        $client = new EnforcementClient(
+            $this->makeScopeConfig(),
+            $this->makeCurl($tamperedJws, $signed['jwks'], $captured),
+            $this->createMock(LoggerInterface::class)
+        );
+
+        $rules = $client->getRules('merchant_xyz');
+
+        $this->assertSame([], $rules);
     }
 }

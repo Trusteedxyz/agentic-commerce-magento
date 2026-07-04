@@ -61,6 +61,14 @@ class EnforcementClient
     private array $payloadCache = [];
 
     /**
+     * In-memory cache: JWKS keys (kid => raw Ed25519 pubkey) per apiBase
+     * (fable audit 2026-07-02, PL-F5). Per-request only — mirrors the scope
+     * of $snapshotCache/$payloadCache above; this client is DI-constructed
+     * per request, unlike the WC/PS clients which persist via APCu.
+     */
+    private array $jwksCache = [];
+
+    /**
      * @param ApiBaseUrlValidator|null $urlValidator SSRF guard for the
      *        admin-configurable api_base_url. Production DI auto-wires this by
      *        type-hint; legacy unit tests that construct the client positionally
@@ -142,7 +150,17 @@ class EnforcementClient
         $hmacSecret     = $this->getHmacSecret();
 
         // Unconfigured connector → never block (wizard not completed yet).
+        // PL-F6 (fable audit 2026-07-02): an empty HMAC secret joins this
+        // short-circuit rather than falling through to buildSignature(),
+        // which used to fabricate a "t=...,s=dev-bypass" header that LOOKED
+        // signed but wasn't. Ops needs a distinct log line to find merchants
+        // stuck mid-setup (HMAC secret step skipped) vs. a fully unconfigured
+        // connector.
         if ($apiBase === '' || $installationId === '') {
+            return self::DECISION_ALLOW;
+        }
+        if ($hmacSecret === '') {
+            $this->logger->warning('[trusteed] evaluate skipped: HMAC secret not configured (installation incomplete)');
             return self::DECISION_ALLOW;
         }
 
@@ -297,6 +315,14 @@ class EnforcementClient
             $this->payloadCache[$merchantId] = null;
             return null;
         }
+        // PL-F6 — see evaluate() for rationale: an empty HMAC secret must
+        // short-circuit the same as an unconfigured apiBase/installationId,
+        // not fall through to a fabricated signature placeholder.
+        if ($hmacSecret === '') {
+            $this->logger->warning('[trusteed] snapshot fetch skipped: HMAC secret not configured (installation incomplete)');
+            $this->payloadCache[$merchantId] = null;
+            return null;
+        }
 
         // H1 — SSRF + HTTPS guard. Snapshot fetch fails open (null) per the
         // existing contract, so a rejected URL simply yields the safe default.
@@ -333,7 +359,7 @@ class EnforcementClient
                 return null;
             }
 
-            $payload = $this->decodeJwsPayloadUnsafe($jws);
+            $payload = $this->verifyAndDecode($jws);
             $this->payloadCache[$merchantId] = $payload;
             return $payload;
         } catch (\Exception $e) {
@@ -370,6 +396,13 @@ class EnforcementClient
 
         if ($apiBase === '' || $installationId === '') {
             return ['outcome' => NonceOutcome::INDETERMINATE, 'reason' => 'config_missing', 'httpStatus' => null];
+        }
+        // PL-F6 — see evaluate() for rationale. Distinguish "HMAC secret step
+        // of setup skipped" from the generic config_missing reason so ops can
+        // tell the two setup gaps apart in logs/metrics.
+        if ($hmacSecret === '') {
+            $this->logger->warning('[trusteed] nonce-consume skipped: HMAC secret not configured (installation incomplete)');
+            return ['outcome' => NonceOutcome::INDETERMINATE, 'reason' => 'hmac_secret_missing', 'httpStatus' => null];
         }
 
         // H1 — SSRF + HTTPS guard. A rejected URL maps to INDETERMINATE so the
@@ -418,31 +451,154 @@ class EnforcementClient
         return ['outcome' => NonceOutcome::INDETERMINATE, 'reason' => 'http_4xx', 'httpStatus' => $status];
     }
 
+    /**
+     * PL-F6 (fable audit 2026-07-02): previously returned a placeholder
+     * "t=...,s=dev-bypass" signature when `$secret` was empty — a header
+     * that LOOKS signed but isn't, sent silently to the enforcement API.
+     * All three call sites (evaluate/fetchSnapshotPayload/consumeNonce) now
+     * short-circuit before ever reaching this method when the HMAC secret is
+     * unconfigured, matching the existing "unconfigured connector → never
+     * block" fail-open posture used elsewhere in this file. This method
+     * additionally refuses to fabricate a signature as a defense-in-depth
+     * backstop, in case a future caller forgets to guard.
+     *
+     * @throws \RuntimeException when $secret is empty.
+     */
     private function buildSignature(string $rawBody, string $secret): string
     {
-        $ts = time();
         if ($secret === '') {
-            return "t={$ts},s=dev-bypass";
+            throw new \RuntimeException('buildSignature() called without an HMAC secret configured');
         }
+        $ts  = time();
         $hex = hash_hmac('sha256', "{$ts}.{$rawBody}", $secret);
         return "t={$ts},s={$hex}";
     }
 
-    /** Decode JWS payload without signature verification (snapshot trust deferred). */
-    private function decodeJwsPayloadUnsafe(string $jwsCompact): ?array
+    /**
+     * Verify the snapshot JWS Ed25519 signature (sodium) and decode its
+     * payload. Returns null (fail-open per existing snapshot contract) when
+     * sodium is unavailable, the JWS is malformed, the kid is not found in
+     * the platform JWKS, or the signature does not verify.
+     *
+     * fable audit 2026-07-02 (PL-F5) — this used to be
+     * `decodeJwsPayloadUnsafe()`, which decoded the payload WITHOUT checking
+     * the signature at all (Tier-1 always failed open regardless of who
+     * produced the bytes). Woo/PS/Odoo clients already verify; this brings
+     * Magento to parity. Mirrors AgentTokenVerifier::verify() in this same
+     * module and PS SnapshotClient::verifyAndDecode().
+     */
+    private function verifyAndDecode(string $jwsCompact): ?array
     {
-        $parts = explode('.', $jwsCompact);
-        if (count($parts) < 2) {
+        if (!function_exists('sodium_crypto_sign_verify_detached') && !class_exists('\ParagonIE_Sodium_Compat')) {
+            $this->logger->warning('[trusteed] snapshot verify skipped: sodium unavailable');
             return null;
         }
-        $padded = strtr($parts[1], '-_', '+/');
+
+        $parts = explode('.', $jwsCompact);
+        if (count($parts) !== 3) {
+            return null;
+        }
+        [$headerB64, $payloadB64, $sigB64] = $parts;
+
+        $header = $this->decodeB64UrlJson($headerB64);
+        if (!is_array($header) || ($header['alg'] ?? '') !== 'EdDSA' || empty($header['kid'])) {
+            return null;
+        }
+
+        $jwks = $this->fetchJwks();
+        $pubkeyRaw = $jwks[(string)$header['kid']] ?? null;
+        if ($pubkeyRaw === null) {
+            return null;
+        }
+
+        $sig = $this->b64urlDecode($sigB64);
+        if ($sig === false || strlen($sig) !== SODIUM_CRYPTO_SIGN_BYTES) {
+            return null;
+        }
+
+        $signingInput = $headerB64 . '.' . $payloadB64;
+        try {
+            $valid = sodium_crypto_sign_verify_detached($sig, $signingInput, $pubkeyRaw);
+        } catch (\SodiumException $e) {
+            $this->logger->warning('[trusteed] snapshot sodium exception: ' . $e->getMessage());
+            return null;
+        }
+        if (!$valid) {
+            $this->logger->warning('[trusteed] snapshot signature verification failed');
+            return null;
+        }
+
+        $payload = $this->decodeB64UrlJson($payloadB64);
+        return is_array($payload) ? $payload : null;
+    }
+
+    /**
+     * Fetch + cache (per-request) the platform JWKS as kid => raw Ed25519
+     * public key. Returns an empty map on any transport/parse failure —
+     * verifyAndDecode() treats "kid not found" as fail-open, same as before.
+     *
+     * @return array<string, string>
+     */
+    private function fetchJwks(): array
+    {
+        $apiBase = rtrim($this->getApiBase(), '/');
+        if (isset($this->jwksCache[$apiBase])) {
+            return $this->jwksCache[$apiBase];
+        }
+
+        $keys = [];
+        try {
+            $this->curl->setTimeout(self::TIMEOUT_SECONDS);
+            $this->applyTlsHardening();
+            $this->curl->addHeader('Accept', 'application/json');
+            $this->curl->get($apiBase . '/.well-known/jwks.json');
+
+            if ((int)$this->curl->getStatus() === 200) {
+                $data = json_decode((string)$this->curl->getBody(), true);
+                foreach ((is_array($data) ? ($data['keys'] ?? []) : []) as $key) {
+                    if (!is_array($key)) {
+                        continue;
+                    }
+                    if (($key['kty'] ?? '') !== 'OKP' || ($key['crv'] ?? '') !== 'Ed25519') {
+                        continue;
+                    }
+                    if (empty($key['kid']) || empty($key['x'])) {
+                        continue;
+                    }
+                    $raw = $this->b64urlDecode((string)$key['x']);
+                    if ($raw !== false && strlen($raw) === SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
+                        $keys[(string)$key['kid']] = $raw;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('[trusteed] jwks fetch error: ' . $e->getMessage());
+        }
+
+        $this->jwksCache[$apiBase] = $keys;
+        return $keys;
+    }
+
+    /** @return array<string,mixed>|null */
+    private function decodeB64UrlJson(string $b64): ?array
+    {
+        $json = $this->b64urlDecode($b64);
+        if ($json === false) {
+            return null;
+        }
+        $data = json_decode($json, true);
+        return is_array($data) ? $data : null;
+    }
+
+    /** @return string|false */
+    private function b64urlDecode(string $data)
+    {
+        $padded = strtr($data, '-_', '+/');
         $mod    = strlen($padded) % 4;
         if ($mod !== 0) {
             $padded .= str_repeat('=', 4 - $mod);
         }
-        $json = base64_decode($padded, true);
-        $data = $json !== false ? json_decode($json, true) : null;
-        return is_array($data) ? $data : null;
+        return base64_decode($padded, true);
     }
 
     private function getApiBase(): string

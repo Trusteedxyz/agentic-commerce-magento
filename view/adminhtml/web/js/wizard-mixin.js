@@ -14,13 +14,10 @@
  *     al navegador. El éxito/error se reflejan con los mensajes reales que
  *     devuelve el servidor tras el guardado (sin 201 falsos).
  */
-define([
-  "jquery",
-  "mage/translate",
-], function ($, $t) {
+define(["jquery", "mage/translate"], function ($, $t) {
   "use strict";
 
-  var POPUP_WIDTH  = 500;
+  var POPUP_WIDTH = 500;
   var POPUP_HEIGHT = 620;
   var POPUP_TIMEOUT_MS = 300000; // 5 min máximo para que el merchant autorice
   var MSG_TYPE = "trusteed:magento:connected";
@@ -36,7 +33,7 @@ define([
         apiBaseUrl: "https://api.trusteed.xyz",
         trusteedDashboardUrl: "https://trusteed.xyz",
         imports: {
-          apiBaseUrl:  "${ $.provider }:data.api_base_url",
+          apiBaseUrl: "${ $.provider }:data.api_base_url",
           isConnected: "${ $.provider }:data.is_connected",
         },
       },
@@ -48,7 +45,9 @@ define([
           this.tokenVerified = true;
           this._showStatus(
             "success",
-            $t("Tu tienda ya está conectada. Puedes cambiar la configuración y guardar.")
+            $t(
+              "Tu tienda ya está conectada. Puedes cambiar la configuración y guardar."
+            )
           );
         }
         this._bindPostMessage();
@@ -70,36 +69,54 @@ define([
         // Genera un nonce de estado para evitar ataques de postMessage
         this.connectState = this._generateNonce();
 
-        var origin  = window.location.origin;
-        var baseUrl = (this.trusteedDashboardUrl || "https://trusteed.xyz").replace(/\/$/, "");
-        var popupUrl = baseUrl + "/connect/magento"
-          + "?origin=" + encodeURIComponent(origin)
-          + "&state="  + encodeURIComponent(this.connectState);
+        var origin = window.location.origin;
+        var baseUrl = (
+          this.trusteedDashboardUrl || "https://trusteed.xyz"
+        ).replace(/\/$/, "");
+        var popupUrl =
+          baseUrl +
+          "/connect/magento" +
+          "?origin=" +
+          encodeURIComponent(origin) +
+          "&state=" +
+          encodeURIComponent(this.connectState);
 
-        var left = Math.round(window.screenX + (window.outerWidth - POPUP_WIDTH)  / 2);
-        var top  = Math.round(window.screenY + (window.outerHeight - POPUP_HEIGHT) / 2);
+        var left = Math.round(
+          window.screenX + (window.outerWidth - POPUP_WIDTH) / 2
+        );
+        var top = Math.round(
+          window.screenY + (window.outerHeight - POPUP_HEIGHT) / 2
+        );
 
         this.connectPopup = window.open(
           popupUrl,
           "trusteed_connect",
-          "width=" + POPUP_WIDTH +
-          ",height=" + POPUP_HEIGHT +
-          ",left=" + left +
-          ",top=" + top +
-          ",menubar=no,toolbar=no,location=no,status=no"
+          "width=" +
+            POPUP_WIDTH +
+            ",height=" +
+            POPUP_HEIGHT +
+            ",left=" +
+            left +
+            ",top=" +
+            top +
+            ",menubar=no,toolbar=no,location=no,status=no"
         );
 
         if (!this.connectPopup) {
           this._showStatus(
             "error",
-            $t("El navegador ha bloqueado la ventana emergente. Permite las ventanas emergentes para esta página e inténtalo de nuevo.")
+            $t(
+              "El navegador ha bloqueado la ventana emergente. Permite las ventanas emergentes para esta página e inténtalo de nuevo."
+            )
           );
           return;
         }
 
         this._showStatus(
           "info",
-          $t("Se ha abierto una ventana de Trusteed. Conéctate allí y vuelve aquí.")
+          $t(
+            "Se ha abierto una ventana de Trusteed. Conéctate allí y vuelve aquí."
+          )
         );
 
         // Timeout de seguridad
@@ -110,7 +127,9 @@ define([
           if (!self.tokenVerified) {
             self._showStatus(
               "error",
-              $t("El tiempo de espera ha expirado. Vuelve a pulsar 'Conectar con Trusteed' para intentarlo de nuevo.")
+              $t(
+                "El tiempo de espera ha expirado. Vuelve a pulsar 'Conectar con Trusteed' para intentarlo de nuevo."
+              )
             );
           }
         }, POPUP_TIMEOUT_MS);
@@ -131,7 +150,9 @@ define([
         if (!event.data || event.data.type !== MSG_TYPE) return;
 
         // Valida el origen — solo acepta el dominio del dashboard de Trusteed
-        var expectedOrigin = (this.trusteedDashboardUrl || "https://trusteed.xyz").replace(/\/$/, "");
+        var expectedOrigin = (
+          this.trusteedDashboardUrl || "https://trusteed.xyz"
+        ).replace(/\/$/, "");
         if (event.origin !== expectedOrigin) {
           return;
         }
@@ -149,7 +170,7 @@ define([
         this.connectState = null;
 
         var connectToken = event.data.connect_token;
-        var merchantId   = event.data.merchant_id;
+        var merchantId = event.data.merchant_id;
 
         if (!connectToken || !merchantId) {
           this._showStatus(
@@ -194,7 +215,9 @@ define([
           this.source.set("data." + key, value);
           return;
         }
-        $("input[name='" + key + "']").val(value).trigger("change");
+        $("input[name='" + key + "']")
+          .val(value)
+          .trigger("change");
       },
 
       // -----------------------------------------------------------------------
@@ -205,7 +228,9 @@ define([
         if (!this.tokenVerified) {
           this._showStatus(
             "error",
-            $t("Primero conecta tu tienda pulsando el botón 'Conectar con Trusteed →'.")
+            $t(
+              "Primero conecta tu tienda pulsando el botón 'Conectar con Trusteed →'."
+            )
           );
           return;
         }
@@ -219,9 +244,11 @@ define([
       _generateNonce: function () {
         var arr = new Uint8Array(16);
         window.crypto.getRandomValues(arr);
-        return Array.from(arr).map(function (b) {
-          return ("0" + b.toString(16)).slice(-2);
-        }).join("");
+        return Array.from(arr)
+          .map(function (b) {
+            return ("0" + b.toString(16)).slice(-2);
+          })
+          .join("");
       },
 
       _showStatus: function (type, message) {
@@ -241,7 +268,11 @@ define([
         } else if (type === "error") {
           container.addClass("message-error");
         } else {
-          container.css({ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e40af" });
+          container.css({
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            color: "#1e40af",
+          });
         }
 
         container.text(message).show();
