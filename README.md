@@ -1,3 +1,5 @@
+**English** | [Español](README.es.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+
 # Trusteed Agentic Commerce for Magento 2
 
 Enable new online shoppers, AI agents, to make purchases in your store securely and reliably thanks to Trusteed: the network that fosters trust between businesses and agents.
