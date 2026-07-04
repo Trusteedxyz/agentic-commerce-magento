@@ -119,6 +119,12 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Changelog
 
+### Unreleased
+
+- **Security fix** — the enforcement snapshot fetched from the Trusteed backend is now cryptographically verified (Ed25519 signature check against the published JWKS) before being trusted, instead of being decoded without verification.
+- **Security fix** — `EnforcementClient` no longer fabricates a placeholder `dev-bypass` signature when the HMAC secret is not yet configured; requests now fail safely open (`ALLOW`, matching the existing "unconfigured connector never blocks" posture) with a distinct log line so ops can tell an installation mid-setup apart from a fully unconfigured one.
+- Fixed the support "Send diagnostics" endpoint calling the wrong backend path (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
+
 ### 1.0.0 (2026-06-18)
 
 - Initial release
@@ -131,7 +137,7 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 ## Support
 
 - Support email: support@trusteed.xyz
-- GitHub issues: [github.com/trusteed/magento-module](https://github.com/trusteed/magento-module)
+- GitHub issues: [github.com/Trusteedxyz/agentic-commerce-magento/issues](https://github.com/Trusteedxyz/agentic-commerce-magento/issues)
 
 ## License
 
