@@ -2,7 +2,7 @@
   "name": "trusteed/agentic-commerce-magento",
   "description": "Trusteed Agentic Commerce integration for Magento Open Source 2.4.7+",
   "type": "magento2-module",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "OSL-3.0",
   "require": {
     "php": ">=8.2",

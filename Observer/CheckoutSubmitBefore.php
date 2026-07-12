@@ -78,11 +78,19 @@ class CheckoutSubmitBefore implements ObserverInterface
             return;
         }
 
+        // App Store remediation (2026-07-11): this used to `return` immediately
+        // for any cart with no agent DID ("skip enforcement") — before ever
+        // calling `$this->enforcementClient->evaluate()` — so merchant-wide
+        // policy rules (R014/R018/R019/R020/R025/R027/R030) never applied to a
+        // normal human checkout, only to agentic ones. `$agentDid` may now be
+        // '' — every agent-specific branch below is already gated on it being
+        // non-empty (token verification at `$jwtToken !== ''`,
+        // `projectAgentHistorySignals()`'s own internal guard), so this
+        // degrades to a no-op exactly as it already did when history/token
+        // data was unavailable. The shared Layer-2 evaluator resolves each
+        // rule's `appliesTo` from ruleCode identity and safely excludes
+        // AGENT-only rules (R001, etc.) when `agentId` is null.
         $agentDid = (string)($this->checkoutSession->getData(self::SESSION_AGENT_DID) ?? '');
-        if ($agentDid === '') {
-            // Not an agent-initiated cart — skip enforcement.
-            return;
-        }
 
         $orderContext = $this->buildOrderContext($quote);
 
@@ -221,7 +229,9 @@ class CheckoutSubmitBefore implements ObserverInterface
 
         $payload = [
             'merchantId'     => $merchantId,
-            'agentId'        => $agentDid,
+            // JSON null (not '') for an organic checkout — the shared
+            // evaluator's AgentDidSchema would reject an empty-string DID.
+            'agentId'        => $agentDid !== '' ? $agentDid : null,
             'orderContext'   => $orderContext,
             'platform'       => 'MAGENTO',
             'installationId' => $installationId,
@@ -255,7 +265,9 @@ class CheckoutSubmitBefore implements ObserverInterface
 
         // ALLOW: persist verified DID so SalesOrderSaveAfter can include it in the
         // outbox payload for R023 agentIdHash propagation to PlatformOrder.
-        $this->checkoutSession->setData(self::SESSION_VERIFIED_AGENT_DID, $agentDid);
+        if ($agentDid !== '') {
+            $this->checkoutSession->setData(self::SESSION_VERIFIED_AGENT_DID, $agentDid);
+        }
     }
 
     /**

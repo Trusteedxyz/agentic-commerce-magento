@@ -121,8 +121,10 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Changelog
 
-### Unreleased
+### 1.1.0
 
+- **Fix** — checkout enforcement was skipped entirely for organic (non-agent) checkouts: merchant rules such as maximum order amount, blocked countries, and business-hours restrictions never ran unless an agent DID was present. These rules now apply to every checkout regardless of agent presence.
+- **Added** — an offline safety-valve evaluator that enforces the same universal merchant rules locally when the remote rules-evaluation API is unreachable, instead of only falling back to a blanket allow/block policy.
 - **Security fix** — the enforcement snapshot fetched from the Trusteed backend is now cryptographically verified (Ed25519 signature check against the published JWKS) before being trusted, instead of being decoded without verification.
 - **Security fix** — `EnforcementClient` no longer fabricates a placeholder `dev-bypass` signature when the HMAC secret is not yet configured; requests now fail safely open (`ALLOW`, matching the existing "unconfigured connector never blocks" posture) with a distinct log line so ops can tell an installation mid-setup apart from a fully unconfigured one.
 - Fixed the support "Send diagnostics" endpoint calling the wrong backend path (`/api/v1/embed/support/report` → `/v1/embed/support/report`).

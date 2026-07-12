@@ -7,6 +7,7 @@ namespace Trusteed\AgenticCommerce\Service;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\HTTP\Client\Curl;
 use Psr\Log\LoggerInterface;
+use Trusteed\AgenticCommerce\Enforcement\OfflineSafetyValveEvaluator;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
 
 /**
@@ -168,7 +169,7 @@ class EnforcementClient
         // api_base_url must fail per failure_mode, never silently exfiltrate the
         // HMAC-signed payload to an attacker-controlled host.
         if (!$this->isOutboundAuthorized($apiBase)) {
-            return $this->failClosedDecision();
+            return $this->tryOfflineSafetyValve($payload) ?? $this->failClosedDecision();
         }
 
         $url     = $apiBase . '/v1/rules/evaluate';
@@ -191,7 +192,7 @@ class EnforcementClient
             $status = (int)$this->curl->getStatus();
             if ($status < 200 || $status >= 300) {
                 $this->logger->warning("[trusteed] evaluate HTTP {$status}");
-                return $this->failClosedDecision();
+                return $this->tryOfflineSafetyValve($payload) ?? $this->failClosedDecision();
             }
 
             $body = json_decode($this->curl->getBody(), true);
@@ -203,8 +204,51 @@ class EnforcementClient
             return $this->mapDecision($body);
         } catch (\Exception $e) {
             $this->logger->warning('[trusteed] evaluate error: ' . $e->getMessage());
-            return $this->failClosedDecision();
+            return $this->tryOfflineSafetyValve($payload) ?? $this->failClosedDecision();
         }
+    }
+
+    /**
+     * App Store remediation follow-up (2026-07-11/12) — before falling back
+     * to the blunt failure_mode policy (block everything / allow
+     * everything), try the offline safety-valve evaluator against the last
+     * `getRules()` snapshot (request-cached — no extra network round trip
+     * when the snapshot was already fetched earlier in this request, e.g.
+     * for the DID resolver). Lets a merchant's own universal policy rules
+     * (max order amount, blocked countries, business hours, PO-box block,
+     * gift-card cap...) still fire during a remote-API outage, instead of
+     * either silently letting every cart through or blocking every
+     * legitimate human checkout.
+     *
+     * Returns self::DECISION_BLOCK when the offline evaluator finds a
+     * match, or null when it finds nothing (or has no snapshot to evaluate
+     * against) — null tells the caller to fall through to
+     * failClosedDecision() as before.
+     *
+     * @param array $payload {merchantId, orderContext, ...}
+     */
+    private function tryOfflineSafetyValve(array $payload): ?string
+    {
+        $merchantId = (string) ($payload['merchantId'] ?? '');
+        if ($merchantId === '') {
+            return null;
+        }
+        $rules = $this->getRules($merchantId);
+        if (empty($rules)) {
+            return null;
+        }
+        $orderContext = (array) ($payload['orderContext'] ?? []);
+        $cartAttributes = (array) ($orderContext['cartAttributes'] ?? []);
+        $block = OfflineSafetyValveEvaluator::evaluate($rules, $orderContext, $cartAttributes);
+        if ($block === null) {
+            return null;
+        }
+        $this->logger->warning(sprintf(
+            '[trusteed.offline_safety_valve] BLOCK ruleCode=%s reason=%s',
+            $block['ruleCode'],
+            $block['reason']
+        ));
+        return self::DECISION_BLOCK;
     }
 
     /**

@@ -1,0 +1,311 @@
+{
+  "_comment": "Cross-language conformance vectors for the 'offline safety valve' rule subset — the merchant-policy rules that need only orderContext + merchantPolicies + cartAttributes (no agentId, no historical lookups) to reach a verdict. Consumed by: packages/shared/src/enforcement/__tests__/offline-safety-valve-conformance.test.ts (validates against the canonical TS evaluators in rule-catalog.ts) AND the PHP ports in the WooCommerce and PrestaShop plugins. Any change to rule-catalog.ts's behavior for these 9 codes MUST update this file, and every consumer's test suite MUST be re-run.",
+  "vectors": [
+    {
+      "id": "r014-high-risk-country-hit",
+      "ruleCode": "R014",
+      "params": { "highRiskCountries": ["KP", "IR"] },
+      "orderContext": { "billingCountry": "KP", "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r014-default-high-risk-list-hit",
+      "ruleCode": "R014",
+      "params": {},
+      "orderContext": { "shippingCountry": "SY", "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r014-safe-country-pass",
+      "ruleCode": "R014",
+      "params": { "highRiskCountries": ["KP"] },
+      "orderContext": { "billingCountry": "US", "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+    {
+      "id": "r014-no-country-no-signal",
+      "ruleCode": "R014",
+      "params": { "highRiskCountries": ["KP"] },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+
+    {
+      "id": "r018-spike-multiplier-hit",
+      "ruleCode": "R018",
+      "params": { "merchantAvgOrderCents": 5000, "spikeMultiplier": 5.0 },
+      "orderContext": { "cartTotalCents": 30000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r018-max-item-count-hit",
+      "ruleCode": "R018",
+      "params": { "maxItemCount": 10 },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 11 },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r018-max-single-sku-qty-hit",
+      "ruleCode": "R018",
+      "params": { "maxSingleSkuQty": 5 },
+      "orderContext": {
+        "cartTotalCents": 5000,
+        "itemCount": 6,
+        "lineItems": [{ "id": "sku-1", "qty": 6, "priceCents": 100 }]
+      },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r018-within-limits-pass",
+      "ruleCode": "R018",
+      "params": { "merchantAvgOrderCents": 5000, "spikeMultiplier": 5.0, "maxItemCount": 10, "maxSingleSkuQty": 5 },
+      "orderContext": {
+        "cartTotalCents": 4000,
+        "itemCount": 3,
+        "lineItems": [{ "id": "sku-1", "qty": 3, "priceCents": 100 }]
+      },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+
+    {
+      "id": "r019-blocked-country-hit",
+      "ruleCode": "R019",
+      "params": { "blockedCountries": ["KP"] },
+      "orderContext": { "billingCountry": "KP", "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r019-not-in-allowlist-hit",
+      "ruleCode": "R019",
+      "params": { "allowedCountries": ["US", "CA"] },
+      "orderContext": { "billingCountry": "FR", "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r019-in-allowlist-pass",
+      "ruleCode": "R019",
+      "params": { "allowedCountries": ["US", "CA"] },
+      "orderContext": { "billingCountry": "US", "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+    {
+      "id": "r019-no-country-no-signal",
+      "ruleCode": "R019",
+      "params": { "blockedCountries": ["KP"] },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+
+    {
+      "id": "r020-outside-hours-hit",
+      "ruleCode": "R020",
+      "params": { "startHour": 9, "endHour": 17 },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_merchant_local_hour": "22" },
+      "expectedMatch": true
+    },
+    {
+      "id": "r020-inside-hours-pass",
+      "ruleCode": "R020",
+      "params": { "startHour": 9, "endHour": 17 },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_merchant_local_hour": "12" },
+      "expectedMatch": false
+    },
+    {
+      "id": "r020-overnight-window-inside-hit",
+      "ruleCode": "R020",
+      "params": { "startHour": 22, "endHour": 6 },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_merchant_local_hour": "23" },
+      "expectedMatch": false
+    },
+    {
+      "id": "r020-not-configured-no-signal",
+      "ruleCode": "R020",
+      "params": {},
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_merchant_local_hour": "23" },
+      "expectedMatch": false
+    },
+
+    {
+      "id": "r025-po-box-hit",
+      "ruleCode": "R025",
+      "params": {},
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_shipping_po_box": "true" },
+      "expectedMatch": true
+    },
+    {
+      "id": "r025-freight-forwarder-hit",
+      "ruleCode": "R025",
+      "params": {},
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_shipping_freight_forwarder": "true" },
+      "expectedMatch": true
+    },
+    {
+      "id": "r025-po-box-allowed-by-config-pass",
+      "ruleCode": "R025",
+      "params": { "blockPoBox": false },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_shipping_po_box": "true" },
+      "expectedMatch": false
+    },
+    {
+      "id": "r025-clean-address-pass",
+      "ruleCode": "R025",
+      "params": {},
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_shipping_po_box": "false", "_shipping_freight_forwarder": "false" },
+      "expectedMatch": false
+    },
+
+    {
+      "id": "r027-over-cap-hit",
+      "ruleCode": "R027",
+      "params": { "maxStoredValueCents": 5000 },
+      "orderContext": { "cartTotalCents": 8000, "itemCount": 1 },
+      "cartAttributes": { "_stored_value_cents": "8000" },
+      "expectedMatch": true
+    },
+    {
+      "id": "r027-under-cap-pass",
+      "ruleCode": "R027",
+      "params": { "maxStoredValueCents": 5000 },
+      "orderContext": { "cartTotalCents": 3000, "itemCount": 1 },
+      "cartAttributes": { "_stored_value_cents": "3000" },
+      "expectedMatch": false
+    },
+    {
+      "id": "r027-no-signal-pass",
+      "ruleCode": "R027",
+      "params": { "maxStoredValueCents": 5000 },
+      "orderContext": { "cartTotalCents": 3000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+
+    {
+      "id": "r028-b2b-missing-po-hit",
+      "ruleCode": "R028",
+      "params": {},
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_b2b_order": "true" },
+      "expectedMatch": true
+    },
+    {
+      "id": "r028-b2b-with-po-pass",
+      "ruleCode": "R028",
+      "params": {},
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_b2b_order": "true", "_purchase_order_hash": "abc123" },
+      "expectedMatch": false
+    },
+    {
+      "id": "r028-not-b2b-pass",
+      "ruleCode": "R028",
+      "params": {},
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+    {
+      "id": "r028-disabled-by-config-pass",
+      "ruleCode": "R028",
+      "params": { "requirePurchaseOrder": false },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_b2b_order": "true" },
+      "expectedMatch": false
+    },
+
+    {
+      "id": "r029-abierto-always-pass",
+      "ruleCode": "R029",
+      "params": { "preset": "abierto" },
+      "orderContext": { "cartTotalCents": 999999, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+    {
+      "id": "r029-regulado-missing-evidence-hit",
+      "ruleCode": "R029",
+      "params": { "preset": "regulado" },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r029-regulado-with-evidence-pass",
+      "ruleCode": "R029",
+      "params": { "preset": "regulado" },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": { "_regulated_evidence_present": "true" },
+      "expectedMatch": false
+    },
+    {
+      "id": "r029-estricto-no-agent-hit",
+      "ruleCode": "R029",
+      "params": { "preset": "estricto" },
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": true,
+      "note": "estricto requires a verified high-trust agent by design — an organic (no-agent) checkout correctly HITs. This is the rule's intended behavior, not an offline-evaluator limitation."
+    },
+    {
+      "id": "r029-equilibrado-default-pass",
+      "ruleCode": "R029",
+      "params": {},
+      "orderContext": { "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+
+    {
+      "id": "r030-over-amount-cap-hit",
+      "ruleCode": "R030",
+      "params": { "maxAmountCents": 10000 },
+      "orderContext": { "cartTotalCents": 18000, "itemCount": 2 },
+      "cartAttributes": {},
+      "expectedMatch": true,
+      "note": "reproduces the exact Shopify App Store reviewer scenario (2x EUR90 items, EUR100 cap)"
+    },
+    {
+      "id": "r030-country-outside-controls-hit",
+      "ruleCode": "R030",
+      "params": { "allowedCountries": ["US"] },
+      "orderContext": { "billingCountry": "FR", "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": true
+    },
+    {
+      "id": "r030-within-limits-pass",
+      "ruleCode": "R030",
+      "params": { "maxAmountCents": 10000, "allowedCountries": ["US", "CA"] },
+      "orderContext": { "billingCountry": "US", "cartTotalCents": 5000, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    },
+    {
+      "id": "r030-no-params-noop-pass",
+      "ruleCode": "R030",
+      "params": {},
+      "orderContext": { "cartTotalCents": 999999999, "itemCount": 1 },
+      "cartAttributes": {},
+      "expectedMatch": false
+    }
+  ]
+}
