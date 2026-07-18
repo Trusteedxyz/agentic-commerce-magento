@@ -342,5 +342,186 @@ namespace Magento\Store\Model {
             public const SCOPE_GROUP = 'group';
         }
     }
+    if (!\interface_exists(StoreManagerInterface::class)) {
+        interface StoreManagerInterface
+        {
+            public function getStore($storeId = null);
+            public function getStores($withDefault = false, $codeKey = false);
+            public function getWebsite($websiteId = null);
+        }
+    }
+    if (!\class_exists(Store::class)) {
+        class Store
+        {
+            public function getId()
+            {
+                return null;
+            }
+            public function getCode()
+            {
+                return null;
+            }
+            public function getName()
+            {
+                return null;
+            }
+            public function getBaseUrl($type = 'link', $secure = null)
+            {
+                return null;
+            }
+            public function isActive()
+            {
+                return false;
+            }
+        }
+    }
+}
+
+// ── DB adapter, resource connection, PDO statement (Webhook/Outbox, Plugin) ───
+
+namespace Magento\Framework\DB\Adapter {
+    if (!\interface_exists(AdapterInterface::class)) {
+        interface AdapterInterface
+        {
+            public function getTableName($tableName);
+            public function insert($table, array $bind);
+            public function update($table, array $bind, $where = '');
+            public function delete($table, $where = '');
+            public function query($sql, $bind = []);
+            public function fetchAll($sql, $bind = [], $fetchMode = null);
+            public function fetchOne($sql, $bind = []);
+            public function fetchRow($sql, $bind = [], $fetchMode = null);
+            public function lastInsertId($tableName = null, $primaryKey = null);
+            public function quoteInto($text, $value, $type = null, $count = null);
+            public function select();
+            public function beginTransaction();
+            public function commit();
+            public function rollBack();
+        }
+    }
+}
+
+namespace Magento\Framework\DB\Statement\Pdo {
+    if (!\class_exists(Mysql::class)) {
+        class Mysql
+        {
+        }
+    }
+}
+
+// ── Resource connection ───────────────────────────────────────────────────────
+
+namespace Magento\Framework\App {
+    if (!\class_exists(ResourceConnection::class)) {
+        class ResourceConnection
+        {
+            public function getConnection($resourceName = 'default')
+            {
+                return null;
+            }
+            public function getTableName($modelEntity, $connectionName = 'default')
+            {
+                return $modelEntity;
+            }
+        }
+    }
+}
+
+// ── Encryptor ─────────────────────────────────────────────────────────────────
+
+namespace Magento\Framework\Encryption {
+    if (!\interface_exists(EncryptorInterface::class)) {
+        interface EncryptorInterface
+        {
+            public function encrypt($data);
+            public function decrypt($data);
+            public function hash($data, $version = null);
+            public function validateHash($password, $hash);
+            public function getHash($password, $salt = false, $version = null);
+        }
+    }
+}
+
+// ── Cache frontend + event manager (Manifest\Builder deps) ────────────────────
+
+namespace Magento\Framework\Cache {
+    if (!\interface_exists(FrontendInterface::class)) {
+        interface FrontendInterface
+        {
+            public function load($identifier);
+            public function save($data, $identifier, array $tags = [], $lifeTime = null);
+            public function remove($identifier);
+        }
+    }
+}
+
+namespace Magento\Framework\Event {
+    if (!\interface_exists(ManagerInterface::class)) {
+        interface ManagerInterface
+        {
+            public function dispatch($eventName, array $data = []);
+        }
+    }
+}
+
+// ── Sales order interface + extension attributes (Plugin/OrderExtension) ──────
+
+namespace Magento\Sales\Api\Data {
+    if (!\interface_exists(OrderInterface::class)) {
+        interface OrderInterface
+        {
+            public function getEntityId();
+            public function getIncrementId();
+            public function getExtensionAttributes();
+        }
+    }
+    if (!\interface_exists(OrderExtensionInterface::class)) {
+        interface OrderExtensionInterface
+        {
+            public function getTrusteedReceiptUri();
+            public function setTrusteedReceiptUri($uri);
+        }
+    }
+}
+
+// ── Store data interface (Manifest\Builder) ───────────────────────────────────
+
+namespace Magento\Store\Api\Data {
+    if (!\interface_exists(StoreInterface::class)) {
+        interface StoreInterface
+        {
+            public function getId();
+            public function getCode();
+            public function getName();
+            public function getBaseUrl($type = 'link', $secure = null);
+            public function isActive();
+        }
+    }
+}
+
+// ── Creditmemo (Observer/SalesCreditmemoSaveAfter) ────────────────────────────
+
+namespace Magento\Sales\Model\Order {
+    if (!\class_exists(Creditmemo::class)) {
+        class Creditmemo
+        {
+            public function getOrder()
+            {
+                return null;
+            }
+            public function getId(): ?int
+            {
+                return null;
+            }
+            public function getGrandTotal(): ?float
+            {
+                return null;
+            }
+            public function getCreatedAt(): ?string
+            {
+                return null;
+            }
+        }
+    }
 }
 

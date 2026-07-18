@@ -57,7 +57,10 @@ class OrderExtensionAttributeTest extends TestCase
             ->method('update')
             ->with(
                 'sales_order',
-                ['trusteed_receipt_uri' => $receiptUri],
+                [
+                    'trusteed_receipt_uri'    => $receiptUri,
+                    'trusteed_receipt_status' => 'signed',
+                ],
                 ['entity_id = ?' => $orderId]
             );
 

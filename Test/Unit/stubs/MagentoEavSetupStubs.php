@@ -40,8 +40,11 @@ namespace Magento\Eav\Setup {
 }
 
 namespace Magento\Catalog\Setup {
+    // In this standalone stub CategorySetupFactory extends EavSetupFactory so a
+    // single test double (FakeFactory) can satisfy BOTH the EavSetupFactory and
+    // CategorySetupFactory constructor typehints of AddAgenticVisibleAttribute.
     if (!\class_exists(CategorySetupFactory::class)) {
-        class CategorySetupFactory
+        class CategorySetupFactory extends \Magento\Eav\Setup\EavSetupFactory
         {
             public function create(array $args = []): \Magento\Eav\Setup\EavSetup
             {
@@ -144,11 +147,11 @@ namespace Trusteed\AgenticCommerce\Test\Unit\Setup\Patch\Data {
      * normally accept a `['setup' => ModuleDataSetupInterface]` argument; we
      * ignore it for the test.
      */
-    final class FakeFactory
+    final class FakeFactory extends \Magento\Catalog\Setup\CategorySetupFactory
     {
         public function __construct(private readonly object $instance) {}
 
-        public function create(array $args = []): object
+        public function create(array $args = []): \Magento\Eav\Setup\EavSetup
         {
             return $this->instance;
         }

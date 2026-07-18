@@ -9,8 +9,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Trusteed\AgenticCommerce\Model\Webhook\SignaturePublisher;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\Encryption\EncryptorInterface;
 use Psr\Log\LoggerInterface;
+use Trusteed\AgenticCommerce\Model\Config\SecretReader;
 
 class SignaturePublisherTest extends TestCase
 {
@@ -29,15 +29,14 @@ class SignaturePublisherTest extends TestCase
             ['trusteed_general/general/webhook_secret_version', null, null, '1'],
         ]);
 
-        // Stub decrypt as identity so plaintext fixtures flow through unchanged.
-        $encryptorMock = $this->createMock(EncryptorInterface::class);
-        $encryptorMock->method('decrypt')->willReturnArgument(0);
-
+        // computeSignature() is pure (HMAC over its arguments); the SecretReader
+        // and optional url validator are not exercised by these cases, so a bare
+        // mock satisfies the constructor without needing real secret resolution.
         $this->publisher = new SignaturePublisher(
             $curlMock,
             $scopeConfigMock,
-            $encryptorMock,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(SecretReader::class)
         );
     }
 
