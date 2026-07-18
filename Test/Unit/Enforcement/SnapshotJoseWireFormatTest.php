@@ -31,13 +31,21 @@ class SnapshotJoseWireFormatTest extends TestCase
      * Build a Curl stub that routes by URL: `.well-known/jwks.json` returns
      * $jwksBody, anything else (the snapshot endpoint) returns $snapshotBody.
      * Both responses report status 200.
+     *
+     * Headers are captured PER REQUEST, keyed by request kind ('snapshot' |
+     * 'jwks'), because getRules() performs two GETs on the same Curl instance
+     * (snapshot, then JWKS for signature verification). A flat name→value map
+     * would let the second request's `Accept: application/json` clobber the
+     * snapshot request's `Accept: application/jose`.
      */
     private function makeCurl(string $snapshotBody, string $jwksBody, array &$headers): Curl
     {
         return new class($snapshotBody, $jwksBody, $headers) extends Curl {
             private string $lastUri = '';
+            /** @var array<string,string> Headers buffered since the last get(). */
+            private array $pending = [];
 
-            /** @param array<string,string> $captured */
+            /** @param array<string,array<string,string>> $captured */
             public function __construct(
                 private readonly string $snapshotBody,
                 private readonly string $jwksBody,
@@ -47,11 +55,14 @@ class SnapshotJoseWireFormatTest extends TestCase
             public function setOption($option, $value): void {}
             public function addHeader(string $name, string $value): void
             {
-                $this->captured[$name] = $value;
+                $this->pending[$name] = $value;
             }
             public function get(string $uri): void
             {
                 $this->lastUri = $uri;
+                $kind = str_contains($uri, '.well-known/jwks.json') ? 'jwks' : 'snapshot';
+                $this->captured[$kind] = $this->pending;
+                $this->pending = [];
             }
             public function getStatus(): int { return 200; }
             public function getBody(): string
@@ -129,8 +140,8 @@ class SnapshotJoseWireFormatTest extends TestCase
 
         $client->getRules('merchant_xyz');
 
-        $this->assertArrayHasKey('Accept', $captured);
-        $this->assertSame('application/jose', $captured['Accept']);
+        $this->assertArrayHasKey('snapshot', $captured);
+        $this->assertSame('application/jose', $captured['snapshot']['Accept']);
     }
 
     /** Parses a BARE JWS body (not a JSON envelope) into the rules array, once signature-verified. */
