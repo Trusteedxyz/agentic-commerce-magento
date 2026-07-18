@@ -14,7 +14,7 @@ namespace Trusteed\AgenticCommerce\Enforcement;
  *
  * Freeze semantics on Magento:
  *   - Quote.is_active = 0 → prevents customer-facing recapture.
- *   - Quote.amcp_hitl_pending = 1 → set on the quote in the observer.
+ *   - Quote.trusteed_hitl_pending = 1 → set on the quote in the observer.
  *   - The observer additionally throws a LocalizedException so the order is NOT
  *     created while the intent is recorded as pending merchant approval.
  *   - When merchant approves via dashboard, quote is reactivated via the
@@ -34,10 +34,10 @@ final class R043HitlGate
 {
     public const R043_REASON_PREFIX = 'trusteed:R043';
 
-    public const QUOTE_META_HITL_PENDING = 'amcp_hitl_pending';
-    public const QUOTE_META_RULE_CODE = 'amcp_hitl_rule_code';
-    public const QUOTE_META_REASON = 'amcp_hitl_reason';
-    public const QUOTE_META_EVALUATION_ID = 'amcp_hitl_evaluation_id';
+    public const QUOTE_META_HITL_PENDING = 'trusteed_hitl_pending';
+    public const QUOTE_META_RULE_CODE = 'trusteed_hitl_rule_code';
+    public const QUOTE_META_REASON = 'trusteed_hitl_reason';
+    public const QUOTE_META_EVALUATION_ID = 'trusteed_hitl_evaluation_id';
 
     /**
      * @param array<string,mixed>|object $response Decoded JSON from /v1/rules/evaluate.

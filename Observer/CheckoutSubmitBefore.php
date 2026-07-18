@@ -246,7 +246,7 @@ class CheckoutSubmitBefore implements ObserverInterface
 
         // H3 — R043 HITL: the backend wants a human-in-the-loop approval before
         // the order may be created. Instead of a generic hard block we freeze the
-        // quote (is_active=0 + amcp_hitl_* flags) so the intent is recorded as
+        // quote (is_active=0 + trusteed_hitl_* flags) so the intent is recorded as
         // pending merchant approval, then throw a distinct reviewable message.
         if ($decision === EnforcementClient::DECISION_ESCALATE) {
             $this->checkoutSession->unsetData(self::SESSION_VERIFIED_AGENT_DID);
@@ -274,7 +274,7 @@ class CheckoutSubmitBefore implements ObserverInterface
      * H3 — Apply the R043 HITL freeze to the quote before aborting the submit.
      *
      * Sets `is_active = 0` and stamps the {@see R043HitlGate} contract flags
-     * (`amcp_hitl_pending`, `amcp_hitl_rule_code`, …) so the merchant dashboard
+     * (`trusteed_hitl_pending`, `trusteed_hitl_rule_code`, …) so the merchant dashboard
      * can recognise the frozen quote and resolve it via the
      * enforcement-hitl-receipt path. The subsequent LocalizedException in the
      * caller prevents the order from being created.
