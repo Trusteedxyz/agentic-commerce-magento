@@ -127,8 +127,15 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Registro de cambios
 
-### Sin publicar
+### 1.1.1
 
+- **Corrección** — la página "Mis Ventas" montaba un placeholder estático (bloque Dashboard + `ventas.phtml`) que nunca llegaba al listado real de TrustReceipts. Ahora monta el SPA de administración real en la sección "Mis Ventas", igual que Reglas y Agentes.
+- Bundle del SPA de administración reconstruido.
+
+### 1.1.0
+
+- **Corrección** — la aplicación de reglas en checkout se saltaba por completo en checkouts orgánicos (sin agente): reglas del comerciante como monto máximo, países bloqueados y restricciones de horario comercial nunca se ejecutaban salvo que hubiera un DID de agente presente. Estas reglas ahora aplican en todo checkout sin importar la presencia del agente.
+- **Añadido** — un evaluador de válvula de seguridad offline que aplica las mismas reglas universales del comerciante localmente cuando la API remota de evaluación de reglas no está disponible, en vez de recurrir solo a una política general de permitir/bloquear todo.
 - **Corrección de seguridad** — el snapshot de enforcement obtenido del backend de Trusteed ahora se verifica criptográficamente (comprobación de firma Ed25519 contra el JWKS publicado) antes de confiar en él, en lugar de decodificarse sin verificación.
 - **Corrección de seguridad** — `EnforcementClient` ya no fabrica una firma `dev-bypass` de relleno cuando el secreto HMAC aún no está configurado; ahora las solicitudes fallan de forma segura y abierta (`ALLOW`, manteniendo la postura existente de "un conector sin configurar nunca bloquea") con una línea de log distinta para que el equipo de operaciones pueda distinguir una instalación a medio configurar de una totalmente sin configurar.
 - Se corrigió que el endpoint de soporte "Send diagnostics" llamaba a la ruta de backend incorrecta (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
