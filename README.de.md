@@ -25,6 +25,12 @@ Ermöglichen Sie den neuen Online-Käufern, den KI-Agenten, sicher und zuverläs
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
+| KI-Verkäufe — Liste automatisierter Belege |
+|------------------------------------------------|
+| ![Belegliste](docs/screenshots/screenshot-09-receipts-list.png) |
+
+Jede von einem Agenten ausgelöste Bestellung erzeugt einen signierten Trust Receipt, aufgeführt unter **Trusteed → Mis ventas → Recibos de venta** mit Verifizierungsstatus und Beleg-URI — verlinkt zum öffentlichen Prüfer unter `receipts.trusteed.xyz`, oder füge den JWS direkt in das **Trust Receipts**-Tool ein (siehe oben), um ihn zu prüfen.
+
 ## Funktionen
 
 - **MCP-Endpunkt** unter `/.well-known/mcp-manifest.json` — wird automatisch von KI-Agentenplattformen erkannt
