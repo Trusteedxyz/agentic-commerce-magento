@@ -25,6 +25,12 @@ Permettez aux nouveaux acheteurs en ligne, les agents d'IA, d'effectuer des acha
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
+| Ventes IA — Liste des reçus automatisés |
+|--------------------------------------------|
+| ![Liste des reçus](docs/screenshots/screenshot-09-receipts-list.png) |
+
+Chaque commande initiée par un agent génère un reçu de confiance signé, répertorié sous **Trusteed → Mis ventas → Recibos de venta** avec son statut de vérification et son URI — lien vers le vérificateur public sur `receipts.trusteed.xyz`, ou collez le JWS directement dans l'outil **Trust Receipts** (voir ci-dessus) pour le vérifier.
+
 ## Fonctionnalités
 
 - **Point de terminaison MCP** sur `/.well-known/mcp-manifest.json` — découvert automatiquement par les plateformes d'agents d'IA
