@@ -25,6 +25,12 @@ Enable new online shoppers, AI agents, to make purchases in your store securely 
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
+| AI Sales — Automated receipts list |
+|--------------------------------------|
+| ![Receipts list](docs/screenshots/screenshot-09-receipts-list.png) |
+
+Every agent-originated order gets a signed trust receipt, listed under **Trusteed → Mis ventas → Recibos de venta** with its verification status and receipt URI — link out to the public verifier at `receipts.trusteed.xyz`, or paste the JWS directly into the **Trust Receipts** tool (see above) to check it.
+
 ## Features
 
 - **MCP endpoint** at `/.well-known/mcp-manifest.json` — discovered automatically by AI agent platforms
