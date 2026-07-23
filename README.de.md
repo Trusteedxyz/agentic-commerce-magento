@@ -71,7 +71,7 @@ bin/magento cache:flush
 ### Manueller Upload
 
 1. **Laden Sie die installierbare `.zip`** von der neuesten GitHub Release herunter:
-   [**⬇ trusteed-agentic-commerce-magento-1.0.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest/download/trusteed-agentic-commerce-magento-1.0.0.zip)
+   [**⬇ trusteed-agentic-commerce-magento-1.1.1.zip**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest/download/trusteed-agentic-commerce-magento-1.1.1.zip)
    — oder durchsuchen Sie alle Versionen auf der [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Entpacken Sie das Archiv nach `app/code/Trusteed/AgenticCommerce/`
 3. Führen Sie die obigen Befehle im Root-Verzeichnis Ihres Magento aus
