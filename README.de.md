@@ -127,8 +127,15 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Änderungsprotokoll
 
-### Unveröffentlicht
+### 1.1.1
 
+- **Fix** — die Seite "Mis Ventas" band einen statischen Platzhalter ein (Dashboard-Block + `ventas.phtml`), der nie die echte TrustReceipt-Liste erreichte. Sie bindet jetzt das echte Admin-SPA im Bereich "Mis Ventas" ein, genau wie Regeln und Agenten.
+- Admin-SPA-Bundle neu gebaut.
+
+### 1.1.0
+
+- **Fix** — die Checkout-Durchsetzung wurde bei organischen (agentenlosen) Checkouts komplett übersprungen: Händlerregeln wie Höchstbetrag, gesperrte Länder und Geschäftszeiten-Beschränkungen liefen nur, wenn eine Agenten-DID vorhanden war. Diese Regeln gelten jetzt bei jedem Checkout, unabhängig von der Agenten-Präsenz.
+- **Hinzugefügt** — ein Offline-Sicherheitsventil-Evaluator, der dieselben universellen Händlerregeln lokal durchsetzt, wenn die entfernte Regel-Auswertungs-API nicht erreichbar ist, statt nur auf eine pauschale Erlauben/Blockieren-Richtlinie zurückzufallen.
 - **Sicherheitskorrektur** — der vom Trusteed-Backend abgerufene Enforcement-Snapshot wird nun vor der Verwendung kryptographisch verifiziert (Ed25519-Signaturprüfung gegen den veröffentlichten JWKS), statt ohne Verifizierung dekodiert zu werden.
 - **Sicherheitskorrektur** — `EnforcementClient` erzeugt nicht mehr eine Platzhalter-Signatur `dev-bypass`, wenn das HMAC-Secret noch nicht konfiguriert ist; Anfragen schlagen jetzt sicher offen fehl (`ALLOW`, entsprechend der bestehenden Haltung „ein unkonfigurierter Connector blockiert niemals"), mit einer eigenen Log-Zeile, damit der Betrieb eine Installation mitten in der Einrichtung von einer vollständig unkonfigurierten unterscheiden kann.
 - Behoben: Der Support-Endpunkt „Send diagnostics" rief den falschen Backend-Pfad auf (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
