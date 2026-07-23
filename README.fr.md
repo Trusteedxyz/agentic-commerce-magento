@@ -127,8 +127,15 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Journal des modifications
 
-### Non publié
+### 1.1.1
 
+- **Correctif** — la page « Mes Ventes » montait un placeholder statique (bloc Dashboard + `ventas.phtml`) qui n'atteignait jamais la vraie liste de TrustReceipts. Elle monte désormais le vrai SPA d'administration dans la section « Mes Ventes », comme Règles et Agents.
+- Bundle du SPA d'administration reconstruit.
+
+### 1.1.0
+
+- **Correctif** — l'application des règles au checkout était entièrement ignorée pour les checkouts organiques (sans agent) : les règles du marchand comme le montant maximum, les pays bloqués et les restrictions d'horaires d'ouverture ne s'exécutaient que si un DID d'agent était présent. Ces règles s'appliquent désormais à chaque checkout, indépendamment de la présence d'un agent.
+- **Ajout** — un évaluateur de soupape de sécurité hors ligne qui applique les mêmes règles universelles du marchand localement lorsque l'API distante d'évaluation des règles est inaccessible, au lieu de se rabattre uniquement sur une politique globale d'autorisation/blocage.
 - **Correctif de sécurité** — l'instantané d'application (enforcement snapshot) récupéré depuis le backend de Trusteed est désormais vérifié cryptographiquement (contrôle de signature Ed25519 par rapport au JWKS publié) avant d'être approuvé, au lieu d'être décodé sans vérification.
 - **Correctif de sécurité** — `EnforcementClient` ne fabrique plus de signature `dev-bypass` de substitution lorsque le secret HMAC n'est pas encore configuré ; les requêtes échouent désormais de façon sûre et ouverte (`ALLOW`, conformément à la posture existante « un connecteur non configuré ne bloque jamais ») avec une ligne de log distincte permettant aux équipes d'exploitation de distinguer une installation en cours de configuration d'une installation totalement non configurée.
 - Correction du point de terminaison de support « Send diagnostics » qui appelait le mauvais chemin backend (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
