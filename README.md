@@ -127,6 +127,11 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Changelog
 
+### 1.1.1
+
+- **Fix** — the "My Sales → Ventas" page mounted a static placeholder (Dashboard block + `ventas.phtml`) that never reached the actual TrustReceipt list. It now mounts the real admin SPA in the "Mis Ventas" section, same as Rules and Agents.
+- Admin SPA bundle rebuilt.
+
 ### 1.1.0
 
 - **Fix** — checkout enforcement was skipped entirely for organic (non-agent) checkouts: merchant rules such as maximum order amount, blocked countries, and business-hours restrictions never ran unless an agent DID was present. These rules now apply to every checkout regardless of agent presence.
