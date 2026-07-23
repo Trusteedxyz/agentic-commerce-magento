@@ -1,11 +1,23 @@
 <?xml version="1.0"?>
+<!--
+  Dispute-evidence Fase A / Bloque 3 (T8): monta la SPA real en la sección
+  "mis-ventas" (contiene el listado de TrustReceipts + descarga de comprobante),
+  igual que reglas/agentes. Antes renderizaba un placeholder estático
+  (Dashboard block + ventas.phtml) que nunca alcanzaba la lista de receipts.
+  reglas.phtml es el template de montaje SPA genérico (la sección la fija el
+  argumento `section` vía SpaShell::getInitialSection()).
+-->
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
-            <block class="Trusteed\AgenticCommerce\Block\Adminhtml\Dashboard"
+            <block class="Trusteed\AgenticCommerce\Block\Adminhtml\SpaShell"
                    name="trusteed.ventas"
-                   template="Trusteed_AgenticCommerce::ventas.phtml"/>
+                   template="Trusteed_AgenticCommerce::reglas.phtml">
+                <arguments>
+                    <argument name="section" xsi:type="string">mis-ventas</argument>
+                </arguments>
+            </block>
             <block class="Magento\Backend\Block\Template"
                    name="trusteed.support.widget"
                    template="Trusteed_AgenticCommerce::support_widget.phtml"/>

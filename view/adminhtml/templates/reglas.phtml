@@ -28,6 +28,10 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
     $section = 'settings';
 } elseif (strpos($requestUri, '/trusteed/reglas/') !== false) {
     $section = 'mis-reglas';
+} elseif (strpos($requestUri, '/trusteed/ventas/') !== false) {
+    // Fase A / Bloque 3 (T8): la ruta Ventas monta la sección mis-ventas
+    // (listado de TrustReceipts + descarga de comprobante).
+    $section = 'mis-ventas';
 }
 ?>
 <div id="trusteed-admin-wrapper" style="margin:0;padding:0;">
