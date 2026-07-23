@@ -25,6 +25,12 @@ Permite que los nuevos compradores online, los agentes de IA, realicen compras e
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
+| Ventas IA — Listado de recibos automatizados |
+|------------------------------------------------|
+| ![Listado de recibos](docs/screenshots/screenshot-09-receipts-list.png) |
+
+Cada pedido originado por un agente genera un recibo de confianza firmado, listado en **Trusteed → Mis ventas → Recibos de venta** con su estado de verificación y URI del recibo — enlaza al verificador público en `receipts.trusteed.xyz`, o pega el JWS directamente en la herramienta **Trust Receipts** (ver arriba) para comprobarlo.
+
 ## Características
 
 - **Endpoint MCP** en `/.well-known/mcp-manifest.json` — descubierto automáticamente por las plataformas de agentes de IA
