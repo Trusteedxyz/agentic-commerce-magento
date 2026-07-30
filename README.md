@@ -127,6 +127,14 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Changelog
 
+### 1.2.0
+
+- **Security fix** — the agent token verifier treated `exp`, `iat` and `nonce` as optional. Both time checks hung off `> 0`, so a token that simply omitted the claim skipped expiry and max-age entirely: it was valid forever. All three claims are now mandatory (`nonce` 16–64 chars), matching the canonical token schema and the other platform connectors.
+- **Security fix** — the enforcement snapshot's signed freshness window (`validUntil`) was ignored. A snapshot past its window — served by the API or by any intermediary that cached it — was applied as if current. Magento was the only connector that did not check this. An expired snapshot is now treated as absent, so the merchant's fallback policy applies. `validUntil` travels *inside* the signed payload, so it cannot be stretched by an attacker; a missing or unparseable value is not treated as expired, since degrading on an unexpected format would block legitimate checkouts.
+- **Fix** — trust scores with a decimal were displayed as "no score". The Health tab parsed the score with `is_int()`, and the scoring engine rounds to one decimal, which `json_decode` maps to a PHP float — so `is_int(81.4)` was `false` and the score silently became `null`. Only whole numbers survived. Measured across production stores on 2026-07-27: scores of 44.7, 52.7, 55.7, 61.5 and 81.4 all rendered as "no score". Now normalised through a single `ScoreNodeNormalizer`, and rendered with the decimal intact (`81.4`, not `81`) so it matches every other admin surface.
+- **Fix** — rule R036 (max line-item value) read its cap from a parameter named `maxCents`; the canonical name is `maxCentsPerLine`, and it is the only one the merchant panel's strict schema accepts. With the wrong key the rule could never fire.
+- **Added** — the connector now reports which cart signals this installation can project (`POST /api/v1/enforcement/capabilities`, HMAC-signed, sent once per capability-set version). Without it, a rule whose signal never arrives returns `NO_SIGNAL` on every checkout: it passes silently, and the merchant sees a rule in ENFORCE that blocks nothing. With the report, the panel can warn at the moment the rule is switched on. Magento projects 31 signals — more than double any other platform — because it also projects agent history, which elsewhere the server resolves.
+
 ### 1.1.1
 
 - **Fix** — the "My Sales → Ventas" page mounted a static placeholder (Dashboard block + `ventas.phtml`) that never reached the actual TrustReceipt list. It now mounts the real admin SPA in the "Mis Ventas" section, same as Rules and Agents.
