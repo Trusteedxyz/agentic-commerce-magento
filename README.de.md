@@ -127,6 +127,14 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Änderungsprotokoll
 
+### 1.2.0
+
+- **Sicherheitsfix** — der Agent-Token-Verifizierer behandelte `exp`, `iat` und `nonce` als optional. Beide Zeitprüfungen hingen an `> 0`, sodass ein Token, das den Claim schlicht wegließ, Ablauf und Höchstalter vollständig umging: es war für immer gültig. Alle drei Claims sind jetzt verpflichtend (`nonce` 16–64 Zeichen), passend zum kanonischen Token-Schema und zu den übrigen Konnektoren.
+- **Sicherheitsfix** — das SIGNIERTE Frischefenster des Enforcement-Snapshots (`validUntil`) wurde ignoriert. Ein abgelaufener Snapshot — von der API oder von einem zwischenspeichernden Vermittler ausgeliefert — wurde angewendet, als wäre er aktuell. Magento war der einzige Konnektor, der das nicht prüfte. Ein abgelaufener Snapshot gilt nun als nicht vorhanden, sodass die Rückfallrichtlinie des Händlers greift. `validUntil` reist INNERHALB der signierten Nutzlast und lässt sich daher nicht verlängern; fehlt der Wert oder ist er nicht lesbar, gilt der Snapshot nicht als abgelaufen — bei einem unerwarteten Format zu degradieren würde legitime Bestellungen blockieren.
+- **Fix** — Vertrauenswerte mit Dezimalstelle wurden als "kein Wert" angezeigt. Der Health-Tab las den Wert mit `is_int()`, während die Engine auf eine Dezimalstelle rundet, was `json_decode` in einen PHP-`float` umsetzt: `is_int(81.4)` ist falsch, der Wert wurde also still zu `null`. Nur ganze Zahlen überlebten. Am 2026-07-27 über die Produktions-Shops gemessen: 44,7, 52,7, 55,7, 61,5 und 81,4 erschienen sämtlich als "kein Wert". Der Wert läuft jetzt durch einen einzigen Normalisierer und wird mit seiner Dezimalstelle angezeigt (`81.4`, nicht `81`) — genau wie in allen anderen Oberflächen.
+- **Fix** — Regel R036 (maximaler Positionswert) las ihre Obergrenze aus einem Parameter namens `maxCents`; der kanonische Name lautet `maxCentsPerLine` und ist der einzige, den das strikte Schema des Händlerpanels akzeptiert. Mit dem falschen Schlüssel konnte die Regel nie auslösen.
+- **Neu** — der Konnektor meldet jetzt, welche Warenkorb-Signale diese Installation projizieren kann (`POST /api/v1/enforcement/capabilities`, HMAC-signiert, einmal pro Version des Fähigkeitssatzes). Ohne das liefert eine Regel, deren Signal nie eintrifft, bei jedem Checkout `NO_SIGNAL`: sie passiert stillschweigend, und der Händler sieht eine Regel in ENFORCE, die nichts blockiert. Mit der Meldung kann das Panel bereits beim Aktivieren warnen. Magento projiziert 31 Signale — mehr als doppelt so viele wie jede andere Plattform — weil es zusätzlich die Agentenhistorie projiziert, die anderswo der Server auflöst.
+
 ### 1.1.1
 
 - **Fix** — die Seite "Mis Ventas" band einen statischen Platzhalter ein (Dashboard-Block + `ventas.phtml`), der nie die echte TrustReceipt-Liste erreichte. Sie bindet jetzt das echte Admin-SPA im Bereich "Mis Ventas" ein, genau wie Regeln und Agenten.
