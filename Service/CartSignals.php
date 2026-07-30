@@ -704,16 +704,24 @@ final class CartSignals
      * Line identifier preference: `item_id` (numeric) → fallback `sku`
      * → `?` sentinel.
      *
+     * Verificación M7 (2026-07-28) — la clave del parámetro era `maxCents`,
+     * copiada de R035. La canónica de R036 es `maxCentsPerLine`
+     * (`rule-params.schemas.ts`, schema `.strict()`, y `r036?: { maxCentsPerLine }`
+     * en `rule-catalog.ts`), así que el panel del comerciante NUNCA escribe
+     * `maxCents` para esta regla: la comprobación de arriba fallaba siempre y
+     * R036 era estructuralmente inerte en este módulo, configurara lo que
+     * configurara el comerciante.
+     *
      * @param \Magento\Quote\Model\Quote $quote
-     * @param array<string,mixed> $params expects ['maxCents' => int]
+     * @param array<string,mixed> $params expects ['maxCentsPerLine' => int]
      * @return array{hit:bool,reason?:string}
      */
     public function evaluateR036(\Magento\Quote\Model\Quote $quote, array $params): array
     {
-        if (!array_key_exists('maxCents', $params) || $params['maxCents'] === null) {
+        if (!array_key_exists('maxCentsPerLine', $params) || $params['maxCentsPerLine'] === null) {
             return ['hit' => false];
         }
-        $cap = (int) $params['maxCents'];
+        $cap = (int) $params['maxCentsPerLine'];
         foreach ($quote->getAllVisibleItems() as $item) {
             $lineCents = (int) round(((float) $item->getRowTotalInclTax()) * 100);
             if ($lineCents > $cap) {

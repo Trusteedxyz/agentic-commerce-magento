@@ -404,6 +404,21 @@ class EnforcementClient
             }
 
             $payload = $this->verifyAndDecode($jws);
+
+            // C2 (verificación 2026-07-28) — honrar `validUntil`, la ventana de
+            // frescura que el snapshot lleva FIRMADA (60s con reglas tier-1,
+            // 300s en el resto). Magento era la única superficie que no la
+            // miraba: WooCommerce, PrestaShop, Odoo y el Wasm de Shopify ya
+            // tratan un snapshot vencido como ausente para que se aplique la
+            // política de fallback del comerciante. Sin esta comprobación, un
+            // snapshot caducado servido por la API (o por un intermediario que
+            // lo cachee) se aplicaba como si estuviera vigente.
+            if ($payload !== null && $this->isSnapshotStale($payload)) {
+                $this->logger->warning('[trusteed] snapshot stale (validUntil in the past) — applying fallback policy');
+                $this->payloadCache[$merchantId] = null;
+                return null;
+            }
+
             $this->payloadCache[$merchantId] = $payload;
             return $payload;
         } catch (\Exception $e) {
@@ -531,6 +546,28 @@ class EnforcementClient
      * Magento to parity. Mirrors AgentTokenVerifier::verify() in this same
      * module and PS SnapshotClient::verifyAndDecode().
      */
+    /**
+     * C2 — ¿el snapshot ya pasó su ventana de frescura firmada?
+     *
+     * `validUntil` viaja DENTRO del payload firmado, así que un atacante no
+     * puede alargarla. Ausente o no parseable ⇒ no se considera vencido: es el
+     * comportamiento previo, y degradar a "vencido" por un formato inesperado
+     * bloquearía checkouts legítimos ante un cambio de formato del emisor.
+     * Mirrors PS `SnapshotClient::extractSnapshotValidUntil` y el
+     * stale-fail-closed del cliente de WooCommerce.
+     */
+    private function isSnapshotStale(array $payload): bool
+    {
+        if (empty($payload['validUntil'])) {
+            return false;
+        }
+        $until = strtotime((string)$payload['validUntil']);
+        if ($until === false) {
+            return false;
+        }
+        return $until <= time();
+    }
+
     private function verifyAndDecode(string $jwsCompact): ?array
     {
         if (!function_exists('sodium_crypto_sign_verify_detached') && !class_exists('\ParagonIE_Sodium_Compat')) {
