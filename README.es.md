@@ -127,6 +127,14 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Registro de cambios
 
+### 1.2.0
+
+- **Corrección de seguridad** — el verificador de tokens de agente trataba `exp`, `iat` y `nonce` como opcionales. Las dos comprobaciones de tiempo colgaban de `> 0`, así que un token que simplemente OMITÍA el claim se saltaba entera la caducidad y el tope de antigüedad: era válido para siempre. Los tres claims son ahora obligatorios (`nonce` de 16 a 64 caracteres), igual que en el esquema canónico del token y en los demás conectores.
+- **Corrección de seguridad** — se ignoraba la ventana de frescura que el snapshot de enforcement lleva FIRMADA (`validUntil`). Un snapshot vencido —servido por la API o por cualquier intermediario que lo cachee— se aplicaba como si estuviera vigente. Magento era el único conector que no lo miraba. Ahora un snapshot vencido se trata como ausente, de modo que se aplica la política de reserva del comerciante. `validUntil` viaja DENTRO del payload firmado, así que nadie puede alargarla; si falta o no se puede leer, no se considera vencido, porque degradar ante un formato inesperado bloquearía compras legítimas.
+- **Corrección** — las puntuaciones de confianza con decimal se mostraban como "sin puntuación". La pestaña de Estado leía la puntuación con `is_int()`, y el motor redondea a un decimal, que `json_decode` convierte en un `float` de PHP: `is_int(81.4)` es falso, así que la puntuación se volvía `null` en silencio. Sólo sobrevivían los números enteros. Medido sobre las tiendas de producción el 2026-07-27: 44,7, 52,7, 55,7, 61,5 y 81,4 se mostraban todas como "sin puntuación". Ahora pasa por un único normalizador y se muestra con su decimal (`81.4`, no `81`), igual que en el resto de paneles.
+- **Corrección** — la regla R036 (valor máximo por línea) leía su tope de un parámetro llamado `maxCents`; el nombre canónico es `maxCentsPerLine`, y es el único que acepta el esquema estricto del panel del comerciante. Con la clave equivocada la regla no podía dispararse nunca.
+- **Novedad** — el conector informa ahora de qué señales de carrito sabe proyectar esta instalación (`POST /api/v1/enforcement/capabilities`, firmado con HMAC, una vez por versión del conjunto de capacidades). Sin eso, una regla cuya señal no llega devuelve `NO_SIGNAL` en cada compra: pasa en silencio, y el comerciante ve una regla en ENFORCE que no bloquea nada. Con el reporte, el panel puede avisarle justo al activarla. Magento proyecta 31 señales —más del doble que cualquier otra plataforma— porque además proyecta el historial del agente, que en las demás resuelve el servidor.
+
 ### 1.1.1
 
 - **Corrección** — la página "Mis Ventas" montaba un placeholder estático (bloque Dashboard + `ventas.phtml`) que nunca llegaba al listado real de TrustReceipts. Ahora monta el SPA de administración real en la sección "Mis Ventas", igual que Reglas y Agentes.
