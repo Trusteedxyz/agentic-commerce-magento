@@ -80,7 +80,7 @@ bin/magento cache:flush
 
 1. Connectez-vous à votre **Panneau d'administration** Magento
 2. Allez dans **Trusteed → Setup Wizard**
-3. Renseignez votre **API Key** depuis [app.trusteed.xyz/settings](https://app.trusteed.xyz/settings)
+3. Renseignez votre **API Key** depuis [trusteed.xyz/dashboard/settings](https://trusteed.xyz/dashboard/settings)
 4. Sélectionnez les vues de boutique que vous souhaitez exposer aux agents d'IA
 5. Cliquez sur **Save & Verify** — l'assistant teste la connectivité et enregistre votre boutique
 

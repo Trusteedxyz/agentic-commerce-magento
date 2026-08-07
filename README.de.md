@@ -80,7 +80,7 @@ bin/magento cache:flush
 
 1. Melden Sie sich in Ihrem Magento-**Admin Panel** an
 2. Gehen Sie zu **Trusteed → Setup Wizard**
-3. Geben Sie Ihren **API Key** von [app.trusteed.xyz/settings](https://app.trusteed.xyz/settings) ein
+3. Geben Sie Ihren **API Key** von [trusteed.xyz/dashboard/settings](https://trusteed.xyz/dashboard/settings) ein
 4. Wählen Sie die Store-Ansichten aus, die Sie KI-Agenten zugänglich machen möchten
 5. Klicken Sie auf **Save & Verify** — der Assistent testet die Verbindung und registriert Ihren Shop
 

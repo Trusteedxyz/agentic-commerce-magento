@@ -80,7 +80,7 @@ bin/magento cache:flush
 
 1. Log in to your Magento **Admin Panel**
 2. Go to **Trusteed → Setup Wizard**
-3. Enter your **API Key** from [app.trusteed.xyz/settings](https://app.trusteed.xyz/settings)
+3. Enter your **API Key** from [trusteed.xyz/dashboard/settings](https://trusteed.xyz/dashboard/settings)
 4. Select the store views you want to expose to AI agents
 5. Click **Save & Verify** — the wizard tests connectivity and registers your store
 

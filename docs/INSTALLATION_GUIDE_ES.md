@@ -43,7 +43,7 @@ Versión 1.0.0 · Magento Open Source y Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
 Antes de instalar, confirme que:
 
-- [ ] Dispone de una cuenta Trusteed en [app.trusteed.xyz](https://app.trusteed.xyz)
+- [ ] Dispone de una cuenta Trusteed en [trusteed.xyz/dashboard](https://trusteed.xyz/dashboard)
 - [ ] El cron de Magento está en funcionamiento (`bin/magento cron:run` finaliza sin errores)
 - [ ] Tiene credenciales del Magento Marketplace (clave pública / clave privada) **o** realizará la instalación manual
 - [ ] Ha activado el modo de mantenimiento en producción:
@@ -159,7 +159,7 @@ El secreto HMAC firma las llamadas internas a la API (cabecera `X-Internal-Auth`
 Debe coincidir con el valor configurado en el backend de Trusteed para su cuenta.
 
 Las Operaciones de Trusteed provisionan este valor — cópielo desde el panel de su
-cuenta en [app.trusteed.xyz/settings/integration](https://app.trusteed.xyz/settings/integration).
+cuenta en [trusteed.xyz/dashboard/settings](https://trusteed.xyz/dashboard/settings).
 
 Péguelo en **Internal HMAC Secret** y haga clic en **Guardar**.
 
@@ -175,7 +175,7 @@ de tienda habilitadas.
 
 ### 6.1 Obtener sus credenciales de API
 
-Inicie sesión en [app.trusteed.xyz](https://app.trusteed.xyz) y navegue a
+Inicie sesión en [trusteed.xyz/dashboard](https://trusteed.xyz/dashboard) y navegue a
 **Configuración → Integraciones → Magento**:
 
 | Credencial | Dónde encontrarla |

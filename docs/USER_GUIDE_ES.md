@@ -205,7 +205,7 @@ pasa al siguiente método en la secuencia. Si todos los métodos fallan, el pedi
 se crea.
 
 > **Para cambiar el orden de sus métodos de pago**, contacte con el soporte de Trusteed
-> en support@trusteed.xyz o acceda al portal principal en app.trusteed.xyz.
+> en support@trusteed.xyz o acceda al portal principal en trusteed.xyz/dashboard.
 
 ---
 
@@ -351,7 +351,7 @@ agente es notificado.
 ### Configurar el umbral HITL
 
 El umbral se configura en el panel de su cuenta de Trusteed en
-[app.trusteed.xyz/settings/rules/r043](https://app.trusteed.xyz/settings/rules/r043).
+[trusteed.xyz/dashboard/agent-trust](https://trusteed.xyz/dashboard/agent-trust).
 Se aplica globalmente a todas las plataformas que se conectan a su tienda.
 
 ---

@@ -202,7 +202,7 @@ falls back to the next method in sequence. If all methods fail, the order is not
 created.
 
 > **To change your payment method order**, contact Trusteed support at
-> support@trusteed.xyz or access the main portal at app.trusteed.xyz.
+> support@trusteed.xyz or access the main portal at trusteed.xyz/dashboard.
 
 ---
 
@@ -350,7 +350,7 @@ are logged in the audit trail and the agent is notified.
 ### Configuring the HITL threshold
 
 The threshold is configured in your Trusteed account dashboard at
-[app.trusteed.xyz/settings/rules/r043](https://app.trusteed.xyz/settings/rules/r043).
+[trusteed.xyz/dashboard/agent-trust](https://trusteed.xyz/dashboard/agent-trust).
 It is applied globally across all platforms that connect to your store.
 
 ---
