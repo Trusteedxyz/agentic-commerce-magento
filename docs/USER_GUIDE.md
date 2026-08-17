@@ -1,6 +1,6 @@
 # User Guide — Trusteed Agentic Commerce for Magento 2
 
-Version 1.0.0
+Version 1.2.1
 
 ---
 
@@ -388,7 +388,7 @@ Yes. Agent orders are standard Magento orders and appear in all standard reports
 **Q: Can agents apply discount codes?**
 
 Only discount codes that have been explicitly allowlisted in your Trusteed rules.
-By default, agents cannot apply arbitrary coupon codes (rule R009).
+By default, agents cannot apply arbitrary coupon codes (rule `R017.coupon-discount-anomaly`).
 
 **Q: What happens to agent orders if Trusteed is down?**
 

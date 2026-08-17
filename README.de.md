@@ -8,8 +8,13 @@ Ermöglichen Sie den neuen Online-Käufern, den KI-Agenten, sicher und zuverläs
 - **Manipulationssichere Belege**: Wir erzeugen elektronisch signierte und kryptographisch manipulationssichere Belege, die im Streitfall als Nachweis der tatsächlichen Transaktion dienen. Kompatibel mit eIDAS (EU, Großbritannien) und eSIGN (USA).
 - **Agenten-Analytik**: Sehen Sie sich Statistiken zu Agentenkäufen an — wie viel sie ausgeben, welche Produkte sie kaufen und wie oft.
 - **Agenten-Blockierung**: Blockieren Sie potenziell gefährliche oder problematische Agenten.
-- **Digitale Währungen**: ermöglicht Käufe in digitalen Währungen dank des X402-Protokolls.
-- **Peer-to-Peer-Transaktionen**: ermöglicht direkten Peer-to-Peer-Handel zwischen Agenten und Händlern.
+- **Digitale Währungen**: Das Trusteed-Netzwerk begleicht Agentenzahlungen über das x402-Protokoll.
+  Dieses Modul verarbeitet diese Zahlungen nicht selbst — Ihr Magento-Checkout bleibt genau so, wie
+  er heute ist; die Zahlungswege werden auf der Trusteed-Seite konfiguriert und an das Admin-Panel
+  zurückgemeldet.
+- **Transaktionen zwischen Agent und Händler**: Agenten kaufen in Ihrem Shop über das
+  Trusteed-Netzwerk, das Identität, Regeln und Beleg zu jeder Bestellung mitführt. Die Zahlung wird
+  weiterhin über Ihre bestehenden Magento-Zahlungsarten abgewickelt.
 
 ## Screenshots
 
@@ -29,17 +34,25 @@ Ermöglichen Sie den neuen Online-Käufern, den KI-Agenten, sicher und zuverläs
 |------------------------------------------------|
 | ![Belegliste](docs/screenshots/screenshot-09-receipts-list.png) |
 
-Jede von einem Agenten ausgelöste Bestellung erzeugt einen signierten Trust Receipt, aufgeführt unter **Trusteed → Mis ventas → Recibos de venta** mit Verifizierungsstatus und Beleg-URI — verlinkt zum öffentlichen Prüfer unter `receipts.trusteed.xyz`, oder füge den JWS direkt in das **Trust Receipts**-Tool ein (siehe oben), um ihn zu prüfen.
+Jede von einem Agenten ausgelöste Bestellung erzeugt einen signierten Trust Receipt, aufgeführt unter **Trusteed → Mis ventas → Recibos de venta** mit Verifizierungsstatus und Beleg-URI. Aus der Liste können Sie die Detailansicht eines Belegs öffnen, um seine Felder zu lesen und den rohen JWS zu kopieren. Für die eigenständige öffentliche Prüfung eines beliebigen JWS gibt es bislang keinen eigenen Endpunkt.
 
 ## Funktionen
 
-- **MCP-Endpunkt** unter `/.well-known/mcp-manifest.json` — wird automatisch von KI-Agentenplattformen erkannt
+- **MCP-Endpunkt** unter `/.well-known/mcp.json` — wird automatisch von KI-Agentenplattformen erkannt
 - **Webhook-Outbox** — zuverlässige Zustellung von Bestellungen/Versand/Rückerstattungen an das Trusteed-Backend mit automatischem Wiederholungsversuch und Backoff
 - **Agenten-Token-Verifizierung** — validiert die Identität des Agenten bei jeder Checkout-Anfrage
-- **Freigabe-Gate (HITL)** — konfigurierbare Freigabe durch einen Menschen (human-in-the-loop) für hochwertige Agentenbestellungen
+- **Freigabe-Gate (HITL)** — löst die Regel R043 des Backends aus, wird die Bestellung zur Freigabe durch einen Menschen zurückgehalten, statt abgeschickt zu werden
 - **Trust Receipts** — jede Agententransaktion erzeugt einen kryptographisch signierten Beleg (Ed25519)
 - **Admin-Dashboard** — SPA mit Agentensitzungen, Verkäufen, Regeln und Statusübersicht
 - **Audit-Log** — jede Interaktion eines Agenten wird mit Identität und Ergebnis protokolliert
+
+## Dokumentation
+
+Die Handbücher liegen bislang nur auf Englisch und Spanisch vor:
+
+- [Installationsanleitung (EN)](docs/INSTALLATION_GUIDE.md) ([ES](docs/INSTALLATION_GUIDE_ES.md)) — Voraussetzungen, Installation, Verbindung, Überprüfung, Fehlersuche
+- [Benutzerhandbuch (EN)](docs/USER_GUIDE.md) ([ES](docs/USER_GUIDE_ES.md)) — täglicher Umgang mit dem Admin-Panel und den Geschäftsregeln
+- [Referenzhandbuch (EN)](docs/REFERENCE_MANUAL.md) ([ES](docs/REFERENCE_MANUAL_ES.md)) — Endpunkte, Konfigurationspfade, CLI-Befehle, Datenmodell
 
 ## Kompatibilität
 
@@ -58,10 +71,24 @@ Jede von einem Agenten ausgelöste Bestellung erzeugt einen signierten Trust Rec
 
 ## Installation
 
-### Über Composer (empfohlen)
+### Über Composer (von GitHub, noch kein Packagist-Eintrag)
+
+Dieses Paket ist **noch nicht auf Packagist veröffentlicht**, daher kann Composer es
+nicht allein über den Namen auflösen. Fügen Sie zuerst das Repository in die
+`composer.json` Ihres Magento-Projekts ein:
+
+```json
+{
+  "repositories": [
+    { "type": "vcs", "url": "https://github.com/Trusteedxyz/agentic-commerce-magento" }
+  ]
+}
+```
+
+Danach installieren Sie es:
 
 ```bash
-composer require trusteed/agentic-commerce-magento
+composer require trusteed/agentic-commerce-magento:^1.2
 bin/magento module:enable Trusteed_AgenticCommerce
 bin/magento setup:upgrade
 bin/magento setup:di:compile
@@ -70,16 +97,17 @@ bin/magento cache:flush
 
 ### Manueller Upload
 
-1. **Laden Sie die installierbare `.zip`** von der neuesten GitHub Release herunter:
-   [**⬇ trusteed-agentic-commerce-magento-1.2.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest/download/trusteed-agentic-commerce-magento-1.2.0.zip)
-   — oder durchsuchen Sie alle Versionen auf der [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
+1. **Laden Sie die installierbare `.zip`** von der
+   [**⬇ neuesten GitHub Release**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest)
+   herunter — die angehängte Datei heißt `trusteed-agentic-commerce-magento-<Version>.zip`.
+   Alle veröffentlichten Versionen finden Sie auf der [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Entpacken Sie das Archiv nach `app/code/Trusteed/AgenticCommerce/`
-3. Führen Sie die obigen Befehle im Root-Verzeichnis Ihres Magento aus
+3. Führen Sie die obigen `bin/magento`-Befehle im Root-Verzeichnis Ihres Magento aus
 
 ## Konfiguration
 
 1. Melden Sie sich in Ihrem Magento-**Admin Panel** an
-2. Gehen Sie zu **Trusteed → Setup Wizard**
+2. Gehen Sie zu **Trusteed → Configuración** (der Einrichtungsassistent)
 3. Geben Sie Ihren **API Key** von [trusteed.xyz/dashboard/settings](https://trusteed.xyz/dashboard/settings) ein
 4. Wählen Sie die Store-Ansichten aus, die Sie KI-Agenten zugänglich machen möchten
 5. Klicken Sie auf **Save & Verify** — der Assistent testet die Verbindung und registriert Ihren Shop
@@ -88,26 +116,46 @@ bin/magento cache:flush
 
 Navigieren Sie zu **Stores → Configuration → Trusteed → Agentic Commerce**:
 
-| Einstellung | Standardwert | Beschreibung |
-|---------|---------|-------------|
-| API Base URL | `https://api.trusteed.xyz` | Endpunkt des Trusteed-Backends |
-| Webhook secret version | `1` | Nach Kompromittierung eines Schlüssels rotieren |
-| HITL enforcement mode | `observe` | `observe` protokolliert nur; `enforce` blockiert Bestellungen oberhalb des Schwellenwerts |
-| HITL amount threshold | `500.00` | Bestellungen oberhalb dieses Werts erfordern eine menschliche Freigabe |
-| Agent token TTL | `300` | Maximales Alter (in Sekunden) eines gültigen Agenten-Tokens |
+**API Connection** (`trusteed_general/general`):
+
+| Einstellung | Beschreibung |
+|---------|-------------|
+| API Base URL | Endpunkt des Trusteed-Backends, z. B. `https://api.trusteed.xyz` |
+| Merchant ID | Ihre Händlerkennung |
+| Integration Token | Verschlüsselt. Authentifiziert diesen Shop gegenüber der Trusteed-API |
+| Webhook Secret | Verschlüsselt. Prüft die Signaturen eingehender Webhooks |
+| Internal HMAC Secret | Verschlüsselt. Signiert interne Heartbeat- und Admin-Aufrufe (`X-Internal-Auth`, HMAC-SHA256); wird vom Trusteed-Betrieb bereitgestellt |
+| Webhook Secret Version | Beim Rotieren des Webhook-Secrets hochzählen |
+| Connection ID | Wird von Trusteed nach dem Verbinden des Shops ausgegeben; identifiziert diesen Shop bei der Webhook-Zustellung |
+
+**Features** (`trusteed_general/features`):
+
+| Einstellung | Beschreibung |
+|---------|-------------|
+| Enable WebMCP Bridge | Bindet die JavaScript-Bridge im Shop-Frontend ein. Bei Hyvä- und PWA-Studio-Themes automatisch deaktiviert |
+| Enable Phase B (Embedded SPA) | Für ein künftiges Release reserviert — lassen Sie die Option aus, sofern der Trusteed-Support nichts anderes sagt |
+
+Das Durchsetzungsverhalten (einschließlich des Human-in-the-Loop-Gates R043) wird hier nicht
+konfiguriert: Es richtet sich nach den Regeln, die Sie unter **Trusteed → Mis Reglas** festlegen, und
+nach dem signierten Regel-Snapshot, den das Backend ausliefert. Agenten-Tokens werden bis zu einem
+Höchstalter von 330 Sekunden akzeptiert (zuzüglich einer Toleranz von 30 Sekunden auf `exp`); dieses
+Zeitfenster ist im Konnektor fest hinterlegt und keine Einstellung.
 
 ## Admin-Seiten
 
 Nach der Installation erscheint ein **Trusteed**-Menü in der Seitenleiste des Magento-Admins:
 
-| Seite | Pfad | Beschreibung |
+| Seite | Route | Beschreibung |
 |------|------|-------------|
-| Dashboard | Trusteed → Dashboard | Echtzeitübersicht der Agentensitzungen |
-| Sales | Trusteed → Ventas | Von Agenten ausgelöste Bestellungen und Belege |
-| Rules | Trusteed → Reglas | Durchsetzungsregeln (CEL-basiert) |
-| Agents | Trusteed → Agentes | Verbundene Agenten-Identitäten |
-| Security | Trusteed → Seguridad | Audit-Log und Anomalie-Warnungen |
-| Settings | Trusteed → Ajustes | Modulkonfiguration |
+| Inicio | `trusteed/dashboard` | „Start“ — Übersicht über Agentensitzungen und Aktivität |
+| ¿Cómo va mi tienda? | `trusteed/health` | „Wie läuft mein Shop?“ — Verbindungszustand und Trust Score |
+| Mis ventas | `trusteed/ventas` | „Meine Verkäufe“ — von Agenten ausgelöste Bestellungen und ihre Trust Receipts |
+| A quién le vendo | `trusteed/agentes` | „Wem ich verkaufe“ — von Ihrem Shop gesehene Agenten-Identitäten |
+| Mis Reglas | `trusteed/reglas` | „Meine Regeln“ — Geschäftsregeln, die beim Checkout angewendet werden |
+| Métodos de pago | `trusteed/pagos` | „Zahlungsarten“ — von Trusteed gemeldete Zahlungswege |
+| Seguridad | `trusteed/seguridad` | „Sicherheit“ — Audit-Log und Anomalie-Warnungen |
+| Ajustes | `trusteed/ajustes` | „Einstellungen“ — Modulkonfiguration |
+| Configuración | `trusteed/setup/wizard` | „Konfiguration“ — Einrichtungsassistent (Shop verbinden / neu verbinden) |
 
 ## Deinstallation
 
@@ -128,6 +176,24 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 ## Änderungsprotokoll
 
 ### 1.2.1
+
+- **Behoben** — `bin/magento trusteed:check-webserver` meldete immer `FAIL`, selbst bei einem
+  einwandfrei ausgelieferten Manifest. Der Befehl akzeptierte die Antwort nur, wenn sie einen
+  Schlüssel `mcpVersion` auf oberster Ebene enthielt; das Manifest dieses Moduls hat einen solchen
+  Schlüssel nie geführt (der Versionsschlüssel heißt `schema_version`), die Prüfung konnte also
+  niemals bestehen. Händlern, die der Installationsanleitung folgten, wurde ein falsch
+  konfigurierter Webserver gemeldet, obwohl er es nicht war.
+- **Behoben — Dokumentation** — die README bewarb zwei Konfigurationsfelder, die es nicht gibt
+  („HITL enforcement mode“, „HITL amount threshold“ — R043 hat keinen konfigurierbaren
+  Betragsschwellenwert), verschwieg sieben tatsächlich vorhandene und gab das Zeitfenster für
+  Agenten-Tokens mit 300 statt 330 Sekunden an. Die Tabelle der Admin-Seiten führte sechs Seiten
+  unter erfundenen englischen Namen auf; es sind neun, und das Menü ist auf Spanisch. Der Absatz zu
+  den Trust Receipts verwies auf `receipts.trusteed.xyz`, einen Host, der nicht auflöst, und
+  beschrieb das Einfügen eines JWS in ein Prüfwerkzeug, das nicht existiert. Die Punkte zu x402 und
+  Peer-to-Peer versprachen Funktionen, die dieses Modul nicht umsetzt. Die Handbücher unter `docs/`
+  waren von nirgendwo verlinkt, und ihre Referenzabschnitte beschrieben eine Manifest-Struktur,
+  Webhook-Routen, eine Wiederholungsrichtlinie, einen CLI-Befehl und eine Frontend-Route, die nicht
+  zum Code passten.
 
 - **Behoben** — das Admin-Panel-Bundle (`view/adminhtml/web/js/admin-spa.js`) wurde unminifiziert ausgeliefert: 869 KB / 25.064 Zeilen statt der 490 KB / 41 Zeilen, die der dokumentierte Build-Befehl tatsächlich erzeugt. Die Herkunft ließ sich nicht verifizieren. Neu aus der Quelle gebaut.
 - **Behoben** — die Regel R047 (Mindestbeitrag) hatte kein Formularfeld im Admin-Panel; ihre Parameter existierten im Schema, konnten aber nur über die API gesetzt werden. Ebenfalls: Beim Anzeigen eines Händler-Kategorienamens wurden die Anti-Injection-Trennzeichen (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) mit ausgegeben, statt sie für die Darstellung zu entfernen.

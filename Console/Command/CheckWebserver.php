@@ -52,7 +52,10 @@ class CheckWebserver extends Command
 
         if ($httpCode === 200) {
             $decoded = json_decode($body, true);
-            if (isset($decoded['mcpVersion'])) {
+            // `schema_version` is the manifest's top-level version key, as emitted
+            // by Model\Manifest\Builder. (Until 1.2.1 this looked for `mcpVersion`,
+            // a key the manifest never carried, so the command always reported FAIL.)
+            if (is_array($decoded) && isset($decoded['schema_version'])) {
                 $output->writeln('<info>OK: /.well-known/mcp.json served correctly</info>');
                 return Command::SUCCESS;
             }

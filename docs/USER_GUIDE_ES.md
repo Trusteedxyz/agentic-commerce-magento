@@ -1,6 +1,6 @@
 # Guía de Usuario — Trusteed Agentic Commerce para Magento 2
 
-Versión 1.0.0
+Versión 1.2.1
 
 ---
 
@@ -390,7 +390,7 @@ informes estándar (Ventas → Informes, Business Intelligence, etc.).
 
 Solo los códigos de descuento que hayan sido explícitamente incluidos en la lista
 permitida de sus reglas de Trusteed. Por defecto, los agentes no pueden aplicar
-cupones arbitrarios (regla R009).
+cupones arbitrarios (regla `R017.coupon-discount-anomaly`).
 
 **P: ¿Qué ocurre con los pedidos de agentes si Trusteed está caído?**
 

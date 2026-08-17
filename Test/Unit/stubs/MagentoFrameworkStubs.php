@@ -353,6 +353,9 @@ namespace Magento\Store\Model {
     if (!\class_exists(Store::class)) {
         class Store
         {
+            public const XML_PATH_UNSECURE_BASE_URL = 'web/unsecure/base_url';
+            public const XML_PATH_SECURE_BASE_URL = 'web/secure/base_url';
+
             public function getId()
             {
                 return null;

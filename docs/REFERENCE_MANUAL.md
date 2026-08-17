@@ -1,6 +1,6 @@
 # Reference Manual — Trusteed Agentic Commerce for Magento 2
 
-Version 1.0.0 · Technical Reference for Developers and System Integrators
+Version 1.2.1 · Technical Reference for Developers and System Integrators
 
 ---
 
@@ -37,7 +37,7 @@ Trusteed_AgenticCommerce
 ├── Console/Command/          CLI commands (checkwebserver, webhook:status)
 ├── Controller/
 │   ├── Adminhtml/            Admin controllers (Dashboard, Setup, Health, etc.)
-│   └── Wellknown/            Frontend /.well-known/mcp-manifest.json endpoint
+│   └── Wellknown/            Frontend /.well-known/mcp.json endpoint
 ├── Cron/                     Webhook drainer + lag heartbeat
 ├── Enforcement/              R043 HITL gate logic
 ├── Model/
@@ -175,17 +175,17 @@ Processes the `trusteed_webhook_outbox` table:
 
 1. Selects entries where `status = 'pending'` AND (`next_attempt_at IS NULL` OR `next_attempt_at <= NOW()`) AND (`locked_until IS NULL` OR `locked_until < NOW()`)
 2. Acquires a lease (`locked_by = <worker-id>`, `locked_until = NOW() + 60s`)
-3. POSTs payload to `POST /v1/webhooks/receive` with signature `X-Trusteed-Signature: t=<ts>,s=<hmac-sha256>`
+3. POSTs payload to `POST /api/v1/webhook/magento/<connectionId>` with signature `X-Trusteed-Signature: t=<ts>,s=<hmac-sha256>`
 4. On success (2xx): sets `status = 'delivered'`
-5. On failure: increments `retry_count`, sets exponential `next_attempt_at` (2^retry_count \* 60s, max 24h)
-6. After 10 retries: sets `status = 'dead'`
+5. On failure: increments `retry_count` and sets an exponential `next_attempt_at` — `2s × 2^retry_count`, capped at 3600 s, ±20% jitter (see §11)
+6. After 8 retries (`OutboxRepository::MAX_RETRIES`): sets `status = 'dead'`
 
 ### `trusteed_lag_heartbeat`
 
 **Class:** `Trusteed\AgenticCommerce\Cron\EmitLagHeartbeat`
 
 Every minute, calculates the age of the oldest `pending` outbox entry and reports
-it to `POST /v1/webhooks/heartbeat` so the Trusteed dashboard can alert on
+it to `POST /api/v1/internal/magento/lag-heartbeat` so the Trusteed dashboard can alert on
 delivery lag.
 
 ---
@@ -226,15 +226,21 @@ in **System → Permissions → User Roles → [Role] → Role Resources**.
 
 ## 8. Frontend Routes
 
-**Front name:** `trusteed` (defined in `etc/frontend/routes.xml`)
+**Front name:** `nlweb` (defined in `etc/frontend/routes.xml` — the route `id` and
+`frontName` are both `nlweb`; there is no `trusteed` frontend route)
 
-| URL Pattern                       | Controller                         | Description                             |
-| --------------------------------- | ---------------------------------- | --------------------------------------- |
-| `/trusteed/products/index`        | `Controller/Products/Index`        | NLWeb product search endpoint (proxied) |
-| `/trusteed/wellknown/mcpmanifest` | `Controller/Wellknown/McpManifest` | Returns the MCP manifest JSON           |
+| URL Pattern                    | Controller                         | Description                             |
+| ------------------------------ | ---------------------------------- | --------------------------------------- |
+| `/nlweb/products/index`        | `Controller/Products/Index`        | NLWeb product search endpoint (proxied) |
+| `/nlweb/wellknown/mcpmanifest` | `Controller/Wellknown/McpManifest` | Returns the MCP manifest JSON           |
 
-The `/.well-known/mcp.json` canonical URL is handled by `Router/WellKnownRouter.php`,
-which maps `/.well-known/mcp-manifest.json` to `trusteed/wellknown/mcpmanifest`.
+`/.well-known/mcp.json` is the canonical manifest URL and the one agents use. It is
+**not** reached through the `nlweb` frontName: it is matched by
+`Router/WellKnownRouter.php`, a custom router registered with `sortOrder=10` in
+`etc/frontend/di.xml`, which dispatches the `Controller/Wellknown/McpManifest` action
+directly. The `/nlweb/wellknown/mcpmanifest` path above is the same controller reached
+through the ordinary frontName, and exists only as a fallback for webservers that
+cannot be made to rewrite the dotted `/.well-known/` path.
 
 ---
 
@@ -377,17 +383,29 @@ HMAC input: `"<timestamp>.<rawBody>"`
 
 ### Retry schedule
 
-| Attempt | Wait before retry    |
-| ------- | -------------------- |
-| 1       | 60 seconds           |
-| 2       | 2 minutes            |
-| 3       | 4 minutes            |
-| 4       | 8 minutes            |
-| ...     | Doubles each time    |
-| 10      | Status set to `dead` |
+Exponential backoff, computed by `Cron/DrainOutbox.php::backoffDelaySeconds()`:
 
-Dead entries are not retried. Use the Trusteed dashboard to replay dead webhooks
-manually if needed.
+```
+delay = min(2 × 2^retry_count, 3600) ± 20% jitter
+```
+
+The base is **2 seconds** (`BACKOFF_BASE_SECONDS`), the cap **3600 seconds**
+(`BACKOFF_MAX_SECONDS`), and symmetric ±20% jitter (`BACKOFF_JITTER_RATIO = 0.20`) is
+applied to avoid thundering-herd retries across pods. The delay never falls below the
+2-second base. The cron does not sleep; it stamps `next_attempt_at` and returns.
+
+| Attempt (`retry_count`) | Nominal delay before next attempt |
+| ----------------------- | --------------------------------- |
+| 0                       | 2 s                               |
+| 1                       | 4 s                               |
+| 2                       | 8 s                               |
+| 3                       | 16 s                              |
+| ...                     | doubles each time                 |
+| 11 and beyond           | 3600 s (capped)                   |
+
+After **8 attempts** (`OutboxRepository::MAX_RETRIES = 8`) the row is marked `dead`.
+Dead entries are not retried. Each drain run processes at most 50 rows
+(`BATCH_SIZE`) and stops after 55 seconds (`MAX_RUNTIME_SECONDS`).
 
 ---
 
@@ -397,15 +415,21 @@ Agent tokens are JWTs signed with Ed25519 (algorithm `EdDSA`, curve `Ed25519`).
 
 ### Token claims
 
-| Claim      | Type           | Description                                |
-| ---------- | -------------- | ------------------------------------------ |
-| `iss`      | string         | Agent DID (e.g. `did:web:claude.ai`)       |
-| `sub`      | string         | Customer identifier                        |
-| `aud`      | string         | Merchant ID                                |
-| `exp`      | unix timestamp | Token expiry (max 300 seconds from iat)    |
-| `iat`      | unix timestamp | Issued at                                  |
-| `jti`      | string         | Single-use nonce (base64url, 16–128 chars) |
-| `platform` | string         | Agent platform (`claude`, `chatgpt`, etc.) |
+All of `iss`, `aud`, `exp`, `iat`, `nonce` and `jti` are **mandatory**. A token that
+omits any of them is rejected as `invalid` (see `Service/AgentTokenVerifier.php`).
+
+| Claim        | Type           | Validated as                                                                                 |
+| ------------ | -------------- | -------------------------------------------------------------------------------------------- |
+| `iss`        | string         | Agent DID. Must equal the DID derived from the header `kid` — key-confusion guard             |
+| `aud`        | string         | Must be the literal `trusteed`. (This is **not** the merchant ID)                             |
+| `merchantId` | string         | Optional. When present, must match the store's configured Merchant ID                        |
+| `exp`        | unix timestamp | Expiry. Rejected once `now > exp + 30` (30-second clock-skew tolerance)                      |
+| `iat`        | unix timestamp | Issued at. Rejected once `now - iat > 330` (`MAX_AGE_SECONDS`)                                |
+| `nonce`      | string         | Mandatory, 16–64 characters                                                                  |
+| `jti`        | string         | Single-use identifier, must match `/^[A-Za-z0-9_-]{16,128}$/`; missing → `missing_jti`        |
+
+`sub` and `platform` are not read by the verifier. The maximum token age is therefore
+**330 seconds** from `iat`, not 300.
 
 ### Verification outcomes
 
@@ -425,7 +449,7 @@ in-memory for the duration of the request to avoid repeated API calls.
 
 ## 13. MCP Manifest
 
-**Endpoint:** `GET /.well-known/mcp-manifest.json`
+**Endpoint:** `GET /.well-known/mcp.json`
 **Controller:** `Trusteed\AgenticCommerce\Controller\Wellknown\McpManifest`
 **Builder:** `Trusteed\AgenticCommerce\Model\Manifest\Builder`
 
@@ -436,22 +460,38 @@ with an Ed25519 key provisioned by Trusteed.
 
 ```json
 {
-  "schema_version": "1.2",
+  "schema_version": "1.0",
+  "issuer": "https://api.trusteed.xyz",
   "merchant_id": "<merchant-id>",
-  "store_url": "https://your-store.com",
-  "connection_id": "<connection-id>",
-  "platform": "magento",
-  "capabilities": {
-    "browse_catalog": true,
-    "add_to_cart": true,
-    "checkout": true,
-    "payment_methods": ["x402", "stored_card"]
-  },
-  "mcp_endpoint": "https://api.trusteed.xyz/mcp/<merchant-id>",
-  "issued_at": "<iso8601>",
-  "signature": "<jws-compact>"
+  "store_views": [
+    { "code": "default", "base_url": "https://your-store.com" },
+    { "code": "fr", "base_url": "https://your-store.fr" }
+  ],
+  "capabilities": ["checkout", "catalog_search", "order_status"],
+  "updated_at": "<iso8601>",
+  "signature": {
+    "jws": "<detached-jws-compact>",
+    "kid": "<key-id>",
+    "alg": "EdDSA",
+    "signed_at": "<iso8601>"
+  }
 }
 ```
+
+Notes on the actual shape:
+
+- `capabilities` is a flat **array of three strings** — `checkout`, `catalog_search`,
+  `order_status` — not an object of feature flags, and it carries no payment-method list.
+- `signature` is an **object** (`jws` / `kid` / `alg` / `signed_at`), not a bare JWS string.
+- `issuer` is the configured Trusteed API base URL. There are no `store_url`,
+  `connection_id`, `platform`, `mcp_endpoint` or `issued_at` fields.
+- `store_views[]` lists every published store view with its base URL, so agents can do
+  longest-prefix matching across multiple domains.
+- The `signed_payload` returned by the backend is served **verbatim**: the backend is
+  authoritative for `issuer`, `merchant_id` and `capabilities` (ADR-014), and serving its
+  exact bytes is what makes the detached JWS verify against what the agent received.
+- `schema_version` is the key `bin/magento trusteed:check-webserver` looks for when
+  deciding whether the endpoint is serving a real manifest.
 
 ---
 
@@ -474,18 +514,49 @@ Defined in `etc/extension_attributes.xml`. Loaded/saved via
 The module makes outbound HTTPS calls to the Trusteed API. All calls require
 HTTPS and are validated by `ApiBaseUrlValidator` (SSRF guard).
 
-| Method | Path                              | When                            | Auth                          |
-| ------ | --------------------------------- | ------------------------------- | ----------------------------- |
-| `POST` | `/v1/rules/evaluate`              | On every agent checkout attempt | `X-Trusteed-Signature` (HMAC) |
-| `GET`  | `/v1/rules/snapshot/<merchantId>` | Per-request cache miss          | `X-Trusteed-Signature` (HMAC) |
-| `POST` | `/v1/agent-events/nonce-consume`  | After token verification        | `X-Trusteed-Signature` (HMAC) |
-| `POST` | `/v1/webhooks/receive`            | Webhook delivery                | `X-Trusteed-Signature` (HMAC) |
-| `POST` | `/v1/webhooks/heartbeat`          | Every minute (lag monitor)      | `X-Trusteed-Signature` (HMAC) |
-| `POST` | `/v1/magento/connect`             | Setup Wizard connect            | `X-Internal-Auth` (HMAC)      |
+| Method | Path                                                        | When                                      | Auth                          | Timeout |
+| ------ | ----------------------------------------------------------- | ----------------------------------------- | ----------------------------- | ------- |
+| `POST` | `/v1/rules/evaluate`                                        | On every checkout attempt                 | `X-Trusteed-Signature` (HMAC) | 5 s     |
+| `GET`  | `/v1/rules/snapshot/<merchantId>`                           | Per-request cache miss                    | `X-Trusteed-Signature` (HMAC) | 5 s     |
+| `POST` | `/v1/agent-events/nonce-consume`                            | After token verification                  | `X-Trusteed-Signature` (HMAC) | 5 s     |
+| `GET`  | `/.well-known/jwks.json`                                    | Snapshot signature verification           | none (public keys)            | 5 s     |
+| `POST` | `/api/v1/webhook/magento/<connectionId>`                    | Outbox delivery (order/shipment/refund)   | `X-Trusteed-Signature` (HMAC) | 10 s    |
+| `POST` | `/api/v1/internal/magento/lag-heartbeat`                    | Every minute (lag monitor cron)           | `X-Internal-Auth` (HMAC)      | 10 s    |
+| `POST` | `/api/v1/internal/magento/event`                            | Install-event data patch                  | `X-Internal-Auth` (HMAC)      | 10 s    |
+| `POST` | `/api/v1/internal/magento/manifest/sign`                    | Manifest build (remote signing, ADR-050)  | `X-Internal-Auth` (HMAC)      | 5 s     |
+| `POST` | `/api/v1/enforcement/capabilities`                          | Once per capability-set version           | `X-Internal-Auth` (HMAC)      | 3 s     |
+| `POST` | `/api/v1/auth/introspect`                                   | Setup Wizard token introspection          | bearer token under test       | 5 s     |
+| `POST` | `/platform/magento/validate-connect-token`                  | Setup Wizard connect                      | connect token                 | 5 s     |
+| `GET`  | `/api/v1/trust/overview?merchantId=<id>`                    | Health tab render                         | `X-Trusteed-Signature` (HMAC) | 6 s     |
+| `POST` | `/api/v1/coupon-attempts-failed`                            | Invalid coupon observer                   | `X-Trusteed-Signature` (HMAC) | 1.5 s   |
+| `POST` | `/api/v1/checkout-failures`                                 | Payment-failed observer                   | `X-Trusteed-Signature` (HMAC) | 1.5 s   |
+| `POST` | `/v1/embed/magento/issue-token`                             | Admin SPA token issuance                  | `X-Embed-Magento-Secret` (per-connection `embed_secret`) | 10 s    |
+| `POST` | `/v1/embed/support/report`                                  | Admin "Send diagnostics"                  | `Authorization: Bearer <integration_token>` + `X-Embed-Source` | 10 s    |
+| `GET`  | `/api/v1/checkout-failures/count`                           | Agent history signals                     | `X-Trusteed-Signature` (HMAC) | 3 s     |
+| `GET`  | `/api/v1/agents/<agentIdHash>/cross-merchant-abuse-check`   | Agent history signals                     | `X-Trusteed-Signature` (HMAC) | 3 s     |
+| `GET`  | `/api/v1/merchants/<merchantId>/disputes/count`             | Agent history signals                     | `X-Trusteed-Signature` (HMAC) | 3 s     |
+| `GET`  | `/api/v1/health`                                            | `ApiBaseUrlValidator` reachability probe   | none                          | 5 s     |
 
-**Timeout:** 5 seconds for all calls. TLS peer verification is always enabled
-(`CURLOPT_SSL_VERIFYPEER=true`, `CURLOPT_SSL_VERIFYHOST=2`). HTTP redirects are
-disabled (`CURLOPT_FOLLOWLOCATION=false`).
+**Timeouts are not uniform** — they differ per caller, as listed above:
+`EnforcementClient` and `ApiBaseUrlValidator` use 5 s, `Manifest\Builder` 5 s
+(`SIGN_TIMEOUT_SECONDS`), `Webhook\SignaturePublisher` 10 s (`TIMEOUT_SECONDS`, and it
+also serves the heartbeat and install-event calls), `Adminhtml\Token\Issue` and
+`Adminhtml\Support\Submit` 10 s, `Block\Adminhtml\Health\Tab` 6 s
+(`SCORE_HTTP_TIMEOUT`), `AgentHistoryFetcher` 3 s (`HTTP_TIMEOUT_SECONDS`), and
+`CapabilitiesReporter` 3 s. The two fire-and-forget observers are the tightest: 1500 ms
+total and 800 ms to connect (`CURLOPT_TIMEOUT_MS` / `CURLOPT_CONNECTTIMEOUT_MS`), so a
+slow backend cannot delay a checkout. `ApiBaseUrlValidator` additionally caps connect
+time at 5 s (`CONNECT_TIMEOUT_SECONDS`).
+
+The two `/v1/embed/*` routes use **different secrets, deliberately**: token issuance
+sends the per-connection `embed_secret` (provisioned by the onboarding exchange and
+validated against the backend SecretVault by `connection_id`), while the support report
+sends the `integration_token` as a bearer. They are not interchangeable.
+
+TLS peer verification is always enabled (`CURLOPT_SSL_VERIFYPEER=true`,
+`CURLOPT_SSL_VERIFYHOST=2`) and HTTP redirects are disabled
+(`CURLOPT_FOLLOWLOCATION=false`). `Manifest\Builder` additionally enforces a closed
+host allowlist before sending the internal HMAC secret anywhere.
 
 ---
 
@@ -535,13 +606,16 @@ indicates replay — the token is treated as `INVALID`.
 
 | Command                    | Class                                | Description                                                                                      |
 | -------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `trusteed:webserver:check` | `Console/Command/CheckWebserver.php` | Validates that the `/.well-known/mcp-manifest.json` endpoint is reachable from the server itself |
+| `trusteed:check-webserver` | `Console/Command/CheckWebserver.php` | Fetches `/.well-known/mcp.json` over the store's unsecure base URL and confirms the response is a real manifest (checks for a top-level `schema_version`). On failure prints the Nginx and Apache rewrite snippets |
 | `trusteed:webhook:status`  | `Console/Command/WebhookStatus.php`  | Prints outbox statistics: pending, delivered, dead counts and oldest pending entry age           |
+
+Both names are registered in `etc/di.xml` under
+`Magento\Framework\Console\CommandListInterface`.
 
 Usage:
 
 ```bash
-bin/magento trusteed:webserver:check
+bin/magento trusteed:check-webserver
 bin/magento trusteed:webhook:status
 ```
 
@@ -553,7 +627,8 @@ bin/magento trusteed:webhook:status
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `AddAgenticVisibleAttribute` | Adds `is_agentic_visible` product EAV attribute (boolean, default 1). Spec-050 FR-A-013 catalog filtering only — `Controller/Products/Index.php` serves agents just the products flagged `1`. It is **not** a rule: no CEL rule reads it | Yes        |
 | `DisableBridgeOnHyva`        | Detects Hyvä or PWA Studio themes and sets `trusteed_general/features/webmcp_enabled = 0` to prevent storefront JS conflicts                                                                                                             | Yes        |
-| `EmitInstallEvent`           | Calls `POST /v1/magento/install-event` to log the installation timestamp and Magento version in the Trusteed dashboard                                                                                                                   | Yes        |
+| `EmitInstallEvent`           | Calls `POST /api/v1/internal/magento/event` to log the installation timestamp and Magento version in the Trusteed dashboard                                                                                                              | Yes        |
+| `ReportSignalCapabilities`   | Reports which cart signals this installation can project, via `POST /api/v1/enforcement/capabilities`. Without it a rule whose signal never arrives returns `NO_SIGNAL` on every checkout — it passes silently while showing as ENFORCE   | Yes        |
 
 ---
 
@@ -571,10 +646,23 @@ Key dependency injection entries:
     </arguments>
 </type>
 
-<!-- Outbox repository uses Magento ResourceModel pattern -->
-<preference for="Trusteed\AgenticCommerce\Model\Webhook\OutboxRepositoryInterface"
-            type="Trusteed\AgenticCommerce\Model\Webhook\OutboxRepository"/>
+<!-- Console commands -->
+<type name="Magento\Framework\Console\CommandListInterface">
+    <arguments>
+        <argument name="commands" xsi:type="array">
+            <item name="trusteed_check_webserver" xsi:type="object">
+                Trusteed\AgenticCommerce\Console\Command\CheckWebserver
+            </item>
+            <item name="trusteed_webhook_status" xsi:type="object">
+                Trusteed\AgenticCommerce\Console\Command\WebhookStatus
+            </item>
+        </argument>
+    </arguments>
+</type>
 ```
+
+`Model\Webhook\OutboxRepository` is injected as a **concrete class**. There is no
+`OutboxRepositoryInterface` and no `<preference>` for it — depend on the class.
 
 See `etc/di.xml` and `etc/frontend/di.xml` for full wiring.
 
