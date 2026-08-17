@@ -127,6 +127,12 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Changelog
 
+### 1.2.1
+
+- **Fixed** — the admin panel bundle (`view/adminhtml/web/js/admin-spa.js`) shipped unminified: 869 KB / 25,064 lines instead of the 490 KB / 41 lines the documented build command actually produces. Provenance could not be verified. Rebuilt from source.
+- **Fixed** — the R047 (minimum contribution amount) rule had no form field in the admin panel; its parameters existed in the schema but could only be set via the API. Also: displaying a merchant category name printed the anti-injection delimiters (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) around it instead of stripping them for display.
+- **Fixed — documentation** — `USER_GUIDE.md`/`USER_GUIDE_ES.md` described five of the six rows in the merchant rule-configuration table with the wrong rule: told the merchant to configure `R007` to restrict categories (R007 actually blocks cross-merchant abuse signals) and `R005` as an amount cap (R005 actually blocks revoked agents). Corrected against the real rule definitions; `R030`/`R032`/`R035`/`R042` added so the guide answers what merchants actually ask. Also removed the false claim that R001/R007 are "always evaluated locally" (the offline evaluator resolves nine different rules, none of them R001 or R007) and the false claim that R007 controls catalog visibility via a `trusteed_agentic_visible` attribute (the real attribute is `is_agentic_visible`, unrelated to any CEL rule).
+
 ### 1.2.0
 
 - **Security fix** — the agent token verifier treated `exp`, `iat` and `nonce` as optional. Both time checks hung off `> 0`, so a token that simply omitted the claim skipped expiry and max-age entirely: it was valid forever. All three claims are now mandatory (`nonce` 16–64 chars), matching the canonical token schema and the other platform connectors.

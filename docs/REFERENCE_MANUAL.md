@@ -75,30 +75,30 @@ All paths are under `Stores → Configuration → Trusteed → Agentic Commerce`
 
 ### Group: API Connection (`trusteed_general/general`)
 
-| Field | Config Path | Type | Scope | Description |
-|-------|------------|------|-------|-------------|
-| API Base URL | `trusteed_general/general/api_base_url` | text | Global | Trusteed API root (must be HTTPS). Default: `https://api.trusteed.xyz` |
-| Merchant ID | `trusteed_general/general/merchant_id` | text | Global | Assigned by Trusteed at account creation |
-| Integration Token | `trusteed_general/general/integration_token` | obscure | Global | Bearer token for outbound API calls. Stored encrypted via `Magento\Config\Model\Config\Backend\Encrypted` |
-| Webhook Secret | `trusteed_general/general/webhook_secret` | obscure | Global | HMAC-SHA256 secret for signing webhook deliveries. Stored encrypted |
-| Internal HMAC Secret | `trusteed_general/general/internal_hmac_secret` | obscure | Global | Signs internal heartbeat calls (`X-Internal-Auth` header). Must match `INTERNAL_API_SECRET` in the Trusteed API env |
-| Webhook Secret Version | `trusteed_general/general/webhook_secret_version` | text | Global | Increment when rotating the webhook secret. Used in `X-Trusteed-Secret-Version` header |
-| Connection ID | `trusteed_general/general/connection_id` | text | Website | Assigned by Trusteed after connecting. Identifies this store in webhook delivery |
+| Field                  | Config Path                                       | Type    | Scope   | Description                                                                                                         |
+| ---------------------- | ------------------------------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| API Base URL           | `trusteed_general/general/api_base_url`           | text    | Global  | Trusteed API root (must be HTTPS). Default: `https://api.trusteed.xyz`                                              |
+| Merchant ID            | `trusteed_general/general/merchant_id`            | text    | Global  | Assigned by Trusteed at account creation                                                                            |
+| Integration Token      | `trusteed_general/general/integration_token`      | obscure | Global  | Bearer token for outbound API calls. Stored encrypted via `Magento\Config\Model\Config\Backend\Encrypted`           |
+| Webhook Secret         | `trusteed_general/general/webhook_secret`         | obscure | Global  | HMAC-SHA256 secret for signing webhook deliveries. Stored encrypted                                                 |
+| Internal HMAC Secret   | `trusteed_general/general/internal_hmac_secret`   | obscure | Global  | Signs internal heartbeat calls (`X-Internal-Auth` header). Must match `INTERNAL_API_SECRET` in the Trusteed API env |
+| Webhook Secret Version | `trusteed_general/general/webhook_secret_version` | text    | Global  | Increment when rotating the webhook secret. Used in `X-Trusteed-Secret-Version` header                              |
+| Connection ID          | `trusteed_general/general/connection_id`          | text    | Website | Assigned by Trusteed after connecting. Identifies this store in webhook delivery                                    |
 
 ### Group: Features (`trusteed_general/features`)
 
-| Field | Config Path | Type | Scope | Description |
-|-------|------------|------|-------|-------------|
-| Enable WebMCP Bridge | `trusteed_general/features/webmcp_enabled` | select | Website | Injects storefront JS bridge. Auto-disabled on Hyvä/PWA Studio via `DisableBridgeOnHyva` patch |
-| Enable Phase B | `trusteed_general/features/phase_b_enabled` | select | Global | Reserved for future embedded SPA. Do not enable |
+| Field                | Config Path                                 | Type   | Scope   | Description                                                                                    |
+| -------------------- | ------------------------------------------- | ------ | ------- | ---------------------------------------------------------------------------------------------- |
+| Enable WebMCP Bridge | `trusteed_general/features/webmcp_enabled`  | select | Website | Injects storefront JS bridge. Auto-disabled on Hyvä/PWA Studio via `DisableBridgeOnHyva` patch |
+| Enable Phase B       | `trusteed_general/features/phase_b_enabled` | select | Global  | Reserved for future embedded SPA. Do not enable                                                |
 
 ### Enforcement paths (set programmatically by Setup Wizard)
 
-| Config Path | Description |
-|------------|-------------|
-| `trusteed/enforcement/failure_mode` | `observe` or `enforce` |
+| Config Path                            | Description                                         |
+| -------------------------------------- | --------------------------------------------------- |
+| `trusteed/enforcement/failure_mode`    | `observe` or `enforce`                              |
 | `trusteed/enforcement/installation_id` | Installation ID returned by Trusteed API on connect |
-| `trusteed/enforcement/hmac_secret` | HMAC secret for signing `POST /v1/rules/evaluate` |
+| `trusteed/enforcement/hmac_secret`     | HMAC secret for signing `POST /v1/rules/evaluate`   |
 
 ---
 
@@ -109,26 +109,27 @@ All paths are under `Stores → Configuration → Trusteed → Agentic Commerce`
 Reliable delivery outbox for order events. Entries are created by observers and
 drained every minute by the `trusteed_webhook_drain` cron job.
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | int unsigned AUTO_INCREMENT | No | Primary key |
-| `event_id` | varchar(36) UNIQUE | No | UUID v4 event identifier (idempotency key) |
-| `event_type` | varchar(32) | No | `order.created`, `order.fulfilled`, `order.refunded`, `order.payment_failed` |
-| `entity_id` | int unsigned | No | Magento order `entity_id` |
-| `increment_id` | varchar(32) | No | Magento order increment ID (e.g. `000000001`) |
-| `composite_id` | varchar(64) | No | Composite ID in format `MAG:<increment_id>` |
-| `store_view_code` | varchar(32) | No | Store view code at time of event |
-| `payload` | text | No | Serialized order payload (JSON) |
-| `status` | varchar(16) | No | `pending`, `delivered`, `dead` |
-| `retry_count` | int unsigned | No | Delivery attempt count. Default: 0 |
-| `secret_version` | int unsigned | No | Webhook secret version at time of enqueue |
-| `next_attempt_at` | timestamp | Yes | Earliest eligible delivery time (exponential backoff). NULL = eligible immediately |
-| `locked_until` | timestamp | Yes | Lease lock expiry (worker lease mechanism) |
-| `locked_by` | varchar(64) | Yes | Process identifier holding the lease |
-| `created_at` | timestamp | No | Entry creation time |
-| `updated_at` | timestamp | No | Last modification time (auto-updated) |
+| Column            | Type                        | Nullable | Description                                                                        |
+| ----------------- | --------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `id`              | int unsigned AUTO_INCREMENT | No       | Primary key                                                                        |
+| `event_id`        | varchar(36) UNIQUE          | No       | UUID v4 event identifier (idempotency key)                                         |
+| `event_type`      | varchar(32)                 | No       | `order.created`, `order.fulfilled`, `order.refunded`, `order.payment_failed`       |
+| `entity_id`       | int unsigned                | No       | Magento order `entity_id`                                                          |
+| `increment_id`    | varchar(32)                 | No       | Magento order increment ID (e.g. `000000001`)                                      |
+| `composite_id`    | varchar(64)                 | No       | Composite ID in format `MAG:<increment_id>`                                        |
+| `store_view_code` | varchar(32)                 | No       | Store view code at time of event                                                   |
+| `payload`         | text                        | No       | Serialized order payload (JSON)                                                    |
+| `status`          | varchar(16)                 | No       | `pending`, `delivered`, `dead`                                                     |
+| `retry_count`     | int unsigned                | No       | Delivery attempt count. Default: 0                                                 |
+| `secret_version`  | int unsigned                | No       | Webhook secret version at time of enqueue                                          |
+| `next_attempt_at` | timestamp                   | Yes      | Earliest eligible delivery time (exponential backoff). NULL = eligible immediately |
+| `locked_until`    | timestamp                   | Yes      | Lease lock expiry (worker lease mechanism)                                         |
+| `locked_by`       | varchar(64)                 | Yes      | Process identifier holding the lease                                               |
+| `created_at`      | timestamp                   | No       | Entry creation time                                                                |
+| `updated_at`      | timestamp                   | No       | Last modification time (auto-updated)                                              |
 
 **Indexes:**
+
 - `TRUSTEED_WEBHOOK_OUTBOX_EVENT_ID` (UNIQUE) on `event_id`
 - `TRUSTEED_WEBHOOK_OUTBOX_STATUS_CREATED_AT` on `(status, created_at)`
 - `TRUSTEED_WEBHOOK_OUTBOX_LOCKED_UNTIL` on `locked_until`
@@ -136,29 +137,29 @@ drained every minute by the `trusteed_webhook_drain` cron job.
 
 ### Columns added to `sales_order`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `trusteed_receipt_uri` | varchar(1024) nullable | TrustReceipt URI. Immutable once set |
-| `trusteed_receipt_status` | varchar(16) nullable | `PENDING`, `ISSUED`, `VERIFIED` |
+| Column                    | Type                   | Description                          |
+| ------------------------- | ---------------------- | ------------------------------------ |
+| `trusteed_receipt_uri`    | varchar(1024) nullable | TrustReceipt URI. Immutable once set |
+| `trusteed_receipt_status` | varchar(16) nullable   | `PENDING`, `ISSUED`, `VERIFIED`      |
 
 ---
 
 ## 4. Events and Observers
 
-| Magento Event | Observer Class | Purpose |
-|---------------|---------------|---------|
-| `sales_order_save_after` | `SalesOrderSaveAfter` | Enqueues `order.created`, `order.fulfilled`, `order.refunded`, `order.cancelled` events to the outbox based on order state transitions |
-| `sales_order_creditmemo_save_after` | `SalesCreditmemoSaveAfter` | Enqueues `order.refunded` for partial refunds (full refunds handled via STATE_CLOSED in `sales_order_save_after`) |
-| `sales_model_service_quote_submit_before` | `CheckoutSubmitBefore` | Pre-order enforcement: verifies agent token, calls `/v1/rules/evaluate`, applies HITL freeze (R043) or throws `LocalizedException` on BLOCK |
-| `sales_order_payment_failed` | `SalesOrderPaymentFailedObserver` | Enqueues `order.payment_failed` signal for R011 checkout failure tracking |
-| `sales_order_shipment_save_after` | `ShipmentSaveAfter` | Enqueues `order.fulfilled` when a shipment is created |
+| Magento Event                             | Observer Class                    | Purpose                                                                                                                                     |
+| ----------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sales_order_save_after`                  | `SalesOrderSaveAfter`             | Enqueues `order.created`, `order.fulfilled`, `order.refunded`, `order.cancelled` events to the outbox based on order state transitions      |
+| `sales_order_creditmemo_save_after`       | `SalesCreditmemoSaveAfter`        | Enqueues `order.refunded` for partial refunds (full refunds handled via STATE_CLOSED in `sales_order_save_after`)                           |
+| `sales_model_service_quote_submit_before` | `CheckoutSubmitBefore`            | Pre-order enforcement: verifies agent token, calls `/v1/rules/evaluate`, applies HITL freeze (R043) or throws `LocalizedException` on BLOCK |
+| `sales_order_payment_failed`              | `SalesOrderPaymentFailedObserver` | Enqueues `order.payment_failed` signal for R011 checkout failure tracking                                                                   |
+| `sales_order_shipment_save_after`         | `ShipmentSaveAfter`               | Enqueues `order.fulfilled` when a shipment is created                                                                                       |
 
 ### Plugin
 
-| Plugin Class | Target | Method | Type | Purpose |
-|-------------|--------|--------|------|---------|
-| `OrderRepositoryPlugin` | `Magento\Sales\Api\OrderRepositoryInterface` | `get` | after | Loads `trusteed_receipt_uri` and `trusteed_receipt_status` extension attributes on order load |
-| `OrderExtensionAttribute` | `Magento\Sales\Api\OrderRepositoryInterface` | `save` | around | Persists extension attributes on order save |
+| Plugin Class              | Target                                       | Method | Type   | Purpose                                                                                       |
+| ------------------------- | -------------------------------------------- | ------ | ------ | --------------------------------------------------------------------------------------------- |
+| `OrderRepositoryPlugin`   | `Magento\Sales\Api\OrderRepositoryInterface` | `get`  | after  | Loads `trusteed_receipt_uri` and `trusteed_receipt_status` extension attributes on order load |
+| `OrderExtensionAttribute` | `Magento\Sales\Api\OrderRepositoryInterface` | `save` | around | Persists extension attributes on order save                                                   |
 
 ---
 
@@ -176,7 +177,7 @@ Processes the `trusteed_webhook_outbox` table:
 2. Acquires a lease (`locked_by = <worker-id>`, `locked_until = NOW() + 60s`)
 3. POSTs payload to `POST /v1/webhooks/receive` with signature `X-Trusteed-Signature: t=<ts>,s=<hmac-sha256>`
 4. On success (2xx): sets `status = 'delivered'`
-5. On failure: increments `retry_count`, sets exponential `next_attempt_at` (2^retry_count * 60s, max 24h)
+5. On failure: increments `retry_count`, sets exponential `next_attempt_at` (2^retry_count \* 60s, max 24h)
 6. After 10 retries: sets `status = 'dead'`
 
 ### `trusteed_lag_heartbeat`
@@ -191,10 +192,10 @@ delivery lag.
 
 ## 6. ACL Resources
 
-| Resource ID | Title | Notes |
-|------------|-------|-------|
-| `Trusteed_AgenticCommerce::config` | Trusteed Agentic Commerce | Grants access to all Trusteed admin pages |
-| `Trusteed_AgenticCommerce::token` | Trusteed Embed Token Relay | Grants access to the token issue controller used by the Setup Wizard |
+| Resource ID                        | Title                      | Notes                                                                |
+| ---------------------------------- | -------------------------- | -------------------------------------------------------------------- |
+| `Trusteed_AgenticCommerce::config` | Trusteed Agentic Commerce  | Grants access to all Trusteed admin pages                            |
+| `Trusteed_AgenticCommerce::token`  | Trusteed Embed Token Relay | Grants access to the token issue controller used by the Setup Wizard |
 
 To grant a custom role access to Trusteed pages, add `Trusteed_AgenticCommerce::config`
 in **System → Permissions → User Roles → [Role] → Role Resources**.
@@ -205,21 +206,21 @@ in **System → Permissions → User Roles → [Role] → Role Resources**.
 
 **Front name:** `trusteed` (defined in `etc/adminhtml/routes.xml`)
 
-| URL Pattern | Controller | Description |
-|------------|-----------|-------------|
-| `/trusteed/dashboard/index` | `Controller/Adminhtml/Dashboard/Index` | Dashboard SPA host |
-| `/trusteed/health/index` | `Controller/Adminhtml/Health/Index` | Store health SPA |
-| `/trusteed/ventas/index` | `Controller/Adminhtml/Ventas/Index` | Agent sales SPA |
-| `/trusteed/agentes/index` | `Controller/Adminhtml/Agentes/Index` | Agent directory SPA |
-| `/trusteed/reglas/index` | `Controller/Adminhtml/Reglas/Index` | Rules SPA |
-| `/trusteed/pagos/index` | `Controller/Adminhtml/Pagos/Index` | Payment methods SPA |
-| `/trusteed/seguridad/index` | `Controller/Adminhtml/Seguridad/Index` | Security SPA |
-| `/trusteed/ajustes/index` | `Controller/Adminhtml/Ajustes/Index` | Settings SPA |
-| `/trusteed/setup/wizard` | `Controller/Adminhtml/Setup/Wizard` | Setup Wizard |
-| `/trusteed/setup/save` | `Controller/Adminhtml/Setup/Save` | Setup Wizard save action |
-| `/trusteed/setup/introspecttoken` | `Controller/Adminhtml/Setup/IntrospectToken` | Token introspection AJAX |
-| `/trusteed/token/issue` | `Controller/Adminhtml/Token/Issue` | Issues embed token (POST) |
-| `/trusteed/support/submit` | `Controller/Adminhtml/Support/Submit` | Support form submit |
+| URL Pattern                       | Controller                                   | Description               |
+| --------------------------------- | -------------------------------------------- | ------------------------- |
+| `/trusteed/dashboard/index`       | `Controller/Adminhtml/Dashboard/Index`       | Dashboard SPA host        |
+| `/trusteed/health/index`          | `Controller/Adminhtml/Health/Index`          | Store health SPA          |
+| `/trusteed/ventas/index`          | `Controller/Adminhtml/Ventas/Index`          | Agent sales SPA           |
+| `/trusteed/agentes/index`         | `Controller/Adminhtml/Agentes/Index`         | Agent directory SPA       |
+| `/trusteed/reglas/index`          | `Controller/Adminhtml/Reglas/Index`          | Rules SPA                 |
+| `/trusteed/pagos/index`           | `Controller/Adminhtml/Pagos/Index`           | Payment methods SPA       |
+| `/trusteed/seguridad/index`       | `Controller/Adminhtml/Seguridad/Index`       | Security SPA              |
+| `/trusteed/ajustes/index`         | `Controller/Adminhtml/Ajustes/Index`         | Settings SPA              |
+| `/trusteed/setup/wizard`          | `Controller/Adminhtml/Setup/Wizard`          | Setup Wizard              |
+| `/trusteed/setup/save`            | `Controller/Adminhtml/Setup/Save`            | Setup Wizard save action  |
+| `/trusteed/setup/introspecttoken` | `Controller/Adminhtml/Setup/IntrospectToken` | Token introspection AJAX  |
+| `/trusteed/token/issue`           | `Controller/Adminhtml/Token/Issue`           | Issues embed token (POST) |
+| `/trusteed/support/submit`        | `Controller/Adminhtml/Support/Submit`        | Support form submit       |
 
 ---
 
@@ -227,10 +228,10 @@ in **System → Permissions → User Roles → [Role] → Role Resources**.
 
 **Front name:** `trusteed` (defined in `etc/frontend/routes.xml`)
 
-| URL Pattern | Controller | Description |
-|------------|-----------|-------------|
-| `/trusteed/products/index` | `Controller/Products/Index` | NLWeb product search endpoint (proxied) |
-| `/trusteed/wellknown/mcpmanifest` | `Controller/Wellknown/McpManifest` | Returns the MCP manifest JSON |
+| URL Pattern                       | Controller                         | Description                             |
+| --------------------------------- | ---------------------------------- | --------------------------------------- |
+| `/trusteed/products/index`        | `Controller/Products/Index`        | NLWeb product search endpoint (proxied) |
+| `/trusteed/wellknown/mcpmanifest` | `Controller/Wellknown/McpManifest` | Returns the MCP manifest JSON           |
 
 The `/.well-known/mcp.json` canonical URL is handled by `Router/WellKnownRouter.php`,
 which maps `/.well-known/mcp-manifest.json` to `trusteed/wellknown/mcpmanifest`.
@@ -245,17 +246,19 @@ which maps `/.well-known/mcp-manifest.json` to `trusteed/wellknown/mcpmanifest`.
 
 HTTP client for the Trusteed rule evaluation API.
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `evaluate(array $payload): string` | `ALLOW` \| `BLOCK` \| `ESCALATE` | Calls `POST /v1/rules/evaluate`. On transport error, returns `BLOCK` (enforce mode) or `ALLOW` (observe mode) |
-| `getDidResolver(string $merchantId): array` | `array<{did, publicKeyJwk}>` | Fetches agent DID → public key map from the snapshot. Empty array on failure |
-| `getRules(string $merchantId): array` | `array<{ruleCode, params, mode, enabled}>` | Fetches rule configuration from the snapshot |
-| `consumeNonce(string $agentDid, string $jti, int $exp): array` | `{outcome, reason, httpStatus}` | Registers a single-use nonce for replay protection |
+| Method                                                         | Returns                                    | Description                                                                                                   |
+| -------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `evaluate(array $payload): string`                             | `ALLOW` \| `BLOCK` \| `ESCALATE`           | Calls `POST /v1/rules/evaluate`. On transport error, returns `BLOCK` (enforce mode) or `ALLOW` (observe mode) |
+| `getDidResolver(string $merchantId): array`                    | `array<{did, publicKeyJwk}>`               | Fetches agent DID → public key map from the snapshot. Empty array on failure                                  |
+| `getRules(string $merchantId): array`                          | `array<{ruleCode, params, mode, enabled}>` | Fetches rule configuration from the snapshot                                                                  |
+| `consumeNonce(string $agentDid, string $jti, int $exp): array` | `{outcome, reason, httpStatus}`            | Registers a single-use nonce for replay protection                                                            |
 
 **Signature format** (Stripe-style):
+
 ```
 X-Trusteed-Signature: t=<unix-timestamp>,s=<hmac-sha256-hex>
 ```
+
 where the HMAC is computed over `"<timestamp>.<rawBody>"`.
 
 ### `AgentTokenVerifier`
@@ -331,10 +334,10 @@ When `evaluate()` returns `ESCALATE`:
 
 ### Failure mode
 
-| Config value | Transport error behavior |
-|-------------|--------------------------|
-| `enforce` | Returns `BLOCK` — agent order is rejected |
-| `observe` | Returns `ALLOW` — agent order proceeds, violation logged |
+| Config value | Transport error behavior                                 |
+| ------------ | -------------------------------------------------------- |
+| `enforce`    | Returns `BLOCK` — agent order is rejected                |
+| `observe`    | Returns `ALLOW` — agent order proceeds, violation logged |
 
 ---
 
@@ -374,14 +377,14 @@ HMAC input: `"<timestamp>.<rawBody>"`
 
 ### Retry schedule
 
-| Attempt | Wait before retry |
-|---------|------------------|
-| 1 | 60 seconds |
-| 2 | 2 minutes |
-| 3 | 4 minutes |
-| 4 | 8 minutes |
-| ... | Doubles each time |
-| 10 | Status set to `dead` |
+| Attempt | Wait before retry    |
+| ------- | -------------------- |
+| 1       | 60 seconds           |
+| 2       | 2 minutes            |
+| 3       | 4 minutes            |
+| 4       | 8 minutes            |
+| ...     | Doubles each time    |
+| 10      | Status set to `dead` |
 
 Dead entries are not retried. Use the Trusteed dashboard to replay dead webhooks
 manually if needed.
@@ -394,23 +397,23 @@ Agent tokens are JWTs signed with Ed25519 (algorithm `EdDSA`, curve `Ed25519`).
 
 ### Token claims
 
-| Claim | Type | Description |
-|-------|------|-------------|
-| `iss` | string | Agent DID (e.g. `did:web:claude.ai`) |
-| `sub` | string | Customer identifier |
-| `aud` | string | Merchant ID |
-| `exp` | unix timestamp | Token expiry (max 300 seconds from iat) |
-| `iat` | unix timestamp | Issued at |
-| `jti` | string | Single-use nonce (base64url, 16–128 chars) |
-| `platform` | string | Agent platform (`claude`, `chatgpt`, etc.) |
+| Claim      | Type           | Description                                |
+| ---------- | -------------- | ------------------------------------------ |
+| `iss`      | string         | Agent DID (e.g. `did:web:claude.ai`)       |
+| `sub`      | string         | Customer identifier                        |
+| `aud`      | string         | Merchant ID                                |
+| `exp`      | unix timestamp | Token expiry (max 300 seconds from iat)    |
+| `iat`      | unix timestamp | Issued at                                  |
+| `jti`      | string         | Single-use nonce (base64url, 16–128 chars) |
+| `platform` | string         | Agent platform (`claude`, `chatgpt`, etc.) |
 
 ### Verification outcomes
 
-| Outcome | Meaning |
-|---------|---------|
-| `VERIFIED` | Signature valid, claims valid, nonce not replayed |
-| `INVALID` | Signature invalid, token expired, or nonce already used |
-| `UNVERIFIED` | No token present or token could not be parsed |
+| Outcome      | Meaning                                                 |
+| ------------ | ------------------------------------------------------- |
+| `VERIFIED`   | Signature valid, claims valid, nonce not replayed       |
+| `INVALID`    | Signature invalid, token expired, or nonce already used |
+| `UNVERIFIED` | No token present or token could not be parsed           |
 
 ### Public key resolution
 
@@ -456,9 +459,9 @@ with an Ed25519 key provisioned by Trusteed.
 
 The module adds extension attributes to `Magento\Sales\Api\Data\OrderInterface`:
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `trusteed_receipt_uri` | string | TrustReceipt URI |
+| Attribute                 | Type   | Description                                      |
+| ------------------------- | ------ | ------------------------------------------------ |
+| `trusteed_receipt_uri`    | string | TrustReceipt URI                                 |
 | `trusteed_receipt_status` | string | Receipt status (`PENDING`, `ISSUED`, `VERIFIED`) |
 
 Defined in `etc/extension_attributes.xml`. Loaded/saved via
@@ -471,14 +474,14 @@ Defined in `etc/extension_attributes.xml`. Loaded/saved via
 The module makes outbound HTTPS calls to the Trusteed API. All calls require
 HTTPS and are validated by `ApiBaseUrlValidator` (SSRF guard).
 
-| Method | Path | When | Auth |
-|--------|------|------|------|
-| `POST` | `/v1/rules/evaluate` | On every agent checkout attempt | `X-Trusteed-Signature` (HMAC) |
-| `GET` | `/v1/rules/snapshot/<merchantId>` | Per-request cache miss | `X-Trusteed-Signature` (HMAC) |
-| `POST` | `/v1/agent-events/nonce-consume` | After token verification | `X-Trusteed-Signature` (HMAC) |
-| `POST` | `/v1/webhooks/receive` | Webhook delivery | `X-Trusteed-Signature` (HMAC) |
-| `POST` | `/v1/webhooks/heartbeat` | Every minute (lag monitor) | `X-Trusteed-Signature` (HMAC) |
-| `POST` | `/v1/magento/connect` | Setup Wizard connect | `X-Internal-Auth` (HMAC) |
+| Method | Path                              | When                            | Auth                          |
+| ------ | --------------------------------- | ------------------------------- | ----------------------------- |
+| `POST` | `/v1/rules/evaluate`              | On every agent checkout attempt | `X-Trusteed-Signature` (HMAC) |
+| `GET`  | `/v1/rules/snapshot/<merchantId>` | Per-request cache miss          | `X-Trusteed-Signature` (HMAC) |
+| `POST` | `/v1/agent-events/nonce-consume`  | After token verification        | `X-Trusteed-Signature` (HMAC) |
+| `POST` | `/v1/webhooks/receive`            | Webhook delivery                | `X-Trusteed-Signature` (HMAC) |
+| `POST` | `/v1/webhooks/heartbeat`          | Every minute (lag monitor)      | `X-Trusteed-Signature` (HMAC) |
+| `POST` | `/v1/magento/connect`             | Setup Wizard connect            | `X-Internal-Auth` (HMAC)      |
 
 **Timeout:** 5 seconds for all calls. TLS peer verification is always enabled
 (`CURLOPT_SSL_VERIFYPEER=true`, `CURLOPT_SSL_VERIFYHOST=2`). HTTP redirects are
@@ -498,6 +501,7 @@ payload is sent.
 ### TLS hardening
 
 All outbound curl calls enforce:
+
 - HTTPS scheme only (`CURLPROTO_HTTPS`)
 - TLS peer and host verification
 - No redirect following
@@ -512,6 +516,7 @@ Stripe-style format: `t=<timestamp>,s=<hex>`. The signing input is
 
 The `webhook_secret_version` config field is included in every delivery header.
 Rotate secrets by:
+
 1. Updating the secret in Trusteed dashboard
 2. Pasting the new secret into Magento config
 3. Incrementing `Webhook Secret Version`
@@ -528,12 +533,13 @@ indicates replay — the token is treated as `INVALID`.
 
 ## 17. Console Commands
 
-| Command | Class | Description |
-|---------|-------|-------------|
+| Command                    | Class                                | Description                                                                                      |
+| -------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | `trusteed:webserver:check` | `Console/Command/CheckWebserver.php` | Validates that the `/.well-known/mcp-manifest.json` endpoint is reachable from the server itself |
-| `trusteed:webhook:status` | `Console/Command/WebhookStatus.php` | Prints outbox statistics: pending, delivered, dead counts and oldest pending entry age |
+| `trusteed:webhook:status`  | `Console/Command/WebhookStatus.php`  | Prints outbox statistics: pending, delivered, dead counts and oldest pending entry age           |
 
 Usage:
+
 ```bash
 bin/magento trusteed:webserver:check
 bin/magento trusteed:webhook:status
@@ -543,11 +549,11 @@ bin/magento trusteed:webhook:status
 
 ## 18. Data Patches
 
-| Patch Class | Purpose | Idempotent |
-|-------------|---------|-----------|
-| `AddAgenticVisibleAttribute` | Adds `trusteed_agentic_visible` product EAV attribute (boolean, used by rule R007 to gate catalog visibility to agents) | Yes |
-| `DisableBridgeOnHyva` | Detects Hyvä or PWA Studio themes and sets `trusteed_general/features/webmcp_enabled = 0` to prevent storefront JS conflicts | Yes |
-| `EmitInstallEvent` | Calls `POST /v1/magento/install-event` to log the installation timestamp and Magento version in the Trusteed dashboard | Yes |
+| Patch Class                  | Purpose                                                                                                                                                                                                                                  | Idempotent |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `AddAgenticVisibleAttribute` | Adds `is_agentic_visible` product EAV attribute (boolean, default 1). Spec-050 FR-A-013 catalog filtering only — `Controller/Products/Index.php` serves agents just the products flagged `1`. It is **not** a rule: no CEL rule reads it | Yes        |
+| `DisableBridgeOnHyva`        | Detects Hyvä or PWA Studio themes and sets `trusteed_general/features/webmcp_enabled = 0` to prevent storefront JS conflicts                                                                                                             | Yes        |
+| `EmitInstallEvent`           | Calls `POST /v1/magento/install-event` to log the installation timestamp and Magento version in the Trusteed dashboard                                                                                                                   | Yes        |
 
 ---
 
@@ -579,14 +585,15 @@ See `etc/di.xml` and `etc/frontend/di.xml` for full wiring.
 All module log entries are prefixed with `[trusteed]` and written to
 `var/log/system.log` (Magento default logger) at the following levels:
 
-| Level | Example messages |
-|-------|----------------|
-| `debug` | Snapshot cache hit, nonce consume ACCEPTED |
-| `info` | Outbox enqueue success, webhook delivered |
+| Level     | Example messages                                                                     |
+| --------- | ------------------------------------------------------------------------------------ |
+| `debug`   | Snapshot cache hit, nonce consume ACCEPTED                                           |
+| `info`    | Outbox enqueue success, webhook delivered                                            |
 | `warning` | API timeout, SSRF guard rejection, HMAC verification mismatch, evaluate HTTP non-2xx |
-| `error` | Fatal configuration missing, outbox drain failure after max retries |
+| `error`   | Fatal configuration missing, outbox drain failure after max retries                  |
 
 To enable debug logging:
+
 ```bash
 bin/magento config:set dev/debug/debug_logging 1
 ```

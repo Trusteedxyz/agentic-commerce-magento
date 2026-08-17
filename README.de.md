@@ -127,6 +127,12 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Änderungsprotokoll
 
+### 1.2.1
+
+- **Behoben** — das Admin-Panel-Bundle (`view/adminhtml/web/js/admin-spa.js`) wurde unminifiziert ausgeliefert: 869 KB / 25.064 Zeilen statt der 490 KB / 41 Zeilen, die der dokumentierte Build-Befehl tatsächlich erzeugt. Die Herkunft ließ sich nicht verifizieren. Neu aus der Quelle gebaut.
+- **Behoben** — die Regel R047 (Mindestbeitrag) hatte kein Formularfeld im Admin-Panel; ihre Parameter existierten im Schema, konnten aber nur über die API gesetzt werden. Ebenfalls: Beim Anzeigen eines Händler-Kategorienamens wurden die Anti-Injection-Trennzeichen (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) mit ausgegeben, statt sie für die Darstellung zu entfernen.
+- **Behoben — Dokumentation** — `USER_GUIDE.md`/`USER_GUIDE_ES.md` beschrieben fünf von sechs Zeilen der Regel-Konfigurationstabelle mit der falschen Regel: Händlern wurde gesagt, `R007` zur Kategorie-Einschränkung zu konfigurieren (R007 blockiert tatsächlich Cross-Merchant-Missbrauchssignale) und `R005` als Betragsobergrenze (R005 blockiert tatsächlich widerrufene Agenten). Gegen die echten Regeldefinitionen korrigiert; `R030`/`R032`/`R035`/`R042` ergänzt, damit der Leitfaden beantwortet, was Händler tatsächlich fragen. Ebenfalls entfernt: die falsche Behauptung, R001/R007 würden "immer lokal ausgewertet" (der Offline-Evaluator löst neun andere Regeln auf, keine davon R001 oder R007) und die falsche Behauptung, R007 steuere die Katalogsichtbarkeit über ein Attribut `trusteed_agentic_visible` (das echte Attribut heißt `is_agentic_visible` und hat nichts mit einer CEL-Regel zu tun).
+
 ### 1.2.0
 
 - **Sicherheitsfix** — der Agent-Token-Verifizierer behandelte `exp`, `iat` und `nonce` als optional. Beide Zeitprüfungen hingen an `> 0`, sodass ein Token, das den Claim schlicht wegließ, Ablauf und Höchstalter vollständig umging: es war für immer gültig. Alle drei Claims sind jetzt verpflichtend (`nonce` 16–64 Zeichen), passend zum kanonischen Token-Schema und zu den übrigen Konnektoren.

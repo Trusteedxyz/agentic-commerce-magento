@@ -52,14 +52,14 @@ Customer → AI Agent → MCP Discovery → Your Magento Store
 
 **Key concepts:**
 
-| Term | Meaning |
-|------|---------|
-| **Agent** | An AI assistant (Claude, ChatGPT, etc.) acting on behalf of a customer |
-| **MCP** | Model Context Protocol — the open standard agents use to interact with stores |
-| **Trust Receipt** | A cryptographically signed proof of each agent transaction (Ed25519) |
-| **Rule** | A merchant-defined constraint (max order value, allowed agents, HITL threshold) |
-| **HITL** | Human-in-the-Loop — orders above a threshold require your manual approval |
-| **Enforcement mode** | `observe` = log only; `enforce` = block orders that violate rules |
+| Term                 | Meaning                                                                         |
+| -------------------- | ------------------------------------------------------------------------------- |
+| **Agent**            | An AI assistant (Claude, ChatGPT, etc.) acting on behalf of a customer          |
+| **MCP**              | Model Context Protocol — the open standard agents use to interact with stores   |
+| **Trust Receipt**    | A cryptographically signed proof of each agent transaction (Ed25519)            |
+| **Rule**             | A merchant-defined constraint (max order value, allowed agents, HITL threshold) |
+| **HITL**             | Human-in-the-Loop — orders above a threshold require your manual approval       |
+| **Enforcement mode** | `observe` = log only; `enforce` = block orders that violate rules               |
 
 ---
 
@@ -75,11 +75,11 @@ The dashboard is your starting point. It shows:
 
 ### Connection banner states
 
-| Banner | Meaning |
-|--------|---------|
-| Green "Your store is connected" | Store is live and receiving agent traffic |
-| Yellow "Connection pending" | Setup Wizard not completed — go to Trusteed → Configuración |
-| Red "Store disconnected" | API credentials invalid or Trusteed API unreachable |
+| Banner                          | Meaning                                                     |
+| ------------------------------- | ----------------------------------------------------------- |
+| Green "Your store is connected" | Store is live and receiving agent traffic                   |
+| Yellow "Connection pending"     | Setup Wizard not completed — go to Trusteed → Configuración |
+| Red "Store disconnected"        | API credentials invalid or Trusteed API unreachable         |
 
 ---
 
@@ -92,6 +92,7 @@ This section shows all orders placed by AI agents in your store. It has four tab
 ### My orders tab
 
 Lists agent-placed orders with:
+
 - Order number (links to standard Magento order view)
 - Agent identity (AI platform + customer)
 - Order total
@@ -127,6 +128,7 @@ Manage which AI agents are allowed to purchase in your store.
 ### Agent list
 
 Shows all agents that have accessed your store, with:
+
 - Agent DID (decentralized identifier)
 - Platform (Claude, ChatGPT, etc.)
 - First seen / last seen dates
@@ -141,11 +143,11 @@ are not affected.
 
 ### Agent identity levels
 
-| Level | Description |
-|-------|-------------|
-| `verified` | Agent presented a valid cryptographic identity token |
+| Level        | Description                                                               |
+| ------------ | ------------------------------------------------------------------------- |
+| `verified`   | Agent presented a valid cryptographic identity token                      |
 | `unverified` | Agent identified itself but token could not be cryptographically verified |
-| `anonymous` | No agent identity presented |
+| `anonymous`  | No agent identity presented                                               |
 
 You can configure minimum trust levels in **Mis Reglas**.
 
@@ -160,14 +162,23 @@ be in `observe` mode (log only) or `enforce` mode (block violations).
 
 ### Common rules
 
-| Rule Code | Name | Description |
-|-----------|------|-------------|
-| R001 | Agent identity required | Rejects anonymous agents |
-| R005 | Max order amount | Blocks orders above a configured threshold |
-| R007 | Allowed product categories | Restricts which categories agents can purchase |
-| R011 | Cart abandonment guard | Flags suspicious cart-abandon patterns |
-| R022 | Retry abuse guard | Limits order retry frequency per agent |
-| R043 | HITL threshold | Sends orders above a value for human review instead of auto-approving |
+| Rule Code | Name                             | Description                                                                         |
+| --------- | -------------------------------- | ----------------------------------------------------------------------------------- |
+| R001      | Verified Agent Required          | Requires a cryptographically identified buying agent; rejects anonymous agents      |
+| R005      | Revoked Agent Block              | Blocks agents that have been revoked or suspended                                   |
+| R007      | Cross-Merchant Abuse Signal      | Blocks agents carrying an abuse signal raised across merchants                      |
+| R011      | Repeat Failed Checkout           | Blocks agents with too many recent failed checkout attempts                         |
+| R022      | Payment Rail Restriction         | Restricts which payment methods or rails agent checkout may use                     |
+| R030      | Simple Controls                  | Basic max-amount and allowed-country controls in a single rule                      |
+| R032      | Category Blocklist               | Blocks agent purchases in categories you list (alcohol, tobacco, weapons, adult)    |
+| R035      | Max Order Value                  | Caps the total amount of an agent order                                             |
+| R042      | Max Orders Per Agent Per Day     | Caps successful orders per agent per 24 h — complements R011, which counts failures |
+| R043      | Agent Checkout Approval Required | Requires your manual approval for **every** agent order via the HITL flow           |
+
+Codes and names above are the canonical ones. A rule code means the same thing on
+every platform, so `R035` is the amount cap everywhere — do not read a code by its
+number. The engine ships **46** rules in total; this table is the subset merchants
+configure most often.
 
 ### Rule modes
 
@@ -215,6 +226,7 @@ The Security page gives you visibility and control over who accesses your store.
 ### Audit log
 
 A chronological record of every agent interaction:
+
 - Timestamp
 - Agent identity
 - Action (browse / add-to-cart / checkout / payment)
@@ -224,6 +236,7 @@ A chronological record of every agent interaction:
 ### Anomaly alerts
 
 Trusteed monitors agent behavior patterns and alerts you when:
+
 - An agent attempts unusually high-value orders
 - The same agent retries a blocked order multiple times
 - An unknown agent platform attempts access
@@ -231,6 +244,7 @@ Trusteed monitors agent behavior patterns and alerts you when:
 ### Webhook status
 
 Shows the health of the webhook delivery pipeline:
+
 - Outbox depth (pending deliveries)
 - Last successful delivery timestamp
 - Delivery error rate
@@ -245,13 +259,21 @@ Shows the health of the webhook delivery pipeline:
 
 Controls what happens when the Trusteed API is temporarily unreachable:
 
-| Mode | Behavior |
-|------|---------|
+| Mode      | Behavior                                                                                                               |
+| --------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `observe` | If the API is down, all orders are allowed through. Violations are logged retroactively. Use in low-risk environments. |
-| `enforce` | If the API is down, all agent orders are blocked. Use in high-value or regulated environments. |
+| `enforce` | If the API is down, all agent orders are blocked. Use in high-value or regulated environments.                         |
 
-Level-1 rules (R001, R007) are always evaluated locally, even when the API is
-unreachable, regardless of this setting.
+When the API is unreachable this module falls back to its bundled offline
+evaluator (`Enforcement/OfflineSafetyValveEvaluator.php`), which decides nine
+rules on its own: **R014** (country dimension only — the cancellation-history
+dimension needs a backend lookup), **R018**, **R019**, **R020**, **R025**,
+**R027**, **R028**, **R029** and **R030**. Those nine keep working under either
+mode above.
+
+Every other rule needs the backend, **including R001 and R007** — under
+`observe` they are skipped, and under `enforce` the order is blocked by the
+setting above rather than evaluated.
 
 ### Payment method order
 
@@ -283,6 +305,7 @@ successful agent order.
 3. Click **Verify**
 
 Results:
+
 - **VERIFIED** — signature is valid, receipt is authentic and untampered
 - **INVALID** — signature does not match; receipt may have been altered
 - **INDETERMINATE** — verification could not complete (e.g., JWKS endpoint unreachable)
@@ -317,10 +340,10 @@ When you ship an order, Trusteed is automatically notified via the webhook outbo
 On the order detail page (**Sales → Orders → [Order]**), a Trust Receipt badge
 shows the receipt status:
 
-| Badge | Meaning |
-|-------|---------|
-| **PENDING** | Order created; receipt not yet issued by Trusteed |
-| **ISSUED** | Receipt issued and URI stored on the order |
+| Badge        | Meaning                                                   |
+| ------------ | --------------------------------------------------------- |
+| **PENDING**  | Order created; receipt not yet issued by Trusteed         |
+| **ISSUED**   | Receipt issued and URI stored on the order                |
 | **VERIFIED** | Receipt has been verified via the Trust Receipts verifier |
 
 The badge links directly to the Trust Receipts → Verify Receipt page with the
@@ -375,7 +398,9 @@ until connectivity is restored.
 
 **Q: Can I limit which products agents can purchase?**
 
-Yes — configure rule **R007 (Allowed product categories)** in **Mis Reglas**.
+Yes — configure rule **R032 (Category Blocklist)** in **Mis Reglas**. It blocks the
+categories you list. (`R007` is a different rule: it blocks agents carrying a
+cross-merchant abuse signal.)
 
 **Q: How are agent payments handled?**
 

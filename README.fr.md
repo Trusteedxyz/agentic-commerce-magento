@@ -127,6 +127,12 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Journal des modifications
 
+### 1.2.1
+
+- **Corrigé** — le bundle du panneau d'administration (`view/adminhtml/web/js/admin-spa.js`) était distribué non minifié : 869 Ko / 25 064 lignes au lieu des 490 Ko / 41 lignes que produit réellement la commande de build documentée. Sa provenance ne pouvait pas être vérifiée. Reconstruit depuis la source.
+- **Corrigé** — la règle R047 (montant minimum de contribution) n'avait pas de champ de formulaire dans le panneau d'administration ; ses paramètres existaient dans le schéma mais ne pouvaient être définis que via l'API. Également : l'affichage du nom d'une catégorie marchande imprimait les délimiteurs anti-injection (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) autour, au lieu de les retirer pour l'affichage.
+- **Corrigé — documentation** — `USER_GUIDE.md`/`USER_GUIDE_ES.md` décrivaient cinq des six lignes du tableau de configuration des règles avec la mauvaise règle : indiquait au marchand de configurer `R007` pour restreindre les catégories (R007 bloque en réalité les signaux d'abus inter-marchands) et `R005` comme plafond de montant (R005 bloque en réalité les agents révoqués). Corrigé par rapport aux définitions réelles des règles ; `R030`/`R032`/`R035`/`R042` ajoutées pour que le guide réponde à ce que les marchands demandent réellement. Retiré également la fausse affirmation que R001/R007 sont "toujours évaluées localement" (l'évaluateur hors ligne résout neuf règles différentes, aucune n'étant R001 ni R007) et la fausse affirmation que R007 contrôle la visibilité du catalogue via un attribut `trusteed_agentic_visible` (l'attribut réel est `is_agentic_visible`, sans rapport avec une quelconque règle CEL).
+
 ### 1.2.0
 
 - **Correctif de sécurité** — le vérificateur de jetons d'agent traitait `exp`, `iat` et `nonce` comme facultatifs. Les deux contrôles temporels dépendaient de `> 0`, si bien qu'un jeton qui omettait simplement le claim échappait entièrement à l'expiration et à la limite d'ancienneté : il restait valable indéfiniment. Les trois claims sont désormais obligatoires (`nonce` de 16 à 64 caractères), conformément au schéma canonique du jeton et aux autres connecteurs.

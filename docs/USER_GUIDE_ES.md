@@ -53,14 +53,14 @@ Cliente → Agente IA → Descubrimiento MCP → Su Tienda Magento
 
 **Conceptos clave:**
 
-| Término | Significado |
-|---------|-------------|
-| **Agente** | Un asistente IA (Claude, ChatGPT, etc.) que actúa en nombre de un cliente |
-| **MCP** | Model Context Protocol — el estándar abierto que los agentes usan para interactuar con tiendas |
-| **Trust Receipt** | Prueba firmada criptográficamente de cada transacción de agente (Ed25519) |
-| **Regla** | Una restricción definida por el comerciante (valor máximo, agentes permitidos, umbral HITL) |
-| **HITL** | Human-in-the-Loop — los pedidos por encima de un umbral requieren su aprobación manual |
-| **Modo de cumplimiento** | `observe` = solo registrar; `enforce` = bloquear pedidos que infrinjan reglas |
+| Término                  | Significado                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------- |
+| **Agente**               | Un asistente IA (Claude, ChatGPT, etc.) que actúa en nombre de un cliente                      |
+| **MCP**                  | Model Context Protocol — el estándar abierto que los agentes usan para interactuar con tiendas |
+| **Trust Receipt**        | Prueba firmada criptográficamente de cada transacción de agente (Ed25519)                      |
+| **Regla**                | Una restricción definida por el comerciante (valor máximo, agentes permitidos, umbral HITL)    |
+| **HITL**                 | Human-in-the-Loop — los pedidos por encima de un umbral requieren su aprobación manual         |
+| **Modo de cumplimiento** | `observe` = solo registrar; `enforce` = bloquear pedidos que infrinjan reglas                  |
 
 ---
 
@@ -76,11 +76,11 @@ El panel es su punto de partida. Muestra:
 
 ### Estados del banner de conexión
 
-| Banner | Significado |
-|--------|-------------|
-| Verde "Your store is connected" | La tienda está activa y recibiendo tráfico de agentes |
-| Amarillo "Connection pending" | El Asistente de Configuración no se ha completado — vaya a Trusteed → Configuración |
-| Rojo "Store disconnected" | Credenciales de API no válidas o API de Trusteed inaccesible |
+| Banner                          | Significado                                                                         |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| Verde "Your store is connected" | La tienda está activa y recibiendo tráfico de agentes                               |
+| Amarillo "Connection pending"   | El Asistente de Configuración no se ha completado — vaya a Trusteed → Configuración |
+| Rojo "Store disconnected"       | Credenciales de API no válidas o API de Trusteed inaccesible                        |
 
 ---
 
@@ -93,6 +93,7 @@ Esta sección muestra todos los pedidos realizados por agentes IA en su tienda. 
 ### Pestaña My orders (Mis pedidos)
 
 Lista los pedidos realizados por agentes con:
+
 - Número de pedido (enlaza a la vista de pedido estándar de Magento)
 - Identidad del agente (plataforma IA + cliente)
 - Total del pedido
@@ -130,6 +131,7 @@ Gestione qué agentes IA tienen permitido comprar en su tienda.
 ### Lista de agentes
 
 Muestra todos los agentes que han accedido a su tienda, con:
+
 - DID del agente (identificador descentralizado)
 - Plataforma (Claude, ChatGPT, etc.)
 - Primera visita / última visita
@@ -144,11 +146,11 @@ pedido. Los pedidos completados existentes no se ven afectados.
 
 ### Niveles de identidad del agente
 
-| Nivel | Descripción |
-|-------|-------------|
-| `verified` | El agente presentó un token de identidad criptográfica válido |
+| Nivel        | Descripción                                                                  |
+| ------------ | ---------------------------------------------------------------------------- |
+| `verified`   | El agente presentó un token de identidad criptográfica válido                |
 | `unverified` | El agente se identificó pero el token no pudo verificarse criptográficamente |
-| `anonymous` | No se presentó identidad de agente |
+| `anonymous`  | No se presentó identidad de agente                                           |
 
 Puede configurar niveles mínimos de confianza en **Mis Reglas**.
 
@@ -163,14 +165,23 @@ Cada regla puede estar en modo `observe` (solo registrar) o `enforce` (bloquear 
 
 ### Reglas comunes
 
-| Código | Nombre | Descripción |
-|--------|--------|-------------|
-| R001 | Identidad de agente requerida | Rechaza agentes anónimos |
-| R005 | Importe máximo de pedido | Bloquea pedidos por encima de un umbral configurado |
-| R007 | Categorías de productos permitidas | Restringe qué categorías pueden comprar los agentes |
-| R011 | Guardia de abandono de carrito | Marca patrones sospechosos de abandono de carrito |
-| R022 | Guardia de abuso de reintentos | Limita la frecuencia de reintentos de pedido por agente |
-| R043 | Umbral HITL | Envía pedidos por encima de un valor para revisión humana en lugar de aprobación automática |
+| Código | Nombre                              | Descripción                                                                                      |
+| ------ | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
+| R001   | Agente verificado obligatorio       | Exige un agente comprador identificado criptográficamente; rechaza agentes anónimos              |
+| R005   | Bloqueo de agente revocado          | Bloquea los agentes revocados o suspendidos                                                      |
+| R007   | Señal de abuso entre comercios      | Bloquea agentes que arrastran una señal de abuso levantada en otros comercios                    |
+| R011   | Checkouts fallidos repetidos        | Bloquea agentes con demasiados intentos de checkout fallidos recientes                           |
+| R022   | Restricción de vía de pago          | Restringe qué métodos o vías de pago admite el checkout de agente                                |
+| R030   | Controles simples                   | Tope de importe y países permitidos, en una sola regla                                           |
+| R032   | Lista de categorías bloqueadas      | Bloquea las compras de agente en las categorías que usted liste (alcohol, tabaco, armas, adulto) |
+| R035   | Importe máximo de pedido            | Limita el importe total de un pedido de agente                                                   |
+| R042   | Máximo de pedidos por agente al día | Limita los pedidos con éxito por agente cada 24 h — complementa a R011, que cuenta los fallos    |
+| R043   | Aprobación de checkout obligatoria  | Exige su aprobación manual para **cada** pedido de agente, vía el flujo HITL                     |
+
+Los códigos y nombres de arriba son los canónicos. Un código significa lo mismo en
+todas las plataformas, así que `R035` es el tope de importe en todas — no deduzca
+una regla por su número. El motor trae **46** reglas en total; esta tabla es el
+subconjunto que los comercios configuran más a menudo.
 
 ### Modos de regla
 
@@ -218,6 +229,7 @@ La página de Seguridad le ofrece visibilidad y control sobre quién accede a su
 ### Registro de auditoría
 
 Un registro cronológico de cada interacción de agente:
+
 - Marca temporal
 - Identidad del agente
 - Acción (navegar / añadir al carrito / pago / cobro)
@@ -227,6 +239,7 @@ Un registro cronológico de cada interacción de agente:
 ### Alertas de anomalías
 
 Trusteed monitoriza los patrones de comportamiento de los agentes y le alerta cuando:
+
 - Un agente intenta pedidos de valor inusualmente alto
 - El mismo agente reintenta un pedido bloqueado múltiples veces
 - Una plataforma de agente desconocida intenta acceder
@@ -234,6 +247,7 @@ Trusteed monitoriza los patrones de comportamiento de los agentes y le alerta cu
 ### Estado de webhooks
 
 Muestra la salud del pipeline de entrega de webhooks:
+
 - Profundidad de la bandeja de salida (entregas pendientes)
 - Marca temporal de la última entrega exitosa
 - Tasa de errores de entrega
@@ -248,13 +262,21 @@ Muestra la salud del pipeline de entrega de webhooks:
 
 Controla qué sucede cuando la API de Trusteed es temporalmente inaccesible:
 
-| Modo | Comportamiento |
-|------|----------------|
+| Modo      | Comportamiento                                                                                                                       |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `observe` | Si la API está caída, todos los pedidos se permiten. Las infracciones se registran retroactivamente. Use en entornos de bajo riesgo. |
-| `enforce` | Si la API está caída, todos los pedidos de agentes se bloquean. Use en entornos de alto valor o regulados. |
+| `enforce` | Si la API está caída, todos los pedidos de agentes se bloquean. Use en entornos de alto valor o regulados.                           |
 
-Las reglas de nivel 1 (R001, R007) siempre se evalúan localmente, incluso cuando
-la API es inaccesible, independientemente de esta configuración.
+Cuando la API es inaccesible, este módulo recurre a su evaluador offline incluido
+(`Enforcement/OfflineSafetyValveEvaluator.php`), que resuelve nueve reglas por sí
+solo: **R014** (solo la dimensión de país — la de historial de cancelaciones
+necesita consultar el backend), **R018**, **R019**, **R020**, **R025**, **R027**,
+**R028**, **R029** y **R030**. Esas nueve siguen funcionando con cualquiera de los
+dos modos de arriba.
+
+El resto de reglas necesita el backend, **incluidas R001 y R007** — con `observe`
+se omiten, y con `enforce` el pedido lo bloquea la configuración de arriba en
+lugar de evaluarse.
 
 ---
 
@@ -282,6 +304,7 @@ cada pedido de agente exitoso.
 3. Haga clic en **Verify**
 
 Resultados:
+
 - **VERIFIED** — la firma es válida; el recibo es auténtico e inalterado
 - **INVALID** — la firma no coincide; el recibo puede haber sido alterado
 - **INDETERMINATE** — la verificación no pudo completarse (p. ej., endpoint JWKS inaccesible)
@@ -317,10 +340,10 @@ a través de la bandeja de salida de webhooks.
 En la página de detalle del pedido (**Ventas → Pedidos → [Pedido]**), una insignia
 de Trust Receipt muestra el estado del recibo:
 
-| Insignia | Significado |
-|----------|-------------|
-| **PENDING** | Pedido creado; recibo aún no emitido por Trusteed |
-| **ISSUED** | Recibo emitido y URI almacenada en el pedido |
+| Insignia     | Significado                                                             |
+| ------------ | ----------------------------------------------------------------------- |
+| **PENDING**  | Pedido creado; recibo aún no emitido por Trusteed                       |
+| **ISSUED**   | Recibo emitido y URI almacenada en el pedido                            |
 | **VERIFIED** | El recibo ha sido verificado a través del verificador de Trust Receipts |
 
 La insignia enlaza directamente a la página Trust Receipts → Verify Receipt con
@@ -378,7 +401,9 @@ conectividad.
 
 **P: ¿Puedo limitar qué productos pueden comprar los agentes?**
 
-Sí — configure la regla **R007 (Categorías de productos permitidas)** en **Mis Reglas**.
+Sí — configure la regla **R032 (Lista de categorías bloqueadas)** en **Mis Reglas**.
+Bloquea las categorías que usted liste. (`R007` es otra regla distinta: bloquea
+agentes que arrastran una señal de abuso entre comercios.)
 
 **P: ¿Cómo se gestionan los pagos de los agentes?**
 

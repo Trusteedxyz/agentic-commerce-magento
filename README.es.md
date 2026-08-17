@@ -127,6 +127,12 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Registro de cambios
 
+### 1.2.1
+
+- **Corregido** — el bundle del panel de administración (`view/adminhtml/web/js/admin-spa.js`) se distribuía sin minificar: 869 KB / 25.064 líneas en vez de los 490 KB / 41 líneas que produce el comando de build documentado. Su procedencia no se podía verificar. Reconstruido desde la fuente.
+- **Corregido** — la regla R047 (importe mínimo de aportación) no tenía campo en el panel de administración: sus parámetros existían en el esquema pero solo se podían configurar por API. También: al mostrar el nombre de una categoría del comercio se imprimían los delimitadores anti-inyección (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) alrededor en vez de quitarlos para la visualización.
+- **Corregido — documentación** — `USER_GUIDE.md`/`USER_GUIDE_ES.md` describían cinco de las seis filas de la tabla de configuración de reglas con la regla equivocada: le decía al comercio que configurase `R007` para restringir categorías (R007 en realidad bloquea señales de abuso entre comercios) y `R005` como tope de importe (R005 en realidad bloquea agentes revocados). Corregido contra las definiciones reales; se añaden `R030`/`R032`/`R035`/`R042` para que la guía responda lo que el comercio pregunta de verdad. También se retira el claim falso de que R001/R007 "se evalúan siempre localmente" (el evaluador offline resuelve nueve reglas distintas, ninguna es R001 ni R007) y el claim falso de que R007 controla la visibilidad del catálogo vía un atributo `trusteed_agentic_visible` (el atributo real es `is_agentic_visible`, sin relación con ninguna regla CEL).
+
 ### 1.2.0
 
 - **Corrección de seguridad** — el verificador de tokens de agente trataba `exp`, `iat` y `nonce` como opcionales. Las dos comprobaciones de tiempo colgaban de `> 0`, así que un token que simplemente OMITÍA el claim se saltaba entera la caducidad y el tope de antigüedad: era válido para siempre. Los tres claims son ahora obligatorios (`nonce` de 16 a 64 caracteres), igual que en el esquema canónico del token y en los demás conectores.
