@@ -33,7 +33,7 @@ Enable new online shoppers, AI agents, to make purchases in your store securely 
 |--------------------------------------|
 | ![Receipts list](docs/screenshots/screenshot-09-receipts-list.png) |
 
-Every agent-originated order gets a signed trust receipt, listed under **Trusteed → Mis ventas → Recibos de venta** with its verification status and receipt URI. From the list you can open a receipt's detail to read its fields and copy the raw JWS. Standalone public verification of an arbitrary JWS does not have a dedicated endpoint yet.
+Every agent-originated order gets a signed trust receipt, listed under **Trusteed → My sales → Recibos de venta** with its verification status and receipt URI. From the list you can open a receipt's detail to read its fields and copy the raw JWS. Standalone public verification of an arbitrary JWS does not have a dedicated endpoint yet.
 
 ## Features
 
@@ -142,15 +142,21 @@ After installation a **Trusteed** menu appears in the Magento admin sidebar:
 
 | Page | Route | Description |
 |------|-------|-------------|
-| Inicio | `trusteed/dashboard` | Agent session and activity overview |
-| ¿Cómo va mi tienda? | `trusteed/health` | Connection health and trust score |
-| Mis ventas | `trusteed/ventas` | Agent-originated orders and their trust receipts |
-| A quién le vendo | `trusteed/agentes` | Agent identities seen by your store |
-| Mis Reglas | `trusteed/reglas` | Business rules applied at checkout |
-| Métodos de pago | `trusteed/pagos` | Payment rails reported by Trusteed |
-| Seguridad | `trusteed/seguridad` | Audit log and anomaly alerts |
-| Ajustes | `trusteed/ajustes` | Module configuration |
-| Configuración | `trusteed/setup/wizard` | Setup wizard (connect / reconnect the store) |
+| Home | `trusteed/dashboard` | Agent session and activity overview |
+| How is my store doing? | `trusteed/health` | Connection health and trust score |
+| My sales | `trusteed/ventas` | Agent-originated orders and their trust receipts |
+| Who I'm selling to | `trusteed/agentes` | Agent identities seen by your store |
+| My Rules | `trusteed/reglas` | Business rules applied at checkout |
+| Payment Methods | `trusteed/pagos` | Payment rails reported by Trusteed |
+| Security | `trusteed/seguridad` | Audit log and anomaly alerts |
+| Settings | `trusteed/ajustes` | Module configuration |
+| Setup Wizard | `trusteed/setup/wizard` | Setup wizard (connect / reconnect the store) |
+
+Menu labels are sourced in English (`etc/adminhtml/menu.xml`) and translated per-locale via
+`i18n/{en_US,es_ES}.csv`, so an English-locale admin now sees this table verbatim and a
+Spanish-locale admin sees the Spanish column of that CSV — fixed 2026-08-18, previously the
+XML source strings were themselves in Spanish, which broke translation for every locale
+(Magento CSV lookup is an exact-match on the source string).
 
 ## Uninstallation
 
