@@ -174,7 +174,70 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 # And columns on sales_order: trusteed_receipt_uri, trusteed_receipt_status
 ```
 
+## The agent readiness dashboard
+
+**Can agents find me?** is a page inside your admin panel that answers one
+question: when an AI shopping agent visits your store, does it get what you
+think it gets?
+
+It never shows a single score. Three columns, never averaged, because they
+answer different questions and can legitimately disagree:
+
+| Column | What it is |
+| --- | --- |
+| **What a third party says** | The verdict of an external scanner, quoted verbatim. Never reinterpreted into a scale of ours — the moment we rescale someone else's grade, we are grading our own exam |
+| **Does what you say match what you do?** | 16 checks that contrast what your store *advertises* against what it *actually answers*. This is the part no external scanner can do: it needs your credentials |
+| **What we have seen** | Real agent traffic in the selected window — which agents arrived, which tools they used, how far they got, and where they failed |
+
+A check that could not run is reported as **not checked**, with the reason. It is
+never silently dropped and never counted as a pass. "We could not look" and
+"we looked and it was fine" are different answers, and the page says which one
+it is.
+
+### What each check looks at
+
+| Check | What it detects |
+| --- | --- |
+| C1 | You advertise tools your store does not serve |
+| C2 | You advertise a checkout protocol whose endpoint does not answer |
+| C3 | The catalogue price is not the price charged |
+| C4 | Things are advertised as available when they are not |
+| C5 | Your return policy says different things depending on where you look |
+| C6 | You advertise as available something that is switched off |
+| C7 | Rules switched on that cannot act for lack of data |
+| C8 | Your rules observe but do not block |
+| C9 | The identification method you advertise does not work |
+| C10 | An agent can buy any amount without your confirmation |
+| C11 | The point of sale is using expired rules |
+| C12 | Operations with no signed receipt |
+| C13 | Advertised addresses that do not work |
+| C14 | Agents are seeing stale data from your store |
+| C15 | Identity credentials about to expire |
+| C16 | The delivery time you promise is not the one you meet |
+
+Some checks need more than your settings to run, and the page says so instead of
+leaving a gap:
+
+- **Needs your store connected** (C3, C4, C5, C14) — they compare against your
+  real catalogue, and without credentials there is nothing to compare with.
+- **Needs delivered orders** (C16) — it compares what you promise against what
+  you actually met, and that cannot be done without history.
+- **Nothing to compare this time** — for example, C12 has nothing to check until
+  an agent has actually completed a purchase. That is not a failing grade.
+
+The checks run once a day and the page shows the result **with its date**, so a
+verdict from yesterday looks like a verdict from yesterday. A cached "all good"
+presented as current would be exactly the kind of self-deception this page
+exists to catch.
+
 ## Changelog
+
+### 1.3.0
+
+- **New — agent readiness dashboard.** *Can agents find me?* now ships in the admin panel. It contrasts what your store advertises against what it actually answers, in **16 checks**, and shows all sixteen — not only the ones that fail. A check that could not run says **why** (store not connected, no delivered orders yet, nothing to compare this time) instead of leaving a gap that reads like a fault. See "The agent readiness dashboard" above.
+- **Fixed** — the diagnosis was written in Spanish inside the API and shown verbatim, so a merchant with the panel in English read English headings above Spanish findings. The checks now emit language-neutral codes and the text is composed when served, in the language you are using.
+- **Fixed** — check C1 ("you advertise tools your store does not serve") counted the full public catalogue as served when no tool list was configured, reporting 46 of 48 answering when the server actually serves 12. It failed in the flattering direction, which is the one this panel exists to catch.
+- **Fixed** — check C6 ("you advertise as available something that is switched off") reported a capability as off whenever its flag was unset, even for flags that are on by default. It was a false alarm on every store.
 
 ### 1.2.1
 

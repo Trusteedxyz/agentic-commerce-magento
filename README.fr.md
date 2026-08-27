@@ -173,7 +173,70 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 # And columns on sales_order: trusteed_receipt_uri, trusteed_receipt_status
 ```
 
+## Le tableau de bord de préparation agentique
+
+**Les agents me trouvent-ils ?** est une page de votre panneau d'administration
+qui répond à une seule question : lorsqu'un agent d'achat IA visite votre
+boutique, obtient-il ce que vous croyez qu'il obtient ?
+
+Aucune note unique n'est affichée. Trois colonnes, jamais moyennées, car elles
+répondent à des questions différentes et peuvent légitimement se contredire :
+
+| Colonne | Ce que c'est |
+| --- | --- |
+| **Ce que dit un tiers** | Le verdict d'un scanner externe, cité tel quel. Jamais réinterprété dans une échelle qui serait la nôtre : dès que l'on convertit la note d'un autre, on corrige sa propre copie |
+| **Ce que vous dites correspond-il à ce que vous faites ?** | 16 vérifications qui confrontent ce que votre boutique **annonce** à ce qu'elle **répond réellement**. C'est la partie qu'aucun scanner externe ne peut faire : elle exige vos identifiants |
+| **Ce que nous avons vu passer** | Le trafic agentique réel sur la période choisie : quels agents sont venus, quels outils ils ont utilisés, jusqu'où ils sont allés et où ils ont échoué |
+
+Une vérification qui n'a pas pu être faite est signalée comme **non vérifiée**,
+avec son motif. Elle n'est jamais écartée en silence ni comptée comme réussie.
+« Nous n'avons pas pu regarder » et « nous avons regardé et tout allait bien »
+sont deux réponses distinctes, et la page indique laquelle s'applique.
+
+### Ce que vérifie chaque contrôle
+
+| Contrôle | Ce qu'il détecte |
+| --- | --- |
+| C1 | Vous annoncez des outils que votre boutique ne sert pas |
+| C2 | Vous annoncez un protocole de paiement dont le point de terminaison ne répond pas |
+| C3 | Le prix du catalogue n'est pas le prix facturé |
+| C4 | Annoncé disponible alors que ce n'est pas le cas |
+| C5 | Votre politique de retour dit des choses différentes selon la source |
+| C6 | Vous annoncez comme disponible quelque chose qui est désactivé |
+| C7 | Des règles activées qui ne peuvent pas agir faute de données |
+| C8 | Vos règles observent mais ne bloquent pas |
+| C9 | La méthode d'identification que vous annoncez ne fonctionne pas |
+| C10 | Un agent peut acheter n'importe quel montant sans votre confirmation |
+| C11 | Le point de vente utilise des règles expirées |
+| C12 | Des opérations sans reçu signé |
+| C13 | Des adresses annoncées qui ne fonctionnent pas |
+| C14 | Les agents voient des données périmées de votre boutique |
+| C15 | Des justificatifs d'identité sur le point d'expirer |
+| C16 | Le délai de livraison promis n'est pas celui que vous tenez |
+
+Certains contrôles ont besoin de plus que vos réglages, et la page le dit au lieu
+de laisser un vide :
+
+- **Nécessite une boutique connectée** (C3, C4, C5, C14) : ils comparent avec
+  votre catalogue réel, et sans identifiants il n'y a rien à comparer.
+- **Nécessite des commandes livrées** (C16) : il compare ce que vous promettez à
+  ce que vous avez réellement tenu, ce qui est impossible sans historique.
+- **Rien à comparer cette fois** : C12, par exemple, n'a rien à vérifier tant
+  qu'un agent n'a pas réellement finalisé un achat. Ce n'est pas un échec.
+
+Les contrôles s'exécutent une fois par jour et la page affiche le résultat **avec
+sa date**, pour qu'un verdict d'hier ressemble à un verdict d'hier. Un « tout va
+bien » mis en cache et présenté comme actuel serait exactement l'auto-illusion
+que cette page existe pour débusquer.
+
 ## Journal des modifications
+
+### 1.3.0
+
+- **Nouveau — tableau de bord de préparation agentique.** *Les agents me trouvent-ils ?* arrive dans le panneau d'administration. Il confronte ce que votre boutique annonce à ce qu'elle répond réellement, en **16 vérifications**, et les affiche toutes les seize, pas seulement celles qui échouent. Une vérification impossible indique **pourquoi** (boutique non connectée, aucune commande livrée pour l'instant, rien à comparer cette fois) au lieu de laisser un vide qui ressemble à une panne. Voir « Le tableau de bord de préparation agentique » ci-dessus.
+- **Corrigé** — le diagnostic était rédigé en espagnol dans l'API et affiché tel quel : un marchand utilisant le panneau en anglais lisait des titres anglais au-dessus de constats espagnols. Les vérifications émettent désormais des codes neutres et le texte est composé au moment de servir, dans votre langue.
+- **Corrigé** — la vérification C1 (« vous annoncez des outils que votre boutique ne sert pas ») considérait tout le catalogue public comme servi en l'absence de liste configurée : elle annonçait 46 sur 48 alors que le serveur en sert 12. L'erreur allait dans le sens flatteur, précisément celui que ce tableau de bord doit débusquer.
+- **Corrigé** — la vérification C6 (« vous annoncez comme disponible quelque chose qui est désactivé ») signalait une capacité comme désactivée dès que son indicateur n'était pas défini, y compris pour ceux activés par défaut. C'était une fausse alerte sur toutes les boutiques.
 
 ### 1.2.1
 

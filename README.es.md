@@ -169,7 +169,70 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 # And columns on sales_order: trusteed_receipt_uri, trusteed_receipt_status
 ```
 
+## El panel de preparación agéntica
+
+**¿Me encuentran los agentes?** es una página dentro de tu panel de
+administración que responde a una sola pregunta: cuando un agente de compra con
+IA visita tu tienda, ¿se encuentra lo que tú crees que se encuentra?
+
+Nunca enseña una nota única. Tres columnas, sin promediar, porque responden a
+preguntas distintas y pueden contradecirse con toda legitimidad:
+
+| Columna | Qué es |
+| --- | --- |
+| **Lo que dice un tercero** | El veredicto de un escáner externo, citado tal cual. Nunca reinterpretado a una escala nuestra: en cuanto reescalas la nota de otro, estás corrigiendo tu propio examen |
+| **¿Coincide lo que dices con lo que haces?** | 16 comprobaciones que contrastan lo que tu tienda **anuncia** con lo que **responde de verdad**. Esta es la parte que ningún escáner externo puede hacer: necesita tus credenciales |
+| **Lo que hemos visto pasar** | Tráfico agéntico real en la ventana elegida: qué agentes llegaron, qué herramientas usaron, hasta dónde llegaron y dónde fallaron |
+
+Una comprobación que no se ha podido hacer se informa como **sin comprobar**,
+con el motivo. Nunca se descarta en silencio ni se cuenta como aprobado. «No
+hemos podido mirar» y «hemos mirado y está bien» son respuestas distintas, y la
+página dice cuál de las dos es.
+
+### Qué mira cada comprobación
+
+| Comprobación | Qué detecta |
+| --- | --- |
+| C1 | Anuncias herramientas que tu tienda no sirve |
+| C2 | Anuncias un protocolo de compra cuyo endpoint no responde |
+| C3 | El precio del catálogo no es el que se cobra |
+| C4 | Se anuncia disponible lo que no lo está |
+| C5 | Tu política de devoluciones dice cosas distintas según dónde se mire |
+| C6 | Anuncias como disponible algo que está apagado |
+| C7 | Reglas activadas que no pueden actuar por falta de datos |
+| C8 | Tus reglas observan pero no bloquean |
+| C9 | La forma de identificarse que anuncias no funciona |
+| C10 | Un agente puede comprar cualquier importe sin tu confirmación |
+| C11 | El punto de venta usa reglas caducadas |
+| C12 | Operaciones sin comprobante firmado |
+| C13 | Direcciones anunciadas que no funcionan |
+| C14 | Los agentes ven datos desfasados de tu tienda |
+| C15 | Credenciales de identidad a punto de caducar |
+| C16 | El plazo de entrega que prometes no es el que cumples |
+
+Algunas comprobaciones necesitan algo más que tu configuración para ejecutarse, y
+la página lo dice en vez de dejar un hueco:
+
+- **Necesita tu tienda conectada** (C3, C4, C5, C14): comparan contra tu catálogo
+  real, y sin credenciales no hay con qué comparar.
+- **Necesita pedidos entregados** (C16): compara lo que prometes con lo que has
+  cumplido de verdad, y eso no se puede sin historial.
+- **Esta vez no había nada que comparar**: por ejemplo, C12 no tiene nada que
+  mirar hasta que un agente haya completado una compra. Eso no es un suspenso.
+
+Las comprobaciones se ejecutan una vez al día y la página enseña el resultado
+**con su fecha**, para que un veredicto de ayer se vea como un veredicto de ayer.
+Un «todo bien» guardado y presentado como actual sería justo el autoengaño que
+esta página existe para cazar.
+
 ## Registro de cambios
+
+### 1.3.0
+
+- **Nuevo — panel de preparación agéntica.** *¿Me encuentran los agentes?* llega al panel de administración. Contrasta lo que tu tienda anuncia con lo que responde de verdad, en **16 comprobaciones**, y las enseña las dieciséis, no sólo las que fallan. Una comprobación que no se ha podido hacer dice **por qué** (tienda sin conectar, todavía sin pedidos entregados, nada que comparar esta vez) en vez de dejar un hueco que se lee como avería. Ver «El panel de preparación agéntica» más arriba.
+- **Corregido** — el diagnóstico se escribía en castellano dentro de la API y se mostraba tal cual, así que un comerciante con el panel en inglés leía encabezados en inglés y hallazgos en castellano. Las comprobaciones emiten ahora códigos neutros de idioma y el texto se compone al servirlo, en el idioma que estés usando.
+- **Corregido** — la comprobación C1 («anuncias herramientas que tu tienda no sirve») daba por servido el catálogo público entero cuando no había lista de herramientas configurada: informaba de 46 de 48 respondiendo cuando el servidor sirve 12. Fallaba en la dirección aduladora, que es justo la que este panel existe para cazar.
+- **Corregido** — la comprobación C6 («anuncias como disponible algo que está apagado») daba una capacidad por apagada siempre que su bandera no estuviera puesta, incluso en banderas que están encendidas por defecto. Era una falsa alarma en todas las tiendas.
 
 ### 1.2.1
 
