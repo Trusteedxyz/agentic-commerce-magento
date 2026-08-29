@@ -231,6 +231,12 @@ que cette page existe pour débusquer.
 
 ## Journal des modifications
 
+### 1.3.2
+
+- Nouveau : les Réglages vous permettent désormais de choisir les outils que votre boutique propose aux agents. Si vous n'avez jamais enregistré de liste, le panneau vous indique que ce qui est proposé est l'ensemble de base fourni par la plateforme, et non votre choix.
+- Nouveau : un bouton pour relancer la vérification sans attendre le balayage quotidien, et le panneau retient ce qui a changé depuis la vérification précédente.
+- Modifié : nos propres pannes ne comptent plus comme des incohérences de votre boutique. Le panneau les sépare, car vous n'y pouvez rien.
+
 ### 1.3.1
 
 - Corrigé : la page de disponibilité pour les agents était publiée sans sa feuille de style, le panneau s'affichait donc sans mise en forme.
