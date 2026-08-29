@@ -232,6 +232,13 @@ exists to catch.
 
 ## Changelog
 
+### 1.3.1
+
+- Fixed: the agent readiness page shipped without its stylesheet, so the panel rendered unstyled.
+- Fixed: the panel could show its shell in one language and the diagnosis in another. The resolved language now travels with the texts instead of being detected twice.
+- New: every finding carries a link to where it is fixed, and the merchant's own claims — the delivery promise and the rest — appear with the backing each one has.
+- Changed: a store with no run yet reads as "checking" instead of "checked once a day": opening the panel already triggers the first run in the background.
+
 ### 1.3.0
 
 - **New — agent readiness dashboard.** *Can agents find me?* now ships in the admin panel. It contrasts what your store advertises against what it actually answers, in **16 checks**, and shows all sixteen — not only the ones that fail. A check that could not run says **why** (store not connected, no delivered orders yet, nothing to compare this time) instead of leaving a gap that reads like a fault. See "The agent readiness dashboard" above.
