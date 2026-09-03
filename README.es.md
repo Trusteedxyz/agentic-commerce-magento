@@ -227,6 +227,11 @@ esta página existe para cazar.
 
 ## Registro de cambios
 
+### 1.3.3
+
+- Nuevo: cuando una comprobación no se pudo ejecutar, el panel ahora explica qué la desbloquearía — nada que hacer, hay que configurar algo, falta esperar datos, o ha fallado una comprobación nuestra — en vez de una lista plana de grises sin explicar.
+- Nuevo: el panel ahora muestra qué servidor nuestro respondió a tu petición, una etiqueta corta y opaca. Útil para comparar lo que ves aquí con lo que ve soporte; nunca revela un nombre de host o de servicio.
+
 ### 1.3.2
 
 - Nuevo: en Ajustes puedes elegir qué herramientas sirve tu tienda a los agentes. Si nunca has guardado una lista, el panel te dice que lo que sirve es el conjunto básico que trae la plataforma, y no una elección tuya.

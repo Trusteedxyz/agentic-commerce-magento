@@ -231,6 +231,11 @@ que cette page existe pour débusquer.
 
 ## Journal des modifications
 
+### 1.3.3
+
+- Nouveau : lorsqu'une vérification n'a pas pu s'exécuter, le panneau explique désormais ce qui la débloquerait — rien à faire, configuration nécessaire, en attente de données, ou l'une de nos propres vérifications a échoué — au lieu d'une liste plate de gris inexpliqués.
+- Nouveau : le panneau indique désormais quel serveur a répondu à votre requête, une étiquette courte et opaque. Utile pour comparer ce que vous voyez ici avec ce que voit le support ; elle ne révèle jamais un nom d'hôte ou de service.
+
 ### 1.3.2
 
 - Nouveau : les Réglages vous permettent désormais de choisir les outils que votre boutique propose aux agents. Si vous n'avez jamais enregistré de liste, le panneau vous indique que ce qui est proposé est l'ensemble de base fourni par la plateforme, et non votre choix.
