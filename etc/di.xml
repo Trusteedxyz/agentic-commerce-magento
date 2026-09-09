@@ -90,4 +90,26 @@
         </arguments>
     </type>
 
+    <!--
+        Aviso de administración cuando la tienda está conectada pero el
+        enforcement de checkout no puede evaluar nada — auditoría de onboarding
+        2026-09-09, hueco A2.
+
+        `EnforcementClient::evaluate()` devuelve ALLOW incondicional sin
+        `installation_id`, y hasta ahora nada se lo decía al comerciante: veía
+        «configuration saved successfully» y se quedaba creyendo que estaba
+        protegido.
+
+        Enganchado SÓLO aquí, sin añadir `magento/module-admin-notification` a
+        composer.json: si esa lista no existe porque el comerciante desactivó
+        AdminNotification, la entrada queda inerte y no rompe el arranque.
+    -->
+    <type name="Magento\AdminNotification\Model\System\MessageList">
+        <arguments>
+            <argument name="messages" xsi:type="array">
+                <item name="trusteed_enforcement_not_provisioned" xsi:type="object">Trusteed\AgenticCommerce\Model\System\Message\EnforcementNotProvisioned</item>
+            </argument>
+        </arguments>
+    </type>
+
 </config>

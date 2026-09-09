@@ -169,65 +169,90 @@ Navigate to **Trusteed → Configuración** (Setup Wizard).
 
 The wizard presents three sections:
 
-| Section                        | Purpose                                            |
-| ------------------------------ | -------------------------------------------------- |
-| Internal HMAC Secret           | Signs internal heartbeat calls to the Trusteed API |
-| Checkout Enforcement (CEL)     | Configures fail-mode and enforcement rules         |
-| Conecta tu tienda con Trusteed | API key entry and store connection                 |
+| Section                        | Purpose                                                   |
+| ------------------------------ | --------------------------------------------------------- |
+| Conecta tu tienda con Trusteed | Store connection — **start here** (see §6)                |
+| Checkout Enforcement (CEL)     | Enforcement credentials and fail-mode (see §6.4)          |
+| Internal HMAC Secret           | Signs internal heartbeat calls to the Trusteed API (§5.3) |
 
-### 5.2 Generate the Internal HMAC Secret
+> **There is nothing to copy by hand to connect the store.** The Merchant ID,
+> integration token and webhook secret are filled in by the wizard itself
+> during the connection (§6). If you go looking for those fields in the form
+> you will not find them — they are hidden on purpose.
 
-The HMAC secret signs internal API calls (X-Internal-Auth header). It must
-match the value configured in the Trusteed backend for your merchant account.
-
-Trusteed Operations provisions this value — copy it from your account dashboard
-at [trusteed.xyz/dashboard/settings](https://trusteed.xyz/dashboard/settings).
-
-Paste it into **Internal HMAC Secret** and click **Guardar**.
-
-### 5.3 Configure Store Views
+### 5.2 Configure Store Views
 
 Under **¿Qué tiendas quieres activar?** select the store views you want to
 expose to AI agents. Agents can only browse and purchase in enabled store views.
+
+### 5.3 Internal HMAC Secret (only if Trusteed gave you one)
+
+The HMAC secret signs internal API calls (`X-Internal-Auth` header). **It is not
+self-serve and does not appear anywhere in the dashboard**: Trusteed provisions
+it and only hands it to the accounts that need it.
+
+If you were not given one, **leave the field empty and carry on** — the install
+works without it. If you were, paste it into **Internal HMAC Secret** and click
+**Guardar**.
 
 ---
 
 ## 6. Connecting to Trusteed
 
-### 6.1 Get your API credentials
+Connecting is a popup authorization flow, like "sign in with…". **No credential
+is pasted by hand.**
 
-Log in to [trusteed.xyz/dashboard](https://trusteed.xyz/dashboard) and navigate to
-**Settings → Integrations → Magento**. You will find:
+### 6.1 Prerequisite: a Trusteed account
 
-| Credential        | Where to find                                      |
-| ----------------- | -------------------------------------------------- |
-| Merchant ID       | Settings → Account → Merchant ID                   |
-| Integration Token | Settings → Integrations → Magento → Token          |
-| Webhook Secret    | Settings → Integrations → Magento → Webhook Secret |
-| Connection ID     | Assigned automatically after connecting            |
+You need an account at [trusteed.xyz](https://trusteed.xyz). Create one before
+continuing — the popup in the next step will ask you to sign in.
 
-### 6.2 Enter credentials in Magento
+### 6.2 Click "Conectar con Trusteed →"
 
-Navigate to **Stores → Configuration → Trusteed → Agentic Commerce**:
+In the Setup Wizard (**Trusteed → Configuración**), click
+**Conectar con Trusteed →**. What happens:
 
-1. **API Base URL** — `https://api.trusteed.xyz` (do not change unless instructed)
-2. **Merchant ID** — paste from your Trusteed account
-3. **Integration Token** — paste the integration token (stored encrypted)
-4. **Webhook Secret** — paste the webhook secret (stored encrypted)
+1. A popup opens to `trusteed.xyz/connect/magento`.
+2. You sign in and authorize this store.
+3. The popup closes and hands the wizard a **single-use token** together with
+   your Merchant ID.
+4. The wizard saves the form, and **your Magento server** exchanges that token
+   for the real credentials (Connection ID, webhook secret, embed secret). The
+   token is never stored — it only lives for the duration of that exchange.
 
-Click **Save Config**.
+If your browser blocks popups, allow them for your back-office domain and click
+the button again.
 
-### 6.3 Click "Conectar con Trusteed"
+### 6.3 Confirm it worked
 
-In the Setup Wizard (**Trusteed → Configuración**) click the
-**Conectar con Trusteed →** button. This:
+After saving you will see **"Trusteed configuration saved successfully"**. Under
+**Stores → Configuration → Trusteed → Agentic Commerce** the **Connection ID**
+field will no longer be empty. That is the reliable indicator that the
+connection completed.
 
-1. Validates connectivity to the Trusteed API
-2. Registers your Magento instance as a connected store
-3. Returns a **Connection ID** — saved automatically to config
+> **Do not hand-edit the Integration Token or Webhook Secret** on that screen
+> after connecting. The backend keeps its own copy of the secrets issued during
+> the exchange; overwriting them locally breaks webhook signatures with no
+> warning. To rotate them, click **Conectar con Trusteed →** again.
 
-A green **"Your store is connected"** banner will appear on the Dashboard
-(**Trusteed → Inicio**) once the connection is established.
+### 6.4 Enabling checkout enforcement (a separate step)
+
+Connecting the store **does not enable checkout enforcement**. That module needs
+two more credentials, provisioned separately by Trusteed:
+
+| Wizard field                | Config path                            |
+| --------------------------- | -------------------------------------- |
+| Enforcement Installation ID | `trusteed/enforcement/installation_id` |
+| Enforcement HMAC Secret     | `trusteed/enforcement/hmac_secret`     |
+
+While the **Installation ID** is empty, `EnforcementClient` lets every checkout
+through without evaluating a single rule. That is deliberate — a half-configured
+store must not block sales — but it means **you are not protected yet**. The
+module keeps an admin notice up until both values are set.
+
+If you want enforcement, ask Trusteed for those two credentials, paste them into
+the wizard and save. If you do not need it, you can leave the notice: the rest of
+the module works.
 
 ---
 

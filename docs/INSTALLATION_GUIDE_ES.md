@@ -171,66 +171,95 @@ Navegue a **Trusteed → Configuración** (Setup Wizard).
 
 El asistente presenta tres secciones:
 
-| Sección                        | Propósito                                                  |
-| ------------------------------ | ---------------------------------------------------------- |
-| Internal HMAC Secret           | Firma las llamadas internas de latido a la API de Trusteed |
-| Checkout Enforcement (CEL)     | Configura el modo de fallo y las reglas de cumplimiento    |
-| Conecta tu tienda con Trusteed | Entrada de clave API y conexión de la tienda               |
+| Sección                        | Propósito                                                           |
+| ------------------------------ | ------------------------------------------------------------------- |
+| Conecta tu tienda con Trusteed | Conexión de la tienda — **empiece por aquí** (ver §6)               |
+| Checkout Enforcement (CEL)     | Credenciales y modo de fallo del enforcement de checkout (ver §6.4) |
+| Internal HMAC Secret           | Firma las llamadas internas de latido a la API de Trusteed (§5.3)   |
 
-### 5.2 Generar el Secreto HMAC Interno
+> **No hay ningún valor que copiar a mano para conectar la tienda.** El
+> Merchant ID, el token de integración y el secreto de webhook los rellena el
+> propio asistente durante la conexión (§6). Si busca esos campos en el
+> formulario no los verá: están ocultos a propósito.
 
-El secreto HMAC firma las llamadas internas a la API (cabecera `X-Internal-Auth`).
-Debe coincidir con el valor configurado en el backend de Trusteed para su cuenta.
-
-Las Operaciones de Trusteed provisionan este valor — cópielo desde el panel de su
-cuenta en [trusteed.xyz/dashboard/settings](https://trusteed.xyz/dashboard/settings).
-
-Péguelo en **Internal HMAC Secret** y haga clic en **Guardar**.
-
-### 5.3 Configurar Vistas de Tienda
+### 5.2 Configurar Vistas de Tienda
 
 En **¿Qué tiendas quieres activar?** seleccione las vistas de tienda que desea
 exponer a los agentes IA. Los agentes solo pueden navegar y comprar en las vistas
 de tienda habilitadas.
 
+### 5.3 Secreto HMAC Interno (sólo si Trusteed se lo ha entregado)
+
+El secreto HMAC firma las llamadas internas a la API (cabecera `X-Internal-Auth`).
+**No es autoservicio y no aparece en ninguna pantalla del panel**: lo provisiona
+el equipo de Trusteed y sólo se entrega a las cuentas que lo necesitan.
+
+Si no le han dado uno, **deje el campo vacío y continúe** — la instalación
+funciona sin él. Si se lo han entregado, péguelo en **Internal HMAC Secret** y
+haga clic en **Guardar**.
+
 ---
 
 ## 6. Conexión con Trusteed
 
-### 6.1 Obtener sus credenciales de API
+La conexión es un flujo de autorización en ventana emergente, al estilo de
+«iniciar sesión con…». **No se pega ninguna credencial a mano.**
 
-Inicie sesión en [trusteed.xyz/dashboard](https://trusteed.xyz/dashboard) y navegue a
-**Configuración → Integraciones → Magento**:
+### 6.1 Requisito previo: una cuenta de Trusteed
 
-| Credencial        | Dónde encontrarla                                        |
-| ----------------- | -------------------------------------------------------- |
-| Merchant ID       | Configuración → Cuenta → Merchant ID                     |
-| Integration Token | Configuración → Integraciones → Magento → Token          |
-| Webhook Secret    | Configuración → Integraciones → Magento → Webhook Secret |
-| Connection ID     | Asignado automáticamente al conectar                     |
+Necesita una cuenta en [trusteed.xyz](https://trusteed.xyz). Si aún no la tiene,
+créela antes de continuar: la ventana emergente del paso siguiente le pedirá
+iniciar sesión.
 
-### 6.2 Introducir credenciales en Magento
+### 6.2 Pulsar "Conectar con Trusteed →"
 
-Navegue a **Tiendas → Configuración → Trusteed → Agentic Commerce**:
+En el Asistente de Configuración (**Trusteed → Configuración**), pulse
+**Conectar con Trusteed →**. Ocurre esto:
 
-1. **API Base URL** — `https://api.trusteed.xyz` (no cambie salvo indicación)
-2. **Merchant ID** — pegue el valor de su cuenta Trusteed
-3. **Integration Token** — pegue el token de integración (se guarda cifrado)
-4. **Webhook Secret** — pegue el secreto de webhook (se guarda cifrado)
+1. Se abre una ventana emergente hacia `trusteed.xyz/connect/magento`.
+2. Usted inicia sesión y autoriza la conexión de esta tienda.
+3. La ventana se cierra y devuelve al asistente un **token de un solo uso**
+   junto con su Merchant ID.
+4. El asistente guarda el formulario, y **el servidor de Magento** canjea ese
+   token por las credenciales definitivas (Connection ID, secreto de webhook y
+   secreto de embed). El token no se guarda en ningún sitio: sólo vive durante
+   ese canje.
 
-Haga clic en **Guardar Configuración**.
+Si su navegador bloquea las ventanas emergentes, permítalas para el dominio de
+su back office y vuelva a pulsar el botón.
 
-### 6.3 Hacer clic en "Conectar con Trusteed"
+### 6.3 Comprobar que ha funcionado
 
-En el Asistente de Configuración (**Trusteed → Configuración**) haga clic en el
-botón **Conectar con Trusteed →**. Esto:
+Tras el guardado verá el mensaje **«Trusteed configuration saved successfully»**.
+En **Tiendas → Configuración → Trusteed → Agentic Commerce** el campo
+**Connection ID** habrá dejado de estar vacío. Ése es el indicador fiable de que
+la conexión se completó.
 
-1. Valida la conectividad con la API de Trusteed
-2. Registra su instancia de Magento como tienda conectada
-3. Devuelve un **Connection ID** — guardado automáticamente en la configuración
+> **No modifique a mano el Integration Token ni el Webhook Secret** en esa
+> pantalla después de conectar. El backend guarda su propia copia de los
+> secretos emitidos durante el canje; sobrescribirlos localmente rompe la firma
+> de los webhooks sin ningún aviso. Si necesita rotarlos, vuelva a pulsar
+> **Conectar con Trusteed →**.
 
-Aparecerá un banner verde **"Your store is connected"** en el Panel
-(**Trusteed → Inicio**) una vez establecida la conexión.
+### 6.4 Activar el enforcement de checkout (paso aparte)
+
+Conectar la tienda **no activa el enforcement de checkout**. Ese módulo necesita
+dos credenciales más, que Trusteed provisiona por separado:
+
+| Campo del asistente         | Config path                            |
+| --------------------------- | -------------------------------------- |
+| Enforcement Installation ID | `trusteed/enforcement/installation_id` |
+| Enforcement HMAC Secret     | `trusteed/enforcement/hmac_secret`     |
+
+Mientras el **Installation ID** esté vacío, `EnforcementClient` deja pasar todos
+los checkouts sin evaluar ni una regla. Es deliberado —una tienda a medio
+configurar no debe bloquear ventas—, pero significa que **no está protegido
+todavía**. El módulo se lo recuerda con un aviso en el panel de administración
+hasta que ambos valores estén puestos.
+
+Si quiere enforcement, pídale esas dos credenciales a Trusteed, péguelas en el
+asistente y guarde. Si no las necesita, puede dejar el aviso: el resto del
+módulo funciona.
 
 ---
 
