@@ -573,7 +573,7 @@ final class CartSignalsTest extends TestCase
         $item2->rowTotalInclTax = 200.00; // 20000 cents (HIT)
         $quote = new Quote();
         $quote->visibleItems = [$item1, $item2];
-        $result = $signals->evaluateR036($quote, ['maxCents' => 10000]);
+        $result = $signals->evaluateR036($quote, ['maxCentsPerLine' => 10000]);
         $this->assertTrue($result['hit']);
         $this->assertSame('line 77 value 20000 exceeds cap 10000', $result['reason']);
     }
@@ -586,7 +586,7 @@ final class CartSignalsTest extends TestCase
         $item->rowTotalInclTax = 10.00; // 1000 cents
         $quote = new Quote();
         $quote->visibleItems = [$item];
-        $this->assertFalse($signals->evaluateR036($quote, ['maxCents' => 5000])['hit']);
+        $this->assertFalse($signals->evaluateR036($quote, ['maxCentsPerLine' => 5000])['hit']);
     }
 
     public function test_r036_passes_when_max_cents_missing_or_cart_empty(): void
@@ -594,13 +594,13 @@ final class CartSignalsTest extends TestCase
         $signals = new CartSignals();
         $quote = new Quote();
         $quote->visibleItems = [];
-        $this->assertFalse($signals->evaluateR036($quote, ['maxCents' => 100])['hit']);
+        $this->assertFalse($signals->evaluateR036($quote, ['maxCentsPerLine' => 100])['hit']);
         // Missing param with non-empty cart
         $item = new Item();
         $item->itemId = 9;
         $item->rowTotalInclTax = 9999.0;
         $quote->visibleItems = [$item];
         $this->assertFalse($signals->evaluateR036($quote, [])['hit']);
-        $this->assertFalse($signals->evaluateR036($quote, ['maxCents' => null])['hit']);
+        $this->assertFalse($signals->evaluateR036($quote, ['maxCentsPerLine' => null])['hit']);
     }
 }

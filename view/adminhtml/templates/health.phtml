@@ -1,5 +1,8 @@
 <?php
 /** @var \Trusteed\AgenticCommerce\Block\Adminhtml\Health\Tab $block */
+
+use Trusteed\AgenticCommerce\Model\Trust\ScoreNodeNormalizer;
+
 $manifestAge    = $block->getManifestAge();
 $lastWebhookAge = $block->getLastWebhookAge();
 $outboxLag      = $block->getOutboxLag();
@@ -16,7 +19,11 @@ function formatAge(int $seconds): string {
     return (string) __('%1 h ago', floor($seconds / 3600));
 }
 
-function scoreTone(?int $score): array {
+// F1-4b — `?float`, not `?int`: the v4.1 engine emits one-decimal scores
+// (44.7 / 81.4 …). With `?int` PHP 8.1+ raised a deprecation on the implicit
+// lossy conversion, and the caller's `is_int()` guard turned every decimal
+// score into null.
+function scoreTone(?float $score): array {
     if ($score === null) return ['#6b7280', '#f3f4f6', '#e5e7eb'];
     if ($score >= 80)    return ['#15803d', '#f0fdf4', '#bbf7d0'];
     if ($score >= 60)    return ['#b45309', '#fef3c7', '#fcd34d'];
@@ -25,7 +32,9 @@ function scoreTone(?int $score): array {
 
 function confidenceLabel(?string $level): string {
     return (string) match ($level) {
-        'cold_start'             => __('New store (cap 60)'),
+        // Cap 65, not 60 — same doc drift the published Zod contract carried.
+        // Source of truth: `TIERS` in apps/api/src/services/trust/trust-score-v41.ts.
+        'cold_start'             => __('New store (cap 65)'),
         'human_established'      => __('With human history (cap 85)'),
         'agent_verified_thin'    => __('First agent orders'),
         'agent_verified'         => __('Verified with agents (cap 100)'),
@@ -53,13 +62,17 @@ $queueOk    = $outboxLag < 300 && $deadCount === 0;
 
     <!-- Mi puntuación de tienda -->
     <?php
-    $scoreVal = $trustScore['score'] ?? null;
-    [$scoreFg, $scoreBg, $scoreBorder] = scoreTone(is_int($scoreVal) ? $scoreVal : null);
+    // F1-4b — normalise once, decide on null. The previous `is_int()` guards
+    // silently dropped every decimal score the engine emits.
+    $scoreVal = ScoreNodeNormalizer::normalizeNumber($trustScore['score'] ?? null);
+    $scoreCapVal = ScoreNodeNormalizer::normalizeNumber($trustScore['scoreCap'] ?? null);
+    $scoreText = ScoreNodeNormalizer::formatScore($scoreVal);
+    [$scoreFg, $scoreBg, $scoreBorder] = scoreTone($scoreVal);
     // Connection status is driven by configuration presence (same definition as
     // the Inicio/Seguridad screens), NOT by trust-score availability. A connected
     // store whose score is still pending must not be reported as "not connected".
     $isDisconnected = !$block->isConnected();
-    $hasScore = is_int($scoreVal);
+    $hasScore = $scoreVal !== null;
     $statusLabel = (string) match (true) {
         $isDisconnected => __('Your store is not yet connected'),
         ($trustScore['status'] ?? null) === 'ready' => __('Calculated'),
@@ -73,15 +86,15 @@ $queueOk    = $outboxLag < 300 && $deadCount === 0;
         <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;">
             <div style="font-size:13px;font-weight:600;color:#374151;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;"><?= $block->escapeHtml(__('My score')) ?></div>
             <div style="font-size:56px;font-weight:800;color:<?= $scoreFg ?>;line-height:1;">
-                <?php if ($isDisconnected || !isset($trustScore['score']) || $trustScore['score'] === null): ?>
+                <?php if ($isDisconnected || $scoreText === null): ?>
                     —
                 <?php else: ?>
-                    <?= (int)$trustScore['score'] ?>
+                    <?= $block->escapeHtml($scoreText) ?>
                 <?php endif; ?>
             </div>
             <div style="font-size:13px;color:#6b7280;margin-top:4px;">
-                <?php if (isset($trustScore['scoreCap']) && is_int($trustScore['scoreCap'])): ?>
-                    <?= $block->escapeHtml(__('out of %1', (int)$trustScore['scoreCap'])) ?>
+                <?php if ($scoreCapVal !== null): ?>
+                    <?= $block->escapeHtml(__('out of %1', ScoreNodeNormalizer::formatScore($scoreCapVal))) ?>
                 <?php else: ?>
                     <?= $block->escapeHtml(__('out of %1', 100)) ?>
                 <?php endif; ?>

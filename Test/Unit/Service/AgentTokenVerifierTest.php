@@ -67,6 +67,9 @@ class AgentTokenVerifierTest extends TestCase
             'agentTrustScore'=> 0.9,
             // Spec-048 P2.8 — base64url jti, 16-128 chars (default valid).
             'jti'            => 'abc123XYZ_test-nonce-0001',
+            // H4 (2026-07-28) — el schema canónico exige `nonce` de 16..64
+            // caracteres; el verificador ya lo comprueba.
+            'nonce'          => 'nonce-0123456789abcdef',
         ];
     }
 
@@ -237,10 +240,35 @@ class AgentTokenVerifierTest extends TestCase
     /** TV-15 exp absent — treated as 0 (no expiry check), token still valid */
     public function testTV15ExpAbsent(): void
     {
+        // H4 (2026-07-28) — este test afirmaba `valid`: un token SIN `exp` se
+        // aceptaba, es decir, era válido para siempre. El schema canónico
+        // (`AgentTokenPayloadSchema`) exige `exp`, y WooCommerce ya lo
+        // rechazaba. Ahora es fail-closed, igual que en los otros tres ports.
         $claims = $this->baseClaims();
         unset($claims['exp']);
         $result = $this->verifier->verify($this->makeToken(null, $claims), $this->buildResolver(), $this->merchantId);
-        $this->assertSame('valid', $result['state']);
+        $this->assertSame('invalid', $result['state']);
+        $this->assertSame('missing_exp', $result['error']);
+    }
+
+    /** H4 (2026-07-28) — token sin `nonce` → invalid (antes: se ignoraba). */
+    public function testH4NonceAbsent(): void
+    {
+        $claims = $this->baseClaims();
+        unset($claims['nonce']);
+        $result = $this->verifier->verify($this->makeToken(null, $claims), $this->buildResolver(), $this->merchantId);
+        $this->assertSame('invalid', $result['state']);
+        $this->assertSame('missing_nonce', $result['error']);
+    }
+
+    /** H4 (2026-07-28) — token sin `iat` → invalid (rompía el tope de antigüedad). */
+    public function testH4IatAbsent(): void
+    {
+        $claims = $this->baseClaims();
+        unset($claims['iat']);
+        $result = $this->verifier->verify($this->makeToken(null, $claims), $this->buildResolver(), $this->merchantId);
+        $this->assertSame('invalid', $result['state']);
+        $this->assertSame('missing_iat', $result['error']);
     }
 
     /** TV-16 aud as array instead of string — wrong_aud */

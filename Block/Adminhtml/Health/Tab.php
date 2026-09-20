@@ -13,6 +13,7 @@ use Magento\Framework\HTTP\Client\Curl;
 use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Model\Config\SecretReader;
 use Trusteed\AgenticCommerce\Model\Storefront\ThemeDetector;
+use Trusteed\AgenticCommerce\Model\Trust\ScoreNodeNormalizer;
 use Trusteed\AgenticCommerce\Model\Webhook\OutboxRepository;
 
 /**
@@ -58,10 +59,11 @@ class Tab extends Template
      * for SCORE_CACHE_TTL seconds. Returns null when the store is not
      * configured or the API call fails (the UI degrades gracefully).
      *
-     * Shape:
+     * Shape (see {@see ScoreNodeNormalizer}):
      *   ['status' => 'ready'|'pending'|'stale'|'unavailable',
-     *    'score'  => int|null (0-100),
-     *    'scoreCap' => int|null,
+     *    'score'  => float|null (0-100, ONE DECIMAL — the v4.1 engine emits
+     *                44.7 / 81.4 …, NOT integers),
+     *    'scoreCap' => float|null (null in the `insufficient_data` state),
      *    'confidenceLevel' => string|null,
      *    'nextMilestone'   => string|null]
      */
@@ -118,18 +120,11 @@ class Tab extends Template
                 return null;
             }
 
-            $scoreNode = $data['score'];
-            $result = [
-                'status' => (string)($scoreNode['status'] ?? 'unavailable'),
-                'score' => is_int($scoreNode['score'] ?? null) ? (int)$scoreNode['score'] : null,
-                'scoreCap' => is_int($scoreNode['scoreCap'] ?? null) ? (int)$scoreNode['scoreCap'] : null,
-                'confidenceLevel' => isset($scoreNode['confidenceLevel'])
-                    ? (string)$scoreNode['confidenceLevel']
-                    : null,
-                'nextMilestone' => isset($scoreNode['nextMilestone'])
-                    ? (string)$scoreNode['nextMilestone']
-                    : null,
-            ];
+            // F1-4b — the previous inline parse used `is_int(...) ? (int)... : null`,
+            // which discarded every decimal score the v4.1 engine emits (see
+            // ScoreNodeNormalizer's docblock). Normalisation now lives in a pure,
+            // unit-tested class instead of being re-derived at each call site.
+            $result = ScoreNodeNormalizer::normalize($data['score']);
 
             $this->cache->save(
                 json_encode($result, JSON_THROW_ON_ERROR),

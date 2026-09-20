@@ -4,31 +4,31 @@
     <menu>
         <add id="Trusteed_AgenticCommerce::trusteed" title="Trusteed" module="Trusteed_AgenticCommerce"
              sortOrder="80" resource="Magento_Backend::stores"/>
-        <add id="Trusteed_AgenticCommerce::inicio" title="Inicio" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::inicio" title="Home" module="Trusteed_AgenticCommerce"
              sortOrder="10" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/dashboard/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::health" title="¿Cómo va mi tienda?" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::health" title="How is my store doing?" module="Trusteed_AgenticCommerce"
              sortOrder="20" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/health/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::ventas" title="Mis ventas" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::ventas" title="My sales" module="Trusteed_AgenticCommerce"
              sortOrder="30" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/ventas/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::agentes" title="A quién le vendo" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::agentes" title="Who I'm selling to" module="Trusteed_AgenticCommerce"
              sortOrder="35" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/agentes/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::reglas" title="Mis Reglas" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::reglas" title="My Rules" module="Trusteed_AgenticCommerce"
              sortOrder="40" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/reglas/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::pagos" title="Métodos de pago" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::pagos" title="Payment Methods" module="Trusteed_AgenticCommerce"
              sortOrder="45" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/pagos/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::seguridad" title="Seguridad" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::seguridad" title="Security" module="Trusteed_AgenticCommerce"
              sortOrder="50" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/seguridad/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::ajustes" title="Ajustes" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::ajustes" title="Settings" module="Trusteed_AgenticCommerce"
              sortOrder="55" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/ajustes/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::setup_wizard" title="Configuración" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::setup_wizard" title="Setup Wizard" module="Trusteed_AgenticCommerce"
              sortOrder="60" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/setup/wizard" resource="Trusteed_AgenticCommerce::config"/>
     </menu>

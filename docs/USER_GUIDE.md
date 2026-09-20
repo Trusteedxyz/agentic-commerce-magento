@@ -1,6 +1,6 @@
 # User Guide — Trusteed Agentic Commerce for Magento 2
 
-Version 1.1.1
+Version 1.3.4
 
 ---
 
@@ -31,7 +31,7 @@ their AI assistant to "buy a blue widget from [your store]", the agent:
 
 1. Discovers your store via the MCP manifest at `/.well-known/mcp.json`
 2. Browses your catalog and adds items to a cart
-3. Validates the order against your rules (price limits, allowed agents, HITL thresholds)
+3. Validates the order against your rules (price limits, allowed agents, manual approval)
 4. Completes the purchase and receives a cryptographically signed Trust Receipt
 
 Every step is logged and auditable, and you control it from the **Trusteed** admin menu.
@@ -57,8 +57,8 @@ Customer → AI Agent → MCP Discovery → Your Magento Store
 | **Agent** | An AI assistant (Claude, ChatGPT, etc.) acting on behalf of a customer |
 | **MCP** | Model Context Protocol — the open standard agents use to interact with stores |
 | **Trust Receipt** | A cryptographically signed record of each agent transaction (Ed25519) |
-| **Rule** | A merchant-defined constraint (max order value, allowed agents, HITL threshold) |
-| **HITL** | Human-in-the-Loop — orders above a threshold require your manual approval |
+| **Rule** | A merchant-defined constraint (max order value, allowed agents, category blocklist) |
+| **HITL** | Human-in-the-Loop: agent orders that wait for your manual approval before they complete |
 | **Enforcement mode** | `observe` = log only; `enforce` = block orders that violate rules |
 
 ---
@@ -143,11 +143,11 @@ are not affected.
 
 ### Agent identity levels
 
-| Level | Description |
-|-------|-------------|
-| `verified` | Agent presented a valid cryptographic identity token |
+| Level        | Description                                                               |
+| ------------ | ------------------------------------------------------------------------- |
+| `verified`   | Agent presented a valid cryptographic identity token                      |
 | `unverified` | Agent identified itself but token could not be cryptographically verified |
-| `anonymous` | No agent identity presented |
+| `anonymous`  | No agent identity presented                                               |
 
 You can configure minimum trust levels in **Mis Reglas**.
 
@@ -162,18 +162,23 @@ be in `observe` mode (log only) or `enforce` mode (block violations).
 
 ### Common rules
 
-The catalog has 46 rules in total (R001 to R062, not contiguous). These are the
-ones this guide refers to:
+| Rule Code | Name                             | Description                                                                         |
+| --------- | -------------------------------- | ----------------------------------------------------------------------------------- |
+| R001      | Verified Agent Required          | Requires a cryptographically identified buying agent; rejects anonymous agents      |
+| R005      | Revoked Agent Block              | Blocks agents that have been revoked or suspended                                   |
+| R007      | Cross-Merchant Abuse Signal      | Blocks agents carrying an abuse signal raised across merchants                      |
+| R011      | Repeat Failed Checkout           | Blocks agents with too many recent failed checkout attempts                         |
+| R022      | Payment Rail Restriction         | Restricts which payment methods or rails agent checkout may use                     |
+| R030      | Simple Controls                  | Basic max-amount and allowed-country controls in a single rule                      |
+| R032      | Category Blocklist               | Blocks agent purchases in categories you list (alcohol, tobacco, weapons, adult)    |
+| R035      | Max Order Value                  | Caps the total amount of an agent order                                             |
+| R042      | Max Orders Per Agent Per Day     | Caps successful orders per agent per 24 h — complements R011, which counts failures |
+| R043      | Agent Checkout Approval Required | Requires your manual approval for **every** agent order via the HITL flow           |
 
-| Rule code | Name | Description |
-|-----------|------|-------------|
-| R001 | `verified-agent-required` | Blocks checkout when no verified agent identity is present |
-| R011 | `repeat-failed-checkout` | Blocks agents that exceed a set number of failed checkout attempts within a time window |
-| R017 | `discount-anomaly-applied` | Caps the number of discount codes on the cart and the total discount depth |
-| R022 | `payment-rail-restriction` | Allows or blocks specific payment methods |
-| R032 | `category-blocklist` | Blocks agent purchases of products in the categories you list |
-| R035 | `max-order-value` | Blocks agent orders above a maximum total. It has no default, so it does nothing until you set a limit |
-| R043 | `agent-checkout-approval-required` | Sends agent orders to manual approval instead of approving them automatically |
+Codes and names above are the canonical ones. A rule code means the same thing on
+every platform, so `R035` is the amount cap everywhere — do not read a code by its
+number. The engine ships **46** rules in total; this table is the subset merchants
+configure most often.
 
 ### Rule modes
 
@@ -208,7 +213,7 @@ falls back to the next method in sequence. If all methods fail, the order is not
 created.
 
 > **To change your payment method order**, contact Trusteed support at
-> support@trusteed.xyz or access the main portal at app.trusteed.xyz.
+> support@trusteed.xyz or access the main portal at trusteed.xyz/dashboard.
 
 ---
 
@@ -259,12 +264,21 @@ rules it can evaluate on its own: the country check of R014, R018, R019, R020, R
 R027, R028, R029 and R030. If one of them matches, the order is blocked whatever the
 mode. If none matches, the mode decides:
 
-| Mode | Behavior |
-|------|---------|
-| `observe` | The order is allowed through. Use in low-risk environments. |
-| `enforce` (default) | The order is blocked. Use in high-value or regulated environments. |
+| Mode      | Behavior                                                                                                               |
+| --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `observe` | If the API is down, all orders are allowed through. Violations are logged retroactively. Use in low-risk environments. |
+| `enforce` | If the API is down, all agent orders are blocked. Use in high-value or regulated environments.                         |
 
-Rules outside that set, such as R001 or R035, need the API to be evaluated.
+When the API is unreachable this module falls back to its bundled offline
+evaluator (`Enforcement/OfflineSafetyValveEvaluator.php`), which decides nine
+rules on its own: **R014** (country dimension only — the cancellation-history
+dimension needs a backend lookup), **R018**, **R019**, **R020**, **R025**,
+**R027**, **R028**, **R029** and **R030**. Those nine keep working under either
+mode above.
+
+Every other rule needs the backend, **including R001 and R007** — under
+`observe` they are skipped, and under `enforce` the order is blocked by the
+setting above rather than evaluated.
 
 ### Payment method order
 
@@ -363,11 +377,7 @@ your Trusteed dashboard, not through a screen in the Magento admin.
 
 ### Configuring the HITL rule
 
-R043 has two settings, which you configure in **Trusteed → Mis Reglas**:
-
-- `minCents`: the amount from which an agent order needs approval. If you leave it
-  unset, the rule applies to every agent checkout.
-- `ttlMinutes`: how long the approval window stays open.
+R043 sends every agent order to manual approval. It has no amount threshold. The only setting is `ttlMinutes`, how long the approval window stays open (60 minutes by default). You set it in **Trusteed → Mis Reglas**.
 
 ---
 
@@ -393,8 +403,9 @@ restored.
 
 **Q: Can I limit which products agents can purchase?**
 
-Yes. Configure rule **R032 (Category blocklist)** in **Mis Reglas** to block the
-categories you don't want agents to buy from.
+Yes. Configure rule **R032 (Category Blocklist)** in **Mis Reglas**. It blocks the
+categories you list. (`R007` is a different rule: it blocks agents carrying a
+cross-merchant abuse signal.)
 
 **Q: How are agent payments handled?**
 

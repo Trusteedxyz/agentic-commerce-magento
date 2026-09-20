@@ -1,6 +1,6 @@
 # Guía de Usuario — Trusteed Agentic Commerce para Magento 2
 
-Versión 1.1.1
+Versión 1.3.4
 
 ---
 
@@ -31,7 +31,7 @@ a su asistente IA que "compre un widget azul en [su tienda]", el agente:
 
 1. Descubre su tienda a través del manifiesto MCP en `/.well-known/mcp.json`
 2. Navega por su catálogo y añade artículos al carrito
-3. Valida el pedido con sus reglas (límites de precio, agentes permitidos, umbrales HITL)
+3. Valida el pedido con sus reglas (límites de precio, agentes permitidos, aprobación manual)
 4. Completa la compra y recibe un Trust Receipt firmado criptográficamente
 
 Cada paso queda registrado, es auditable y controlable desde el menú **Trusteed**
@@ -58,8 +58,8 @@ Cliente → Agente IA → Descubrimiento MCP → Su Tienda Magento
 | **Agente** | Un asistente IA (Claude, ChatGPT, etc.) que actúa en nombre de un cliente |
 | **MCP** | Model Context Protocol — el estándar abierto que los agentes usan para interactuar con tiendas |
 | **Trust Receipt** | Registro firmado criptográficamente de cada transacción de agente (Ed25519) |
-| **Regla** | Una restricción definida por el comerciante (valor máximo, agentes permitidos, umbral HITL) |
-| **HITL** | Human-in-the-Loop — los pedidos por encima de un umbral requieren su aprobación manual |
+| **Regla** | Una restricción definida por el comerciante (valor máximo, agentes permitidos, lista de categorías bloqueadas) |
+| **HITL** | Human-in-the-Loop: pedidos de agentes que esperan su aprobación manual antes de completarse |
 | **Modo de cumplimiento** | `observe` = solo registrar; `enforce` = bloquear pedidos que infrinjan reglas |
 
 ---
@@ -146,11 +146,11 @@ pedido. Los pedidos completados existentes no se ven afectados.
 
 ### Niveles de identidad del agente
 
-| Nivel | Descripción |
-|-------|-------------|
-| `verified` | El agente presentó un token de identidad criptográfica válido |
+| Nivel        | Descripción                                                                  |
+| ------------ | ---------------------------------------------------------------------------- |
+| `verified`   | El agente presentó un token de identidad criptográfica válido                |
 | `unverified` | El agente se identificó pero el token no pudo verificarse criptográficamente |
-| `anonymous` | No se presentó identidad de agente |
+| `anonymous`  | No se presentó identidad de agente                                           |
 
 Puede configurar niveles mínimos de confianza en **Mis Reglas**.
 
@@ -165,18 +165,23 @@ Cada regla puede estar en modo `observe` (solo registrar) o `enforce` (bloquear 
 
 ### Reglas comunes
 
-El catálogo tiene 46 reglas en total (de R001 a R062, no contiguas). Estas son las que
-cita esta guía:
+| Código | Nombre                              | Descripción                                                                                      |
+| ------ | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
+| R001   | Agente verificado obligatorio       | Exige un agente comprador identificado criptográficamente; rechaza agentes anónimos              |
+| R005   | Bloqueo de agente revocado          | Bloquea los agentes revocados o suspendidos                                                      |
+| R007   | Señal de abuso entre comercios      | Bloquea agentes que arrastran una señal de abuso levantada en otros comercios                    |
+| R011   | Checkouts fallidos repetidos        | Bloquea agentes con demasiados intentos de checkout fallidos recientes                           |
+| R022   | Restricción de vía de pago          | Restringe qué métodos o vías de pago admite el checkout de agente                                |
+| R030   | Controles simples                   | Tope de importe y países permitidos, en una sola regla                                           |
+| R032   | Lista de categorías bloqueadas      | Bloquea las compras de agente en las categorías que usted liste (alcohol, tabaco, armas, adulto) |
+| R035   | Importe máximo de pedido            | Limita el importe total de un pedido de agente                                                   |
+| R042   | Máximo de pedidos por agente al día | Limita los pedidos con éxito por agente cada 24 h — complementa a R011, que cuenta los fallos    |
+| R043   | Aprobación de checkout obligatoria  | Exige su aprobación manual para **cada** pedido de agente, vía el flujo HITL                     |
 
-| Código | Nombre | Descripción |
-|--------|--------|-------------|
-| R001 | `verified-agent-required` | Bloquea el checkout cuando no hay una identidad de agente verificada |
-| R011 | `repeat-failed-checkout` | Bloquea a los agentes que superan un número de intentos de checkout fallidos dentro de una ventana de tiempo |
-| R017 | `discount-anomaly-applied` | Limita el número de códigos de descuento del carrito y la profundidad total del descuento |
-| R022 | `payment-rail-restriction` | Permite o bloquea métodos de pago concretos |
-| R032 | `category-blocklist` | Bloquea las compras de agentes de productos de las categorías que usted indique |
-| R035 | `max-order-value` | Bloquea pedidos de agentes por encima de un total máximo. No tiene valor por defecto, así que no hace nada hasta que fije un límite |
-| R043 | `agent-checkout-approval-required` | Envía los pedidos de agentes a aprobación manual en lugar de aprobarlos automáticamente |
+Los códigos y nombres de arriba son los canónicos. Un código significa lo mismo en
+todas las plataformas, así que `R035` es el tope de importe en todas — no deduzca
+una regla por su número. El motor trae **46** reglas en total; esta tabla es el
+subconjunto que los comercios configuran más a menudo.
 
 ### Modos de regla
 
@@ -211,7 +216,7 @@ pasa al siguiente método en la secuencia. Si todos los métodos fallan, el pedi
 se crea.
 
 > **Para cambiar el orden de sus métodos de pago**, contacte con el soporte de Trusteed
-> en support@trusteed.xyz o acceda al portal principal en app.trusteed.xyz.
+> en support@trusteed.xyz o acceda al portal principal en trusteed.xyz/dashboard.
 
 ---
 
@@ -262,16 +267,21 @@ pequeño conjunto de reglas que puede evaluar por sí solo: la comprobación de 
 R014, R018, R019, R020, R025, R027, R028, R029 y R030. Si coincide alguna, el pedido se
 bloquea sea cual sea el modo. Si no coincide ninguna, decide el modo:
 
-| Modo | Comportamiento |
-|------|----------------|
-| `observe` | El pedido se permite. Use en entornos de bajo riesgo. |
-| `enforce` (por defecto) | El pedido se bloquea. Use en entornos de alto valor o regulados. |
+| Modo      | Comportamiento                                                                                                                       |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `observe` | Si la API está caída, todos los pedidos se permiten. Las infracciones se registran retroactivamente. Use en entornos de bajo riesgo. |
+| `enforce` | Si la API está caída, todos los pedidos de agentes se bloquean. Use en entornos de alto valor o regulados.                           |
 
-Las reglas fuera de ese conjunto, como R001 o R035, necesitan la API para evaluarse.
+Cuando la API es inaccesible, este módulo recurre a su evaluador offline incluido
+(`Enforcement/OfflineSafetyValveEvaluator.php`), que resuelve nueve reglas por sí
+solo: **R014** (solo la dimensión de país — la de historial de cancelaciones
+necesita consultar el backend), **R018**, **R019**, **R020**, **R025**, **R027**,
+**R028**, **R029** y **R030**. Esas nueve siguen funcionando con cualquiera de los
+dos modos de arriba.
 
-### Orden de los métodos de pago
-
-Consulte [Métodos de pago](#7-métodos-de-pago).
+El resto de reglas necesita el backend, **incluidas R001 y R007** — con `observe`
+se omiten, y con `enforce` el pedido lo bloquea la configuración de arriba en
+lugar de evaluarse.
 
 ---
 
@@ -366,11 +376,7 @@ su panel de Trusteed, no desde una pantalla del administrador de Magento.
 
 ### Configurar la regla HITL
 
-R043 tiene dos ajustes, que usted configura en **Trusteed → Mis Reglas**:
-
-- `minCents`: el importe a partir del cual un pedido de agente necesita aprobación. Si
-  lo deja sin fijar, la regla se aplica a todos los checkouts de agentes.
-- `ttlMinutes`: cuánto tiempo permanece abierta la ventana de aprobación.
+R043 envía todos los pedidos de agentes a aprobación manual. No tiene umbral de importe. El único ajuste es `ttlMinutes`, el tiempo que permanece abierta la ventana de aprobación (60 minutos por defecto). Lo configura en **Trusteed → Mis Reglas**.
 
 ---
 
@@ -398,8 +404,9 @@ conectividad.
 
 **P: ¿Puedo limitar qué productos pueden comprar los agentes?**
 
-Sí. Configure la regla **R032 (Lista de categorías bloqueadas)** en **Mis Reglas** para
-bloquear las categorías a las que no quiere que compren los agentes.
+Sí. Configure la regla **R032 (Lista de categorías bloqueadas)** en **Mis Reglas**.
+Bloquea las categorías que usted liste. (`R007` es otra regla distinta: bloquea
+agentes que arrastran una señal de abuso entre comercios.)
 
 **P: ¿Cómo se gestionan los pagos de los agentes?**
 

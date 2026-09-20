@@ -105,13 +105,31 @@ class AgentTokenVerifier
             return $this->result('invalid', $did, 0.0, 'merchant_id_mismatch');
         }
 
+        // H4 (verificación 2026-07-28) — `exp`, `iat` y `nonce` son
+        // OBLIGATORIOS. El schema canónico los exige (`AgentTokenPayloadSchema`
+        // en packages/shared/src/enforcement/types.ts) y WooCommerce ya los
+        // exigía. Aquí las dos comprobaciones de abajo colgaban de `> 0`, así
+        // que un token que OMITÍA el claim (o lo ponía a 0) se saltaba entera
+        // la caducidad y el tope de antigüedad: válido para siempre.
+        if (!isset($payload['exp']) || !is_numeric($payload['exp'])) {
+            return $this->result('invalid', $did, 0.0, 'missing_exp', $kid);
+        }
+        if (!isset($payload['iat']) || !is_numeric($payload['iat'])) {
+            return $this->result('invalid', $did, 0.0, 'missing_iat', $kid);
+        }
+        $nonceClaim = isset($payload['nonce']) ? (string)$payload['nonce'] : '';
+        $nonceLen = strlen($nonceClaim);
+        if ($nonceLen < 16 || $nonceLen > 64) {
+            return $this->result('invalid', $did, 0.0, 'missing_nonce', $kid);
+        }
+
         $now = time();
-        $exp = isset($payload['exp']) ? (int)$payload['exp'] : 0;
-        if ($exp > 0 && $now > $exp + 30) {
+        $exp = (int)$payload['exp'];
+        if ($now > $exp + 30) {
             return $this->result('invalid', $did, 0.0, 'expired');
         }
-        $iat = isset($payload['iat']) ? (int)$payload['iat'] : 0;
-        if ($iat > 0 && ($now - $iat) > self::MAX_AGE_SECONDS) {
+        $iat = (int)$payload['iat'];
+        if (($now - $iat) > self::MAX_AGE_SECONDS) {
             return $this->result('invalid', $did, 0.0, 'too_old');
         }
 

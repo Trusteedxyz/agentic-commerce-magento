@@ -1,6 +1,6 @@
 # Guía de Instalación — Trusteed Agentic Commerce para Magento 2
 
-Versión 1.1.1 · Magento Open Source y Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
+Versión 1.3.4 · Magento Open Source y Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
 ---
 
@@ -22,20 +22,25 @@ Versión 1.1.1 · Magento Open Source y Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
 ## 1. Requisitos del sistema
 
-| Componente | Mínimo | Recomendado |
-|------------|--------|-------------|
-| Magento Open Source | 2.4.7 | 2.4.8 |
-| Adobe Commerce | 2.4.7 | 2.4.8 |
-| PHP | 8.2 | 8.3 |
-| Extensiones PHP | `curl`, `json`, `openssl` | + `ext-sodium` |
-| MySQL / MariaDB | 8.0 / 10.6 | MySQL 8.0 |
-| Composer | 2.x | 2.7+ |
-| Cron | Requerido | — |
+| Componente          | Mínimo                    | Recomendado    |
+| ------------------- | ------------------------- | -------------- |
+| Magento Open Source | 2.4.7                     | 2.4.8          |
+| Adobe Commerce      | 2.4.7                     | 2.4.8          |
+| PHP                 | 8.2                       | 8.3            |
+| Extensiones PHP     | `curl`, `json`, `openssl`, `sodium` | igual |
+| MySQL / MariaDB     | 8.0 / 10.6                | MySQL 8.0      |
+| Composer            | 2.x                       | 2.7+           |
+| Cron                | Requerido                 | —              |
 
-> **Instale `ext-sodium`.** El módulo incluye un respaldo en PHP puro
-> (`paragonie/sodium_compat`) para verificar los tokens de agente con Ed25519,
-> pero `ext-sodium` nativo es la mejor opción y está disponible en todas
-> las compilaciones de PHP 8.2 o posterior.
+> **`ext-sodium` es un requisito, no una opción.** Realiza las comprobaciones Ed25519
+> en las que se apoyan la verificación del token de agente y la verificación del
+> snapshot de enforcement. Sin ella, ambas verificaciones devuelven `indeterminate`:
+> el conector no puede establecer la identidad del agente, así que nunca confirma a
+> ningún agente como verificado. El módulo **no** incluye ningún fallback en PHP puro:
+> `paragonie/sodium_compat` no está declarado como dependencia, por lo que la rama de
+> compatibilidad que hay en el código es inalcanzable en una instalación normal.
+> `ext-sodium` viene incluida y activada por defecto en prácticamente todas las
+> compilaciones de PHP 8.2+.
 
 ---
 
@@ -43,9 +48,9 @@ Versión 1.1.1 · Magento Open Source y Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
 Antes de instalar, confirme que:
 
-- [ ] Dispone de una cuenta Trusteed en [app.trusteed.xyz](https://app.trusteed.xyz)
+- [ ] Dispone de una cuenta Trusteed en [trusteed.xyz/dashboard](https://trusteed.xyz/dashboard)
 - [ ] El cron de Magento está en funcionamiento (`bin/magento cron:run` finaliza sin errores)
-- [ ] Tiene credenciales del Magento Marketplace (clave pública / clave privada) **o** realizará la instalación manual
+- [ ] Su proyecto Magento puede autenticarse contra `repo.magento.com` (clave pública / clave privada), **o** realizará la instalación manual desde el `.zip`
 - [ ] Ha activado el modo de mantenimiento en producción:
   ```bash
   bin/magento maintenance:enable
@@ -56,9 +61,12 @@ Antes de instalar, confirme que:
 
 ## 3. Instalación vía Composer
 
-### 3.1 Configurar la autenticación del Magento Marketplace
+### 3.1 Comprobar la autenticación del repositorio de Magento
 
-Si aún no está configurada:
+Este módulo **no** se distribuye a través del Magento Marketplace, así que no necesita
+credenciales propias de Marketplace. Solo hará falta la autenticación contra
+`repo.magento.com` porque su propio proyecto Magento ya descarga de ahí sus paquetes,
+como es lo habitual:
 
 ```bash
 composer config http-basic.repo.magento.com <CLAVE_PUBLICA> <CLAVE_PRIVADA>
@@ -66,8 +74,22 @@ composer config http-basic.repo.magento.com <CLAVE_PUBLICA> <CLAVE_PRIVADA>
 
 ### 3.2 Requerir el paquete
 
+Este paquete **todavía no está publicado en Packagist**, así que primero hay que
+indicarle a Composer dónde encontrarlo. Añada lo siguiente al `composer.json` de su
+proyecto Magento, fusionándolo con las entradas `repositories` que ya tuviera:
+
+```json
+{
+  "repositories": [
+    { "type": "vcs", "url": "https://github.com/Trusteedxyz/agentic-commerce-magento" }
+  ]
+}
+```
+
+Solo entonces se resolverá el `require`:
+
 ```bash
-composer require trusteed/agentic-commerce-magento
+composer require trusteed/agentic-commerce-magento:^1.2
 ```
 
 ### 3.3 Activar el módulo
@@ -114,13 +136,15 @@ bin/magento maintenance:disable
 
 ## 4. Instalación manual
 
-Use este método si no dispone de credenciales del Magento Marketplace o si obtuvo
-el módulo como archivo `.zip` desde la página de descargas del Marketplace.
+Use este método si prefiere no añadir una entrada de repositorio en Composer. Descargue
+el `.zip` instalable desde la
+[última GitHub Release](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest)
+— el archivo adjunto se llama `trusteed-agentic-commerce-magento-<versión>.zip`.
 
 ### 4.1 Extraer el archivo
 
 ```bash
-unzip trusteed-agentic-commerce-magento-1.1.1.zip -d /tmp/trusteed-module
+unzip trusteed-agentic-commerce-magento-1.3.4.zip -d /tmp/trusteed-module
 ```
 
 ### 4.2 Copiar los archivos en Magento
@@ -147,67 +171,96 @@ Navegue a **Trusteed → Configuración** (Setup Wizard).
 
 El asistente presenta cuatro secciones:
 
-| Sección | Propósito |
-|---------|-----------|
-| Internal HMAC Secret | Firma las solicitudes internas de latido a la API de Trusteed |
-| Checkout Enforcement (CEL) | Contiene el Enforcement Installation ID y el Enforcement HMAC Secret que proporciona Trusteed. Hasta que ambos estén definidos, el cumplimiento no hace nada |
-| Conecta tu tienda con Trusteed | El botón **Conectar con Trusteed →**, que conecta la tienda con su cuenta de Trusteed |
-| ¿Qué tiendas quieres activar? | Las vistas de tienda que pueden ver los agentes |
+| Sección                        | Propósito                                                           |
+| ------------------------------ | ------------------------------------------------------------------- |
+| Conecta tu tienda con Trusteed | Conecta la tienda. **Empiece por aquí** (ver §6)                    |
+| ¿Qué tiendas quieres activar?  | Vistas de tienda que se exponen a los agentes (§5.2)                |
+| Checkout Enforcement (CEL)     | Credenciales y modo de fallo del enforcement de checkout (ver §6.4) |
+| Internal HMAC Secret           | Firma las llamadas internas de latido a la API de Trusteed (§5.3)   |
 
-### 5.2 Generar el secreto HMAC interno
+> **No hay ningún valor que copiar a mano para conectar la tienda.** El
+> Merchant ID, el token de integración y el secreto de webhook los rellena el
+> propio asistente durante la conexión (§6). Si busca esos campos en el
+> formulario no los verá: están ocultos a propósito.
 
-El secreto HMAC firma las solicitudes internas de latido a la API de Trusteed.
-Debe coincidir con el valor configurado en el backend de Trusteed para su cuenta.
-
-El equipo de operaciones de Trusteed provisiona este valor. Use el que Trusteed le
-entregó para su cuenta de comerciante.
-
-Péguelo en **Internal HMAC Secret** y haga clic en **Guardar**.
-
-### 5.3 Configurar vistas de tienda
+### 5.2 Configurar Vistas de Tienda
 
 En **¿Qué tiendas quieres activar?** seleccione las vistas de tienda que desea
 exponer a los agentes IA. Los agentes solo pueden navegar y comprar en las vistas
 de tienda habilitadas.
 
+### 5.3 Secreto HMAC Interno (sólo si Trusteed se lo ha entregado)
+
+El secreto HMAC firma las llamadas internas a la API (cabecera `X-Trusteed-Signature`, junto con `X-Trusteed-Connection-Id` y `X-Trusteed-Timestamp`).
+**No es autoservicio y no aparece en ninguna pantalla del panel**: lo provisiona
+el equipo de Trusteed y sólo se entrega a las cuentas que lo necesitan.
+
+Si no le han dado uno, **deje el campo vacío y continúe** — la instalación
+funciona sin él. Si se lo han entregado, péguelo en **Internal HMAC Secret** y
+haga clic en **Guardar**.
+
 ---
 
 ## 6. Conexión con Trusteed
 
-### 6.1 Obtener sus credenciales de API
+La conexión es un flujo de autorización en ventana emergente, al estilo de
+«iniciar sesión con…». **No se pega ninguna credencial a mano.**
 
-Inicie sesión en [app.trusteed.xyz](https://app.trusteed.xyz) y navegue a
-**Configuración → Integraciones → Magento**:
+### 6.1 Requisito previo: una cuenta de Trusteed
 
-| Credencial | Dónde encontrarla |
-|------------|-------------------|
-| Merchant ID | Configuración → Cuenta → Merchant ID |
-| Integration Token | Configuración → Integraciones → Magento → Token |
-| Webhook Secret | Configuración → Integraciones → Magento → Webhook Secret |
-| Connection ID | Asignado automáticamente al conectar |
+Necesita una cuenta en [trusteed.xyz](https://trusteed.xyz). Si aún no la tiene,
+créela antes de continuar: la ventana emergente del paso siguiente le pedirá
+iniciar sesión.
 
-### 6.2 Introducir credenciales en Magento
+### 6.2 Pulsar "Conectar con Trusteed →"
 
-Navegue a **Tiendas → Configuración → Trusteed → Agentic Commerce**:
+En el Asistente de Configuración (**Trusteed → Configuración**), pulse
+**Conectar con Trusteed →**. Ocurre esto:
 
-1. **API Base URL**: `https://api.trusteed.xyz`. No la cambie salvo que Trusteed se lo indique.
-2. **Merchant ID**: pegue el valor de su cuenta de Trusteed.
-3. **Integration Token**: pegue el token de integración. Magento lo guarda cifrado.
-4. **Webhook Secret**: pegue el secreto de webhook. Magento lo guarda cifrado.
+1. Se abre una ventana emergente hacia `trusteed.xyz/connect/magento`.
+2. Usted inicia sesión y autoriza la conexión de esta tienda.
+3. La ventana se cierra y devuelve al asistente un **token de un solo uso**
+   junto con su Merchant ID.
+4. El asistente guarda el formulario, y **el servidor de Magento** canjea ese
+   token por las credenciales definitivas (Connection ID, secreto de webhook y
+   secreto de embed). El token no se guarda en ningún sitio: sólo vive durante
+   ese canje.
 
-Haga clic en **Guardar Configuración**.
+Si su navegador bloquea las ventanas emergentes, permítalas para el dominio de
+su back office y vuelva a pulsar el botón.
 
-### 6.3 Hacer clic en "Conectar con Trusteed"
+### 6.3 Comprobar que ha funcionado
 
-En el Asistente de Configuración (**Trusteed → Configuración**) haga clic en el
-botón **Conectar con Trusteed →**. Esto:
+Tras el guardado verá el mensaje **«Trusteed configuration saved successfully»**.
+En **Tiendas → Configuración → Trusteed → Agentic Commerce** el campo
+**Connection ID** habrá dejado de estar vacío. Ése es el indicador fiable de que
+la conexión se completó.
 
-1. Valida la conectividad con la API de Trusteed
-2. Registra su instancia de Magento como tienda conectada
-3. Devuelve un **Connection ID**, que Magento guarda automáticamente en la configuración
+> **No modifique a mano el Integration Token ni el Webhook Secret** en esa
+> pantalla después de conectar. El backend guarda su propia copia de los
+> secretos emitidos durante el canje; sobrescribirlos localmente rompe la firma
+> de los webhooks sin ningún aviso. Si necesita rotarlos, vuelva a pulsar
+> **Conectar con Trusteed →**.
 
-Aparecerá un banner verde **"Your store is connected"** en el Panel
-(**Trusteed → Inicio**) una vez establecida la conexión.
+### 6.4 Activar el enforcement de checkout (paso aparte)
+
+Conectar la tienda **no activa el enforcement de checkout**. Ese módulo necesita
+dos credenciales más, que Trusteed provisiona por separado:
+
+| Campo del asistente         | Config path                            |
+| --------------------------- | -------------------------------------- |
+| Enforcement Installation ID | `trusteed/enforcement/installation_id` |
+| Enforcement HMAC Secret     | `trusteed/enforcement/hmac_secret`     |
+
+Mientras el **Installation ID** esté vacío, `EnforcementClient` deja pasar todos
+los checkouts sin evaluar ni una regla. Es deliberado —una tienda a medio
+configurar no debe bloquear ventas—, pero significa que **no está protegido
+todavía**. El módulo se lo recuerda con un aviso en el panel de administración
+hasta que ambos valores estén puestos.
+
+Si quiere enforcement, pídale esas dos credenciales a Trusteed, péguelas en el
+asistente y guarde. Si no las necesita, puede dejar el aviso: el resto del
+módulo funciona.
 
 ---
 
@@ -222,6 +275,9 @@ bin/magento module:status Trusteed_AgenticCommerce
 
 ### 7.2 Verificar tablas de la base de datos
 
+Magento 2 no tiene ningún comando de validación de esquema (`doctrine:schema:validate`
+pertenece a Doctrine, no a Magento). Compruebe los objetos directamente:
+
 ```bash
 mysql -u <usuario> -p <bbdd> -e "DESCRIBE trusteed_webhook_outbox;"
 mysql -u <usuario> -p <bbdd> -e "SHOW COLUMNS FROM sales_order LIKE 'trusteed_%';"
@@ -230,9 +286,20 @@ mysql -u <usuario> -p <bbdd> -e "SHOW COLUMNS FROM sales_order LIKE 'trusteed_%'
 ### 7.3 Verificar el endpoint del manifiesto MCP
 
 ```bash
-curl -sf https://<SU_TIENDA>/.well-known/mcp.json
-# Debe devolver un JSON con las capacidades de la tienda
+curl -sf https://<TU_TIENDA>/.well-known/mcp.json
+# Debe devolver un manifiesto JSON cuyas claves de primer nivel incluyan
+# schema_version, issuer, merchant_id, store_views, capabilities y signature
 ```
+
+O deje que el módulo lo compruebe por usted, incluida la reescritura del servidor web:
+
+```bash
+bin/magento trusteed:check-webserver
+```
+
+No existe ninguna ruta de frontend `/trusteed/...`: el `frontName` de frontend del
+módulo es `nlweb`, y `/.well-known/mcp.json` lo sirve un router propio, no un
+`frontName`.
 
 ### 7.4 Comprobar el panel de administración
 
@@ -255,10 +322,10 @@ grep trusteed var/log/cron.log
 
 El módulo registra dos trabajos cron en el grupo `default`:
 
-| Trabajo | Programación | Propósito |
-|---------|-------------|-----------|
-| `trusteed_webhook_drain` | Cada minuto | Entrega los webhooks pendientes desde la bandeja de salida a la API de Trusteed con reintento exponencial |
-| `trusteed_lag_heartbeat` | Cada minuto | Emite una métrica de latencia para que el panel de Trusteed pueda alertar sobre retrasos |
+| Trabajo                  | Programación | Propósito                                                                                                 |
+| ------------------------ | ------------ | --------------------------------------------------------------------------------------------------------- |
+| `trusteed_webhook_drain` | Cada minuto  | Entrega los webhooks pendientes desde la bandeja de salida a la API de Trusteed con reintento exponencial |
+| `trusteed_lag_heartbeat` | Cada minuto  | Emite una métrica de latencia para que el panel de Trusteed pueda alertar sobre retrasos                  |
 
 **El cron es obligatorio.** Sin él, los eventos de pedido (creado, enviado,
 reembolsado) se acumularán en la tabla `trusteed_webhook_outbox` y nunca se entregarán.
@@ -364,7 +431,15 @@ sudo dnf install php-sodium
 sudo systemctl restart php8.2-fpm
 ```
 
-El respaldo en PHP puro se activa automáticamente si `ext-sodium` no está presente.
+No hay ningún fallback al que recurrir: `paragonie/sodium_compat` no está declarado
+como dependencia de este módulo, así que `ext-sodium` tiene que estar presente.
+Mientras falte, la verificación del token de agente y la del snapshot de enforcement
+devuelven ambas `indeterminate` y ningún agente llega a confirmarse como verificado.
+Confirme que está cargada con:
+
+```bash
+php -m | grep -i sodium
+```
 
 ### Los pedidos no aparecen en el panel de Trusteed
 

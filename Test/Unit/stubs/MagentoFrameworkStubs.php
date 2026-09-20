@@ -353,6 +353,9 @@ namespace Magento\Store\Model {
     if (!\class_exists(Store::class)) {
         class Store
         {
+            public const XML_PATH_UNSECURE_BASE_URL = 'web/unsecure/base_url';
+            public const XML_PATH_SECURE_BASE_URL = 'web/secure/base_url';
+
             public function getId()
             {
                 return null;
@@ -521,6 +524,66 @@ namespace Magento\Sales\Model\Order {
             {
                 return null;
             }
+        }
+    }
+}
+
+// ── Magento\Framework\Phrase ─────────────────────────────────────────────────
+
+namespace Magento\Framework {
+    if (!\class_exists(Phrase::class)) {
+        class Phrase
+        {
+            public function __construct(private string $text = '')
+            {
+            }
+
+            public function __toString(): string
+            {
+                return $this->text;
+            }
+        }
+    }
+}
+
+// ── Magento\Framework\Notification ───────────────────────────────────────────
+
+namespace Magento\Framework\Notification {
+    if (!\interface_exists(MessageInterface::class)) {
+        interface MessageInterface
+        {
+            public const SEVERITY_CRITICAL = 1;
+            public const SEVERITY_MAJOR = 2;
+            public const SEVERITY_MINOR = 3;
+            public const SEVERITY_NOTICE = 4;
+
+            public function getIdentity();
+
+            public function isDisplayed();
+
+            public function getText();
+
+            public function getSeverity();
+        }
+    }
+}
+
+// ── Traducción global ────────────────────────────────────────────────────────
+//
+// El `__()` real de Magento interpola `%1`, `%2`… y devuelve un `Phrase`. Aquí
+// sólo hace falta lo segundo: los tests comprueban el TEXTO, no el mecanismo de
+// traducción, y una interpolación de mentira que se comiera un argumento haría
+// pasar en verde un mensaje al que le falta un dato.
+
+namespace {
+    if (!\function_exists('__')) {
+        function __($text, ...$args): \Magento\Framework\Phrase
+        {
+            $rendered = (string) $text;
+            foreach ($args as $i => $arg) {
+                $rendered = \str_replace('%' . ($i + 1), (string) $arg, $rendered);
+            }
+            return new \Magento\Framework\Phrase($rendered);
         }
     }
 }

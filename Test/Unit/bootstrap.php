@@ -24,5 +24,20 @@ if (!interface_exists(\Magento\Framework\Event\ObserverInterface::class)) {
     require_once __DIR__ . '/stubs/MagentoFrameworkStubs.php';
 }
 
+/*
+ * `symfony/console` ships transitively with the real Magento framework; stub it
+ * for local runs so the console-command tests can load their subjects.
+ */
+if (!class_exists(\Symfony\Component\Console\Command\Command::class)) {
+    require_once __DIR__ . '/stubs/SymfonyConsoleStubs.php';
+}
+
+/*
+ * Namespaced cURL shims — must be declared before CheckWebserver executes so
+ * its unqualified curl_*() calls resolve to the canned test transport.
+ */
+require_once __DIR__ . '/stubs/CurlFunctionStubs.php';
+require_once __DIR__ . '/../../Console/Command/CheckWebserver.php';
+
 require_once __DIR__ . '/../../Observer/SalesOrderPaymentFailedObserver.php';
 require_once __DIR__ . '/../../Service/EnforcementClient.php';

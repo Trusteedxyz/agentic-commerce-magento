@@ -63,7 +63,67 @@ class CheckoutSubmitBefore implements ObserverInterface
     ) {}
 
     /**
+     * Spec-048 4.9 — señales de carrito que ESTA instalación sabe proyectar.
+     *
+     * Es la mitad "qué aporto" del contrato cuya otra mitad es
+     * `RULE_SIGNALS_READ` ("qué lee cada regla") en el servidor. Cruzarlas
+     * convierte el silencio de `NO_SIGNAL` —una regla activada en ENFORCE que
+     * nunca dispara porque su señal no llega— en un aviso que el comerciante
+     * ve al activarla.
+     *
+     * Magento es, con diferencia, la instalación que más aporta: además del
+     * contexto de carrito proyecta el historial del agente
+     * (`projectAgentHistorySignals`), que en las otras plataformas resuelve el
+     * servidor. La lista NO se mantiene a ojo: el gate
+     * `signals-provided-plugin-declarations.test.ts` (en `packages/shared`)
+     * escanea el cuerpo de esta clase y exige que coincida exactamente con las
+     * claves que escribe.
+     *
+     * @return string[]
+     */
+    public static function signalsProvided(): array
+    {
+        return [
+            '_agent_key_age_hours',
+            '_agent_revoked',
+            '_agent_token_jti_malformed',
+            '_agent_token_jti_missing',
+            '_agent_token_nonce_unavailable',
+            '_agent_token_present',
+            '_agent_token_replay',
+            '_agent_token_signature_invalid',
+            '_autorenew',
+            '_b2b_order',
+            '_cancel_count',
+            '_cart_total_cents',
+            '_cart_total_dev_bps',
+            '_completed_orders',
+            '_cross_merchant_abuse',
+            '_dispute_count',
+            '_failed_checkout_count',
+            '_lowest_stock',
+            '_merchant_local_hour',
+            '_price_delta_bps',
+            '_product_categories',
+            '_product_platform',
+            '_provider_confidence',
+            '_qty_per_sku_max',
+            '_refund_ratio',
+            '_requested_scopes',
+            '_return_policy_mismatch',
+            '_shipping_freight_forwarder',
+            '_shipping_po_box',
+            '_stored_value_cents',
+            '_subscription',
+        ];
+    }
+
+    /**
      * @throws LocalizedException When enforcement decision is BLOCK.
+     *
+     * SIGNALS_PROVIDED_BUILDER_START — ancla del gate de 4.9: todo lo que esta
+     * clase escriba en `cartAttributes` de aquí abajo tiene que estar en
+     * `signalsProvided()`.
      */
     public function execute(Observer $observer): void
     {
