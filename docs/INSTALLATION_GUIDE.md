@@ -1,4 +1,4 @@
-# Installation Guide — Trusteed Agentic Commerce for Magento 2
+# Installation Guide: Trusteed Agentic Commerce for Magento 2
 
 Version 1.3.4 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
@@ -10,7 +10,7 @@ Version 1.3.4 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 2. [Pre-installation checklist](#2-pre-installation-checklist)
 3. [Installation via Composer](#3-installation-via-composer)
 4. [Manual installation](#4-manual-installation)
-5. [Post-Installation Setup](#5-post-installation-setup)
+5. [Post-installation setup](#5-post-installation-setup)
 6. [Connecting to Trusteed](#6-connecting-to-trusteed)
 7. [Verifying the installation](#7-verifying-the-installation)
 8. [Cron configuration](#8-cron-configuration)
@@ -30,11 +30,11 @@ Version 1.3.4 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 | PHP extensions      | `curl`, `json`, `openssl`, `sodium` | same |
 | MySQL / MariaDB     | 8.0 / 10.6                | MySQL 8.0      |
 | Composer            | 2.x                       | 2.7+           |
-| Cron                | Required                  | —              |
+| Cron                | Required                  | n/a            |
 
-> **`ext-sodium` is required, not optional.** It performs the Ed25519 checks behind
+> **`ext-sodium` is required.** It performs the Ed25519 checks behind
 > agent token verification and enforcement-snapshot verification. Without it both
-> verifications return `indeterminate` — the connector cannot establish agent
+> verifications return `indeterminate`. The connector cannot establish agent
 > identity, so it never confirms an agent as verified. The module does **not** ship a
 > pure-PHP fallback: `paragonie/sodium_compat` is not a declared dependency, so the
 > compat branch in the code is never reachable in a normal install. `ext-sodium` is
@@ -63,7 +63,7 @@ Before installing, confirm:
 
 This module is **not** distributed through the Magento Marketplace, so it needs no
 Marketplace credentials of its own. You only need `repo.magento.com` authentication
-if your Magento project already pulls its own packages from there — which it
+if your Magento project already pulls its own packages from there, which it
 normally does:
 
 ```bash
@@ -158,7 +158,7 @@ Follow steps 3.3 through 3.8 above.
 
 ---
 
-## 5. Post-Installation Setup
+## 5. Post-installation setup
 
 After installation the **Trusteed** menu appears in the Magento admin sidebar
 (below **Stores**).
@@ -181,7 +181,7 @@ The wizard presents four sections:
 > during the connection (§6). If you go looking for those fields in the form
 > you will not find them: they are hidden on purpose.
 
-### 5.2 Configure Store Views
+### 5.2 Configure store views
 
 Under **¿Qué tiendas quieres activar?** select the store views you want to
 expose to AI agents. Agents can only browse and purchase in enabled store views.
@@ -438,7 +438,7 @@ sudo dnf install php-sodium
 sudo systemctl restart php8.2-fpm
 ```
 
-There is no fallback to fall back to: `paragonie/sodium_compat` is not a declared
+There is no fallback: `paragonie/sodium_compat` is not a declared
 dependency of this module, so `ext-sodium` must be present. Until it is, agent token
 verification and enforcement-snapshot verification both return `indeterminate` and no
 agent is ever confirmed as verified. Confirm it is loaded with:

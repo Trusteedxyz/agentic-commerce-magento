@@ -1,4 +1,4 @@
-# User Guide — Trusteed Agentic Commerce for Magento 2
+# User Guide: Trusteed Agentic Commerce for Magento 2
 
 Version 1.3.4
 
@@ -18,7 +18,7 @@ Version 1.3.4
 10. [Trust Receipts](#10-trust-receipts)
 11. [Viewing agent orders in standard Magento](#11-viewing-agent-orders-in-standard-magento)
 12. [Understanding the Trust Receipt badge](#12-understanding-the-trust-receipt-badge)
-13. [HITL — Human-in-the-Loop Approvals](#13-hitl--human-in-the-loop-approvals)
+13. [HITL: human-in-the-loop approvals](#13-hitl-human-in-the-loop-approvals)
 14. [Frequently asked questions](#14-frequently-asked-questions)
 
 ---
@@ -55,7 +55,7 @@ Customer → AI Agent → MCP Discovery → Your Magento Store
 | Term | Meaning |
 |------|---------|
 | **Agent** | An AI assistant (Claude, ChatGPT, etc.) acting on behalf of a customer |
-| **MCP** | Model Context Protocol — the open standard agents use to interact with stores |
+| **MCP** | Model Context Protocol, the open standard agents use to interact with stores |
 | **Trust Receipt** | A cryptographically signed record of each agent transaction (Ed25519) |
 | **Rule** | A merchant-defined constraint (max order value, allowed agents, category blocklist) |
 | **HITL** | Human-in-the-Loop: agent orders that wait for your manual approval before they complete |
@@ -172,19 +172,19 @@ be in `observe` mode (log only) or `enforce` mode (block violations).
 | R030      | Simple Controls                  | Basic max-amount and allowed-country controls in a single rule                      |
 | R032      | Category Blocklist               | Blocks agent purchases in categories you list (alcohol, tobacco, weapons, adult)    |
 | R035      | Max Order Value                  | Caps the total amount of an agent order                                             |
-| R042      | Max Orders Per Agent Per Day     | Caps successful orders per agent per 24 h — complements R011, which counts failures |
+| R042      | Max Orders Per Agent Per Day     | Caps successful orders per agent per 24 h. Complements R011, which counts failures |
 | R043      | Agent Checkout Approval Required | Requires your manual approval for **every** agent order via the HITL flow           |
 
 Codes and names above are the canonical ones. A rule code means the same thing on
-every platform, so `R035` is the amount cap everywhere — do not read a code by its
-number. The engine ships **46** rules in total; this table is the subset merchants
-configure most often.
+every platform, so `R035` is the amount cap everywhere. Don't guess what a code does
+from its number. The engine ships 46 rules in total, and this table is the subset
+merchants configure most often.
 
 ### Rule modes
 
-- **Observe**: the rule evaluates and logs its verdict, but never blocks an order.
-  Use this when initially deploying a rule to understand its impact before enforcing.
-- **Enforce**: the rule blocks or escalates orders that violate it.
+In `observe` mode the rule evaluates and logs its verdict, but never blocks an order.
+Use it when you first deploy a rule, to see its impact before you enforce it. In
+`enforce` mode the rule blocks or escalates the orders that violate it.
 
 ### Switching a rule to enforce mode
 
@@ -271,14 +271,13 @@ mode. If none matches, the mode decides:
 
 When the API is unreachable this module falls back to its bundled offline
 evaluator (`Enforcement/OfflineSafetyValveEvaluator.php`), which decides nine
-rules on its own: **R014** (country dimension only — the cancellation-history
-dimension needs a backend lookup), **R018**, **R019**, **R020**, **R025**,
-**R027**, **R028**, **R029** and **R030**. Those nine keep working under either
-mode above.
+rules on its own: R014 (country dimension only, because the cancellation-history
+dimension needs a backend lookup), R018, R019, R020, R025, R027, R028, R029 and
+R030. Those nine keep working under either mode above.
 
-Every other rule needs the backend, **including R001 and R007** — under
-`observe` they are skipped, and under `enforce` the order is blocked by the
-setting above rather than evaluated.
+Every other rule needs the backend, including R001 and R007. Under `observe` they
+are skipped. Under `enforce` the order is blocked by the setting above rather than
+evaluated.
 
 ### Payment method order
 
@@ -316,11 +315,10 @@ successful agent order.
 2. Paste the JWS string from a customer's receipt
 3. Click **Verify**
 
-Results:
-
-- **VERIFIED**: the signature is valid and the receipt is authentic and unaltered
-- **INVALID**: the signature does not match, so the receipt may have been altered
-- **INDETERMINATE**: verification could not complete (e.g., JWKS endpoint unreachable)
+Verification returns one of three results. VERIFIED means the signature is valid and
+the receipt is authentic and unaltered. INVALID means the signature does not match,
+so the receipt may have been altered. INDETERMINATE means verification could not
+complete, for example because the JWKS endpoint is unreachable.
 
 ### Self-Test
 
@@ -362,7 +360,7 @@ Receipt**.
 
 ---
 
-## 13. HITL — Human-in-the-Loop Approvals
+## 13. HITL: human-in-the-loop approvals
 
 When rule **R043** is active in `enforce` mode and an agent order needs approval, the
 order is not created. Instead:

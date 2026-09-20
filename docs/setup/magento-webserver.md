@@ -75,7 +75,7 @@ web:
 ```
 
 If you already have a `/.well-known` block, merge the rule into the existing
-block — YAML does not allow duplicate keys at the same level.
+block, since YAML does not allow duplicate keys at the same level.
 
 After committing and deploying the change, verify:
 

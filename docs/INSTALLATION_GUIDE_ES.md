@@ -1,4 +1,4 @@
-# Guía de Instalación — Trusteed Agentic Commerce para Magento 2
+# Guía de instalación: Trusteed Agentic Commerce para Magento 2
 
 Versión 1.3.4 · Magento Open Source y Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
@@ -30,9 +30,9 @@ Versión 1.3.4 · Magento Open Source y Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 | Extensiones PHP     | `curl`, `json`, `openssl`, `sodium` | igual |
 | MySQL / MariaDB     | 8.0 / 10.6                | MySQL 8.0      |
 | Composer            | 2.x                       | 2.7+           |
-| Cron                | Requerido                 | —              |
+| Cron                | Requerido                 | n/d            |
 
-> **`ext-sodium` es un requisito, no una opción.** Realiza las comprobaciones Ed25519
+> **`ext-sodium` es un requisito.** Realiza las comprobaciones Ed25519
 > en las que se apoyan la verificación del token de agente y la verificación del
 > snapshot de enforcement. Sin ella, ambas verificaciones devuelven `indeterminate`:
 > el conector no puede establecer la identidad del agente, así que nunca confirma a
@@ -138,8 +138,8 @@ bin/magento maintenance:disable
 
 Use este método si prefiere no añadir una entrada de repositorio en Composer. Descargue
 el `.zip` instalable desde la
-[última GitHub Release](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest)
-— el archivo adjunto se llama `trusteed-agentic-commerce-magento-<versión>.zip`.
+[última GitHub Release](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest).
+El archivo adjunto se llama `trusteed-agentic-commerce-magento-<versión>.zip`.
 
 ### 4.1 Extraer el archivo
 
@@ -183,19 +183,19 @@ El asistente presenta cuatro secciones:
 > propio asistente durante la conexión (§6). Si busca esos campos en el
 > formulario no los verá: están ocultos a propósito.
 
-### 5.2 Configurar Vistas de Tienda
+### 5.2 Configurar vistas de tienda
 
 En **¿Qué tiendas quieres activar?** seleccione las vistas de tienda que desea
 exponer a los agentes IA. Los agentes solo pueden navegar y comprar en las vistas
 de tienda habilitadas.
 
-### 5.3 Secreto HMAC Interno (sólo si Trusteed se lo ha entregado)
+### 5.3 Secreto HMAC interno (sólo si Trusteed se lo ha entregado)
 
 El secreto HMAC firma las llamadas internas a la API (cabecera `X-Trusteed-Signature`, junto con `X-Trusteed-Connection-Id` y `X-Trusteed-Timestamp`).
 **No es autoservicio y no aparece en ninguna pantalla del panel**: lo provisiona
 el equipo de Trusteed y sólo se entrega a las cuentas que lo necesitan.
 
-Si no le han dado uno, **deje el campo vacío y continúe** — la instalación
+Si no le han dado uno, **deje el campo vacío y continúe**. La instalación
 funciona sin él. Si se lo han entregado, péguelo en **Internal HMAC Secret** y
 haga clic en **Guardar**.
 
@@ -253,8 +253,8 @@ dos credenciales más, que Trusteed provisiona por separado:
 | Enforcement HMAC Secret     | `trusteed/enforcement/hmac_secret`     |
 
 Mientras el **Installation ID** esté vacío, `EnforcementClient` deja pasar todos
-los checkouts sin evaluar ni una regla. Es deliberado —una tienda a medio
-configurar no debe bloquear ventas—, pero significa que **no está protegido
+los checkouts sin evaluar ni una regla. Es deliberado (una tienda a medio
+configurar no debe bloquear ventas), pero significa que **no está protegido
 todavía**. El módulo se lo recuerda con un aviso en el panel de administración
 hasta que ambos valores estén puestos.
 
@@ -431,7 +431,7 @@ sudo dnf install php-sodium
 sudo systemctl restart php8.2-fpm
 ```
 
-No hay ningún fallback al que recurrir: `paragonie/sodium_compat` no está declarado
+No hay fallback: `paragonie/sodium_compat` no está declarado
 como dependencia de este módulo, así que `ext-sodium` tiene que estar presente.
 Mientras falte, la verificación del token de agente y la del snapshot de enforcement
 devuelven ambas `indeterminate` y ningún agente llega a confirmarse como verificado.

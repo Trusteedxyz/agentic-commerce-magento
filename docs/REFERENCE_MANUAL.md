@@ -1,6 +1,6 @@
-# Reference Manual — Trusteed Agentic Commerce for Magento 2
+# Reference Manual: Trusteed Agentic Commerce for Magento 2
 
-Version 1.3.4 · Technical Reference for Developers and System Integrators
+Version 1.3.4 · Technical reference for developers and system integrators
 
 ---
 
@@ -226,8 +226,8 @@ in **System → Permissions → User Roles → [Role] → Role Resources**.
 
 ## 8. Frontend routes
 
-**Front name:** `nlweb` (defined in `etc/frontend/routes.xml` — the route `id` and
-`frontName` are both `nlweb`; there is no `trusteed` frontend route)
+**Front name:** `nlweb` (defined in `etc/frontend/routes.xml`). The route `id` and
+`frontName` are both `nlweb`, and there is no `trusteed` frontend route.
 
 | URL Pattern                    | Controller                         | Description                             |
 | ------------------------------ | ---------------------------------- | --------------------------------------- |
@@ -437,7 +437,7 @@ omits any of them is rejected as `invalid` (see `Service/AgentTokenVerifier.php`
 
 | Claim        | Type           | Validated as                                                                                 |
 | ------------ | -------------- | -------------------------------------------------------------------------------------------- |
-| `iss`        | string         | Agent DID. Must equal the DID derived from the header `kid` — key-confusion guard             |
+| `iss`        | string         | Agent DID. Must equal the DID derived from the header `kid`, as a key-confusion guard             |
 | `aud`        | string         | Must be the literal `trusteed`. (This is **not** the merchant ID)                             |
 | `merchantId` | string         | Optional. When present, must match the store's configured Merchant ID                        |
 | `exp`        | unix timestamp | Expiry. Rejected once `now > exp + 30` (30-second clock-skew tolerance)                      |
@@ -497,8 +497,8 @@ with an Ed25519 key provisioned by Trusteed.
 
 Notes on the actual shape:
 
-- `capabilities` is a flat **array of three strings** — `checkout`, `catalog_search`,
-  `order_status` — not an object of feature flags, and it carries no payment-method list.
+- `capabilities` is a flat array of three strings (`checkout`, `catalog_search` and
+  `order_status`). It is not an object of feature flags, and it carries no payment-method list.
 - `signature` is an **object** (`jws` / `kid` / `alg` / `signed_at`), not a bare JWS string.
 - `issuer` is the configured Trusteed API base URL. There are no `store_url`,
   `connection_id`, `platform`, `mcp_endpoint` or `issued_at` fields.
@@ -554,7 +554,7 @@ HTTPS and are validated by `ApiBaseUrlValidator` (SSRF guard).
 | `GET`  | `/api/v1/merchants/<merchantId>/disputes/count`             | Agent history signals                     | `X-Trusteed-Signature` (HMAC) | 3 s     |
 | `GET`  | `/api/v1/health`                                            | `ApiBaseUrlValidator` reachability probe   | none                          | 5 s     |
 
-**Timeouts are not uniform** — they differ per caller, as listed above:
+Timeouts are not uniform. They differ per caller, as listed above:
 `EnforcementClient` and `ApiBaseUrlValidator` use 5 s, `Manifest\Builder` 5 s
 (`SIGN_TIMEOUT_SECONDS`), `Webhook\SignaturePublisher` 10 s (`TIMEOUT_SECONDS`, and it
 also serves the heartbeat and install-event calls), `Adminhtml\Token\Issue` and
@@ -642,10 +642,10 @@ bin/magento trusteed:webhook:status
 
 | Patch Class                  | Purpose                                                                                                                                                                                                                                  | Idempotent |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `AddAgenticVisibleAttribute` | Adds `is_agentic_visible` product EAV attribute (boolean, default 1). Spec-050 FR-A-013 catalog filtering only — `Controller/Products/Index.php` serves agents just the products flagged `1`. It is **not** a rule: no CEL rule reads it | Yes        |
+| `AddAgenticVisibleAttribute` | Adds `is_agentic_visible` product EAV attribute (boolean, default 1). Spec-050 FR-A-013 catalog filtering only. `Controller/Products/Index.php` serves agents just the products flagged `1`. It is **not** a rule: no CEL rule reads it | Yes        |
 | `DisableBridgeOnHyva`        | Detects Hyvä or PWA Studio themes and sets `trusteed_general/features/webmcp_enabled = 0` to prevent storefront JS conflicts                                                                                                             | Yes        |
 | `EmitInstallEvent`           | Calls `POST /api/v1/internal/magento/event` to log the installation timestamp and Magento version in the Trusteed dashboard                                                                                                              | Yes        |
-| `ReportSignalCapabilities`   | Reports which cart signals this installation can project, via `POST /api/v1/enforcement/capabilities`. Without it a rule whose signal never arrives returns `NO_SIGNAL` on every checkout — it passes silently while showing as ENFORCE   | Yes        |
+| `ReportSignalCapabilities`   | Reports which cart signals this installation can project, via `POST /api/v1/enforcement/capabilities`. Without it a rule whose signal never arrives returns `NO_SIGNAL` on every checkout: it passes silently while showing as ENFORCE   | Yes        |
 
 ---
 
@@ -679,7 +679,7 @@ Key dependency injection entries:
 ```
 
 `Model\Webhook\OutboxRepository` is injected as a **concrete class**. There is no
-`OutboxRepositoryInterface` and no `<preference>` for it — depend on the class.
+`OutboxRepositoryInterface` and no `<preference>` for it, so depend on the class.
 
 See `etc/di.xml` and `etc/frontend/di.xml` for full wiring.
 

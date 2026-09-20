@@ -25,7 +25,7 @@ Les agents IA sont un nouveau type d'acheteur en ligne. Avec Trusteed, le résea
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
-| Ventes IA — Liste des reçus automatisés |
+| Ventes IA : Liste des reçus automatisés |
 |--------------------------------------------|
 | ![Liste des reçus](docs/screenshots/screenshot-09-receipts-list.png) |
 
@@ -94,7 +94,7 @@ bin/magento cache:flush
 
 1. **Téléchargez le `.zip` installable** depuis la
    [**⬇ dernière GitHub Release**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest)
-   — le fichier joint s'appelle `trusteed-agentic-commerce-magento-<version>.zip`.
+   Le fichier joint s'appelle `trusteed-agentic-commerce-magento-<version>.zip`.
    Toutes les versions publiées sont listées sur la [page des Releases](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Extrayez-le dans `app/code/Trusteed/AgenticCommerce/`
 3. Exécutez les commandes `bin/magento` ci-dessus depuis la racine de votre Magento
@@ -128,7 +128,7 @@ Allez dans **Stores → Configuration → Trusteed → Agentic Commerce** :
 | Paramètre | Description |
 |---------|-------------|
 | Enable WebMCP Bridge | Injecte le pont JavaScript dans la vitrine. Désactivé automatiquement sur les thèmes Hyvä et PWA Studio |
-| Enable Phase B (Embedded SPA) | Réservé à une version future — laissez cette option désactivée, sauf indication contraire du support Trusteed |
+| Enable Phase B (Embedded SPA) | Réservé à une version future. Laissez cette option désactivée, sauf indication contraire du support Trusteed |
 
 Le comportement d'application des règles (y compris le verrou human-in-the-loop R043) ne se configure
 pas ici : il est piloté par les règles que vous définissez dans **Trusteed → Mis Reglas** et par
@@ -138,7 +138,7 @@ figée dans le connecteur, ce n'est pas un paramètre.
 
 ## Pages d'administration
 
-Après l'installation, un menu **Trusteed** apparaît dans la barre latérale de l'administration Magento. Ses libellés s'affichent en espagnol — ce sont ceux que voit le marchand — avec leur traduction française entre guillemets :
+Après l'installation, un menu **Trusteed** apparaît dans la barre latérale de l'administration Magento. Ses libellés s'affichent en espagnol (ce sont ceux que voit le marchand), avec leur traduction française entre guillemets :
 
 | Page | Route | Description |
 |------|------|-------------|
@@ -179,14 +179,12 @@ répondent à des questions différentes et peuvent légitimement se contredire 
 
 | Colonne | Ce que c'est |
 | --- | --- |
-| **Ce que dit un tiers** | Le verdict d'un scanner externe, cité tel quel. Jamais réinterprété dans une échelle qui serait la nôtre : dès que l'on convertit la note d'un autre, on corrige sa propre copie |
+| **Ce que dit un tiers** | Le verdict d'un scanner externe, cité tel quel et jamais converti dans une échelle qui serait la nôtre |
 | **Ce que vous dites correspond-il à ce que vous faites ?** | 16 vérifications qui confrontent ce que votre boutique **annonce** à ce qu'elle **répond réellement**. C'est la partie qu'aucun scanner externe ne peut faire : elle exige vos identifiants |
 | **Ce que nous avons vu passer** | Le trafic agentique réel sur la période choisie : quels agents sont venus, quels outils ils ont utilisés, jusqu'où ils sont allés et où ils ont échoué |
 
 Une vérification qui n'a pas pu être faite est signalée comme **non vérifiée**,
 avec son motif. Elle n'est jamais écartée en silence ni comptée comme réussie.
-« Nous n'avons pas pu regarder » et « nous avons regardé et tout allait bien »
-sont deux réponses distinctes, et la page indique laquelle s'applique.
 
 ### Ce que vérifie chaque contrôle
 
@@ -212,23 +210,21 @@ sont deux réponses distinctes, et la page indique laquelle s'applique.
 Certains contrôles ont besoin de plus que vos réglages, et la page le dit au lieu
 de laisser un vide :
 
-- **Nécessite une boutique connectée** (C3, C4, C5, C14) : ils comparent avec
+- C3, C4, C5 et C14 nécessitent une boutique connectée. Ils comparent avec
   votre catalogue réel, et sans identifiants il n'y a rien à comparer.
-- **Nécessite des commandes livrées** (C16) : il compare ce que vous promettez à
+- C16 nécessite des commandes livrées. Il compare ce que vous promettez à
   ce que vous avez réellement tenu, ce qui est impossible sans historique.
-- **Rien à comparer cette fois** : C12, par exemple, n'a rien à vérifier tant
-  qu'un agent n'a pas réellement finalisé un achat. Ce n'est pas un échec.
+- Rien à comparer cette fois : C12, par exemple, n'a rien à vérifier tant
+  qu'un agent n'a pas réellement finalisé un achat, et ce n'est pas un échec.
 
 Les contrôles s'exécutent une fois par jour et la page affiche le résultat **avec
-sa date**, pour qu'un verdict d'hier ressemble à un verdict d'hier. Un « tout va
-bien » mis en cache et présenté comme actuel serait exactement l'auto-illusion
-que cette page existe pour débusquer.
+sa date**, pour que personne ne prenne le verdict d'hier pour celui d'aujourd'hui.
 
 ## Journal des modifications
 
 ### 1.3.3
 
-- Nouveau : lorsqu'une vérification n'a pas pu s'exécuter, le panneau explique désormais ce qui la débloquerait — rien à faire, configuration nécessaire, en attente de données, ou l'une de nos propres vérifications a échoué — au lieu d'une liste plate de gris inexpliqués.
+- Nouveau : lorsqu'une vérification n'a pas pu s'exécuter, le panneau explique désormais ce qui la débloquerait (rien à faire, configuration nécessaire, en attente de données, ou l'une de nos propres vérifications a échoué) au lieu d'une liste plate de gris inexpliqués.
 - Nouveau : le panneau indique désormais quel serveur a répondu à votre requête, une étiquette courte et opaque. Utile pour comparer ce que vous voyez ici avec ce que voit le support ; elle ne révèle jamais un nom d'hôte ou de service.
 
 ### 1.3.2
@@ -241,14 +237,14 @@ que cette page existe pour débusquer.
 
 - Corrigé : la page de disponibilité pour les agents était publiée sans sa feuille de style, le panneau s'affichait donc sans mise en forme.
 - Corrigé : le panneau pouvait afficher son interface dans une langue et le diagnostic dans une autre. La langue résolue accompagne désormais les textes au lieu d'être détectée deux fois.
-- Nouveau : chaque constat renvoie vers l'endroit où le corriger, et les affirmations du marchand — le délai de livraison et les autres — apparaissent avec les éléments qui les étayent.
+- Nouveau : chaque constat renvoie vers l'endroit où le corriger, et les affirmations du marchand (le délai de livraison et les autres) apparaissent avec les éléments qui les étayent.
 - Modifié : une boutique sans aucune vérification affiche « vérification en cours » au lieu de « vérifié une fois par jour » : ouvrir le panneau déclenche déjà la première vérification en arrière-plan.
 
 ### 1.3.0
 
-- **Nouveau — tableau de bord de préparation agentique.** *Les agents me trouvent-ils ?* arrive dans le panneau d'administration. Il confronte ce que votre boutique annonce à ce qu'elle répond réellement, en **16 vérifications**, et les affiche toutes les seize, pas seulement celles qui échouent. Une vérification impossible indique **pourquoi** (boutique non connectée, aucune commande livrée pour l'instant, rien à comparer cette fois) au lieu de laisser un vide qui ressemble à une panne. Voir « Le tableau de bord de préparation agentique » ci-dessus.
+- **Nouveau : tableau de bord de préparation agentique.** *Les agents me trouvent-ils ?* arrive dans le panneau d'administration. Il confronte ce que votre boutique annonce à ce qu'elle répond réellement, en **16 vérifications**, et les affiche toutes les seize, pas seulement celles qui échouent. Une vérification impossible indique **pourquoi** (boutique non connectée, aucune commande livrée pour l'instant, rien à comparer cette fois) au lieu de laisser un vide qui ressemble à une panne. Voir « Le tableau de bord de préparation agentique » ci-dessus.
 - Corrigé: le diagnostic était rédigé en espagnol dans l'API et affiché tel quel : un marchand utilisant le panneau en anglais lisait des titres anglais au-dessus de constats espagnols. Les vérifications émettent désormais des codes neutres et le texte est composé au moment de servir, dans votre langue.
-- Corrigé: la vérification C1 (« vous annoncez des outils que votre boutique ne sert pas ») considérait tout le catalogue public comme servi en l'absence de liste configurée : elle annonçait 46 sur 48 alors que le serveur en sert 12. L'erreur allait dans le sens flatteur, précisément celui que ce tableau de bord doit débusquer.
+- Corrigé: la vérification C1 (« vous annoncez des outils que votre boutique ne sert pas ») considérait tout le catalogue public comme servi en l'absence de liste configurée : elle annonçait 46 sur 48 alors que le serveur en sert 12. L'erreur jouait en faveur de la boutique.
 - Corrigé: la vérification C6 (« vous annoncez comme disponible quelque chose qui est désactivé ») signalait une capacité comme désactivée dès que son indicateur n'était pas défini, y compris pour ceux activés par défaut. C'était une fausse alerte sur toutes les boutiques.
 
 ### 1.2.1
@@ -260,7 +256,7 @@ que cette page existe pour débusquer.
   suivaient le guide d'installation s'entendaient dire que leur serveur web était mal configuré
   alors qu'il ne l'était pas.
 - Corrigé (documentation): le README annonçait deux champs de configuration qui n'existent pas
-  (« HITL enforcement mode » et « HITL amount threshold » — R043 n'a aucun seuil de montant
+  (« HITL enforcement mode » et « HITL amount threshold », alors que R043 n'a aucun seuil de montant
   configurable), en omettait sept qui existent bel et bien, et donnait la fenêtre du jeton d'agent
   à 300 secondes au lieu de 330. Le tableau des pages d'administration en listait six sous des noms
   anglais inventés ; il y en a neuf, et le menu est en espagnol. Le paragraphe sur les reçus de
@@ -278,10 +274,10 @@ que cette page existe pour débusquer.
 ### 1.2.0
 
 - Correctif de sécurité: le vérificateur de jetons d'agent traitait `exp`, `iat` et `nonce` comme facultatifs. Les deux contrôles temporels dépendaient de `> 0`, si bien qu'un jeton qui omettait simplement le claim échappait entièrement à l'expiration et à la limite d'ancienneté : il restait valable indéfiniment. Les trois claims sont désormais obligatoires (`nonce` de 16 à 64 caractères), conformément au schéma canonique du jeton et aux autres connecteurs.
-- Correctif de sécurité: la fenêtre de fraîcheur SIGNÉE de l'instantané d'enforcement (`validUntil`) était ignorée. Un instantané périmé — servi par l'API ou par tout intermédiaire qui le met en cache — était appliqué comme s'il était courant. Magento était le seul connecteur à ne pas le vérifier. Un instantané périmé est maintenant traité comme absent, de sorte que la politique de repli du marchand s'applique. `validUntil` voyage À L'INTÉRIEUR de la charge utile signée : personne ne peut l'allonger. Une valeur absente ou illisible n'est pas considérée comme périmée, car dégrader sur un format inattendu bloquerait des paiements légitimes.
+- Correctif de sécurité: la fenêtre de fraîcheur SIGNÉE de l'instantané d'enforcement (`validUntil`) était ignorée. Un instantané périmé, qu'il soit servi par l'API ou par tout intermédiaire qui le met en cache, était appliqué comme s'il était courant. Magento était le seul connecteur à ne pas le vérifier. Un instantané périmé est maintenant traité comme absent, de sorte que la politique de repli du marchand s'applique. `validUntil` voyage À L'INTÉRIEUR de la charge utile signée : personne ne peut l'allonger. Une valeur absente ou illisible n'est pas considérée comme périmée, car dégrader sur un format inattendu bloquerait des paiements légitimes.
 - Correctif: les scores de confiance comportant une décimale s'affichaient comme « aucun score ». L'onglet Santé lisait le score avec `is_int()`, alors que le moteur arrondit à une décimale, que `json_decode` convertit en `float` PHP : `is_int(81.4)` est faux, donc le score devenait silencieusement `null`. Seuls les entiers survivaient. Mesuré sur les boutiques de production le 2026-07-27 : 44,7, 52,7, 55,7, 61,5 et 81,4 s'affichaient toutes comme « aucun score ». Le score passe désormais par un normaliseur unique et s'affiche avec sa décimale (`81.4`, pas `81`), comme dans toutes les autres interfaces.
 - Correctif: la règle R036 (valeur maximale par ligne) lisait son plafond dans un paramètre nommé `maxCents` ; le nom canonique est `maxCentsPerLine`, seul accepté par le schéma strict du panneau marchand. Avec la mauvaise clé, la règle ne pouvait jamais se déclencher.
-- Nouveauté: le connecteur déclare désormais quels signaux de panier cette installation sait projeter (`POST /api/v1/enforcement/capabilities`, signé en HMAC, envoyé une fois par version du jeu de capacités). Sans cela, une règle dont le signal n'arrive jamais renvoie `NO_SIGNAL` à chaque paiement : elle passe en silence, et le marchand voit une règle en ENFORCE qui ne bloque rien. Avec la déclaration, le panneau peut l'avertir au moment même de l'activation. Magento projette 31 signaux — plus du double de toute autre plateforme — car il projette aussi l'historique de l'agent, que le serveur résout ailleurs.
+- Nouveauté: le connecteur déclare désormais quels signaux de panier cette installation sait projeter (`POST /api/v1/enforcement/capabilities`, signé en HMAC, envoyé une fois par version du jeu de capacités). Sans cela, une règle dont le signal n'arrive jamais renvoie `NO_SIGNAL` à chaque paiement : elle passe en silence, et le marchand voit une règle en ENFORCE qui ne bloque rien. Avec la déclaration, le panneau peut l'avertir au moment même de l'activation. Magento projette 31 signaux, plus du double de toute autre plateforme, car il projette aussi l'historique de l'agent, que le serveur résout ailleurs.
 
 ### 1.1.1
 

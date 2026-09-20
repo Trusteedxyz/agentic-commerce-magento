@@ -25,7 +25,7 @@ AI agents are a new kind of online shopper. With Trusteed, the network that conn
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
-| AI Sales — Automated receipts list |
+| AI Sales: Automated receipts list |
 |--------------------------------------|
 | ![Receipts list](docs/screenshots/screenshot-09-receipts-list.png) |
 
@@ -91,7 +91,7 @@ bin/magento cache:flush
 
 1. **Download the installable `.zip`** from the
    [**⬇ latest GitHub Release**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest)
-   — the attached asset is named `trusteed-agentic-commerce-magento-<version>.zip`.
+   The attached asset is named `trusteed-agentic-commerce-magento-<version>.zip`.
    All published versions are listed on the [Releases page](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Extract to `app/code/Trusteed/AgenticCommerce/`
 3. Run the `bin/magento` commands above from your Magento root
@@ -125,7 +125,7 @@ Navigate to **Stores → Configuration → Trusteed → Agentic Commerce**:
 | Setting | Description |
 |---------|-------------|
 | Enable WebMCP Bridge | Injects the storefront JavaScript bridge. Auto-disabled on Hyvä / PWA Studio themes |
-| Enable Phase B (Embedded SPA) | Reserved for a future release — leave off unless Trusteed support tells you otherwise |
+| Enable Phase B (Embedded SPA) | Reserved for a future release. Leave off unless Trusteed support tells you otherwise |
 
 Enforcement behaviour (including the R043 human-in-the-loop gate) is not configured here: it is
 driven by the rules you set in **Trusteed → Mis Reglas** and by the signed rule snapshot the backend
@@ -150,9 +150,9 @@ After installation a **Trusteed** menu appears in the Magento admin sidebar:
 
 Menu labels are sourced in English (`etc/adminhtml/menu.xml`) and translated per-locale via
 `i18n/{en_US,es_ES}.csv`, so an English-locale admin now sees this table verbatim and a
-Spanish-locale admin sees the Spanish column of that CSV — fixed 2026-08-18, previously the
-XML source strings were themselves in Spanish, which broke translation for every locale
-(Magento CSV lookup is an exact-match on the source string).
+Spanish-locale admin sees the Spanish column of that CSV. This was fixed on 2026-08-18: the
+XML source strings used to be in Spanish, which broke translation for every locale
+(Magento's CSV lookup is an exact match on the source string).
 
 ## Uninstallation
 
@@ -181,14 +181,12 @@ answer different questions and can legitimately disagree:
 
 | Column | What it is |
 | --- | --- |
-| **What a third party says** | The verdict of an external scanner, quoted verbatim. Never reinterpreted into a scale of ours — the moment we rescale someone else's grade, we are grading our own exam |
+| **What a third party says** | The verdict of an external scanner, quoted verbatim and never converted to a scale of ours |
 | **Does what you say match what you do?** | 16 checks that contrast what your store *advertises* against what it *actually answers*. This is the part no external scanner can do: it needs your credentials |
-| **What we have seen** | Real agent traffic in the selected window — which agents arrived, which tools they used, how far they got, and where they failed |
+| **What we have seen** | Real agent traffic in the selected window: which agents arrived, which tools they used, how far they got, and where they failed |
 
 A check that could not run is reported as **not checked**, with the reason. It is
-never silently dropped and never counted as a pass. "We could not look" and
-"we looked and it was fine" are different answers, and the page says which one
-it is.
+never silently dropped and never counted as a pass.
 
 ### What each check looks at
 
@@ -214,28 +212,26 @@ it is.
 Some checks need more than your settings to run, and the page says so instead of
 leaving a gap:
 
-- **Needs your store connected** (C3, C4, C5, C14) — they compare against your
+- C3, C4, C5 and C14 need your store connected. They compare against your
   real catalogue, and without credentials there is nothing to compare with.
-- **Needs delivered orders** (C16) — it compares what you promise against what
+- C16 needs delivered orders. It compares what you promise against what
   you actually met, and that cannot be done without history.
 - Nothing to compare this time: for example, C12 has nothing to check until
-  an agent has actually completed a purchase. That is not a failing grade.
+  an agent has actually completed a purchase, and that is not a failure.
 
-The checks run once a day and the page shows the result **with its date**, so a
-verdict from yesterday looks like a verdict from yesterday. A cached "all good"
-presented as current would be exactly the kind of self-deception this page
-exists to catch.
+The checks run once a day and the page shows the result **with its date**, so
+nobody mistakes yesterday's verdict for today's.
 
 ## Changelog
 
 ### 1.3.3
 
-- New: a check that could not run now says why in one of four groups — nothing to do, needs configuration, waiting for data, or one of our own checks failed — instead of one flat list of unexplained grays.
+- New: a check that could not run now says why in one of four groups (nothing to do, needs configuration, waiting for data, or one of our own checks failed) instead of one flat list of unexplained grays.
 - New: the panel now shows which of our servers answered your request, a short opaque label. Useful when comparing what you see here with what support sees; it never reveals a hostname or service name.
 
 ### 1.3.2
 
-- New: Settings now lets you choose which tools your store serves to agents. If you never saved a list, the panel tells you that what you serve is the basic set the platform ships with — not a choice of yours.
+- New: Settings now lets you choose which tools your store serves to agents. If you never saved a list, the panel tells you that what you serve is the basic set the platform ships with, not a choice of yours.
 - New: a button to re-run the readiness check without waiting for the daily sweep, and the panel remembers what changed since the previous run.
 - Changed: our own outages no longer count as your store's mismatches. The panel keeps them separate, because there is nothing you can do about them.
 
@@ -243,14 +239,14 @@ exists to catch.
 
 - Fixed: the agent readiness page shipped without its stylesheet, so the panel rendered unstyled.
 - Fixed: the panel could show its shell in one language and the diagnosis in another. The resolved language now travels with the texts instead of being detected twice.
-- New: every finding carries a link to where it is fixed, and the merchant's own claims — the delivery promise and the rest — appear with the backing each one has.
+- New: every finding carries a link to where it is fixed, and the merchant's own claims (the delivery promise and the rest) appear with the backing each one has.
 - Changed: a store with no run yet reads as "checking" instead of "checked once a day": opening the panel already triggers the first run in the background.
 
 ### 1.3.0
 
-- **New — agent readiness dashboard.** *Can agents find me?* now ships in the admin panel. It contrasts what your store advertises against what it actually answers, in **16 checks**, and shows all sixteen — not only the ones that fail. A check that could not run says **why** (store not connected, no delivered orders yet, nothing to compare this time) instead of leaving a gap that reads like a fault. See "The agent readiness dashboard" above.
+- **New: agent readiness dashboard.** *Can agents find me?* now ships in the admin panel. It contrasts what your store advertises against what it actually answers, in **16 checks**, and shows all sixteen, not only the ones that fail. A check that could not run says **why** (store not connected, no delivered orders yet, nothing to compare this time) instead of leaving a gap that reads like a fault. See "The agent readiness dashboard" above.
 - Fixed: the diagnosis was written in Spanish inside the API and shown verbatim, so a merchant with the panel in English read English headings above Spanish findings. The checks now emit language-neutral codes and the text is composed when served, in the language you are using.
-- Fixed: check C1 ("you advertise tools your store does not serve") counted the full public catalogue as served when no tool list was configured, reporting 46 of 48 answering when the server actually serves 12. It failed in the flattering direction, which is the one this panel exists to catch.
+- Fixed: check C1 ("you advertise tools your store does not serve") counted the full public catalogue as served when no tool list was configured, reporting 46 of 48 answering when the server actually serves 12. The error favoured the store.
 - Fixed: check C6 ("you advertise as available something that is switched off") reported a capability as off whenever its flag was unset, even for flags that are on by default. It was a false alarm on every store.
 
 ### 1.2.1
@@ -261,7 +257,7 @@ exists to catch.
   the check could not pass. Merchants following the installation guide were told their webserver was
   misconfigured when it was not.
 - Fixed (documentation): the README advertised two configuration fields that do not exist
-  ("HITL enforcement mode", "HITL amount threshold" — R043 has no configurable amount threshold),
+  ("HITL enforcement mode" and "HITL amount threshold", although R043 has no configurable amount threshold),
   omitted seven that do, and gave the agent-token window as 300 seconds instead of 330. The admin
   page table listed six pages under invented English names; there are nine, and the menu is in
   Spanish. The trust-receipt paragraph pointed at `receipts.trusteed.xyz`, a host that does not
@@ -277,10 +273,10 @@ exists to catch.
 ### 1.2.0
 
 - Security fix: the agent token verifier treated `exp`, `iat` and `nonce` as optional. Both time checks hung off `> 0`, so a token that simply omitted the claim skipped expiry and max-age entirely: it was valid forever. All three claims are now mandatory (`nonce` 16–64 chars), matching the canonical token schema and the other platform connectors.
-- Security fix: the enforcement snapshot's signed freshness window (`validUntil`) was ignored. A snapshot past its window — served by the API or by any intermediary that cached it — was applied as if current. Magento was the only connector that did not check this. An expired snapshot is now treated as absent, so the merchant's fallback policy applies. `validUntil` travels *inside* the signed payload, so it cannot be stretched by an attacker; a missing or unparseable value is not treated as expired, since degrading on an unexpected format would block legitimate checkouts.
-- Fix: trust scores with a decimal were displayed as "no score". The Health tab parsed the score with `is_int()`, and the scoring engine rounds to one decimal, which `json_decode` maps to a PHP float — so `is_int(81.4)` was `false` and the score silently became `null`. Only whole numbers survived. Measured across production stores on 2026-07-27: scores of 44.7, 52.7, 55.7, 61.5 and 81.4 all rendered as "no score". Now normalised through a single `ScoreNodeNormalizer`, and rendered with the decimal intact (`81.4`, not `81`) so it matches every other admin surface.
+- Security fix: the enforcement snapshot's signed freshness window (`validUntil`) was ignored. A snapshot past its window, whether served by the API or by any intermediary that cached it, was applied as if current. Magento was the only connector that did not check this. An expired snapshot is now treated as absent, so the merchant's fallback policy applies. `validUntil` travels *inside* the signed payload, so it cannot be stretched by an attacker; a missing or unparseable value is not treated as expired, since degrading on an unexpected format would block legitimate checkouts.
+- Fix: trust scores with a decimal were displayed as "no score". The Health tab parsed the score with `is_int()`, and the scoring engine rounds to one decimal, which `json_decode` maps to a PHP float, so `is_int(81.4)` was `false` and the score silently became `null`. Only whole numbers survived. Measured across production stores on 2026-07-27: scores of 44.7, 52.7, 55.7, 61.5 and 81.4 all rendered as "no score". Now normalised through a single `ScoreNodeNormalizer`, and rendered with the decimal intact (`81.4`, not `81`) so it matches every other admin surface.
 - Fix: rule R036 (max line-item value) read its cap from a parameter named `maxCents`; the canonical name is `maxCentsPerLine`, and it is the only one the merchant panel's strict schema accepts. With the wrong key the rule could never fire.
-- Added: the connector now reports which cart signals this installation can project (`POST /api/v1/enforcement/capabilities`, HMAC-signed, sent once per capability-set version). Without it, a rule whose signal never arrives returns `NO_SIGNAL` on every checkout: it passes silently, and the merchant sees a rule in ENFORCE that blocks nothing. With the report, the panel can warn at the moment the rule is switched on. Magento projects 31 signals — more than double any other platform — because it also projects agent history, which elsewhere the server resolves.
+- Added: the connector now reports which cart signals this installation can project (`POST /api/v1/enforcement/capabilities`, HMAC-signed, sent once per capability-set version). Without it, a rule whose signal never arrives returns `NO_SIGNAL` on every checkout: it passes silently, and the merchant sees a rule in ENFORCE that blocks nothing. With the report, the panel can warn at the moment the rule is switched on. Magento projects 31 signals, more than double any other platform, because it also projects agent history, which elsewhere the server resolves.
 
 ### 1.1.1
 

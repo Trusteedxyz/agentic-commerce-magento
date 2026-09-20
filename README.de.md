@@ -25,7 +25,7 @@ KI-Agenten sind eine neue Art von Online-Käufern. Mit Trusteed, dem Netzwerk, d
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
-| KI-Verkäufe — Liste automatisierter Belege |
+| KI-Verkäufe: Liste automatisierter Belege |
 |------------------------------------------------|
 | ![Belegliste](docs/screenshots/screenshot-09-receipts-list.png) |
 
@@ -94,7 +94,7 @@ bin/magento cache:flush
 
 1. **Laden Sie die installierbare `.zip`** von der
    [**⬇ neuesten GitHub Release**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest)
-   herunter — die angehängte Datei heißt `trusteed-agentic-commerce-magento-<Version>.zip`.
+   herunter. Die angehängte Datei heißt `trusteed-agentic-commerce-magento-<Version>.zip`.
    Alle veröffentlichten Versionen finden Sie auf der [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Entpacken Sie das Archiv nach `app/code/Trusteed/AgenticCommerce/`
 3. Führen Sie die obigen `bin/magento`-Befehle im Root-Verzeichnis Ihres Magento aus
@@ -128,7 +128,7 @@ Gehen Sie zu **Stores → Configuration → Trusteed → Agentic Commerce**:
 | Einstellung | Beschreibung |
 |---------|-------------|
 | Enable WebMCP Bridge | Bindet die JavaScript-Bridge im Shop-Frontend ein. Bei Hyvä- und PWA-Studio-Themes automatisch deaktiviert |
-| Enable Phase B (Embedded SPA) | Für ein künftiges Release reserviert — lassen Sie die Option aus, sofern der Trusteed-Support nichts anderes sagt |
+| Enable Phase B (Embedded SPA) | Für ein künftiges Release reserviert. Lassen Sie die Option aus, sofern der Trusteed-Support nichts anderes sagt |
 
 Das Durchsetzungsverhalten (einschließlich des Human-in-the-Loop-Gates R043) wird hier nicht
 konfiguriert: Es richtet sich nach den Regeln, die Sie unter **Trusteed → Mis Reglas** festlegen, und
@@ -142,13 +142,13 @@ Nach der Installation erscheint in der Seitenleiste des Magento-Admins ein **Tru
 
 | Seite | Route | Beschreibung |
 |------|------|-------------|
-| Inicio | `trusteed/dashboard` | „Start“ — Übersicht über Agentensitzungen und Aktivität |
-| ¿Cómo va mi tienda? | `trusteed/health` | „Wie läuft mein Shop?“ — Verbindungszustand und Trust Score |
-| Mis ventas | `trusteed/ventas` | „Meine Verkäufe“ — von Agenten ausgelöste Bestellungen und ihre Trust Receipts |
-| A quién le vendo | `trusteed/agentes` | „Wem ich verkaufe“ — von Ihrem Shop gesehene Agenten-Identitäten |
-| Mis Reglas | `trusteed/reglas` | „Meine Regeln“ — Geschäftsregeln, die beim Checkout angewendet werden |
-| Métodos de pago | `trusteed/pagos` | „Zahlungsarten“ — von Trusteed gemeldete Zahlungswege |
-| Seguridad | `trusteed/seguridad` | „Sicherheit“ — Audit-Log und Anomalie-Warnungen |
+| Inicio | `trusteed/dashboard` | „Start“: Übersicht über Agentensitzungen und Aktivität |
+| ¿Cómo va mi tienda? | `trusteed/health` | „Wie läuft mein Shop?“: Verbindungszustand und Trust Score |
+| Mis ventas | `trusteed/ventas` | „Meine Verkäufe“: von Agenten ausgelöste Bestellungen und ihre Trust Receipts |
+| A quién le vendo | `trusteed/agentes` | „Wem ich verkaufe“: von Ihrem Shop gesehene Agenten-Identitäten |
+| Mis Reglas | `trusteed/reglas` | „Meine Regeln“: Geschäftsregeln, die beim Checkout angewendet werden |
+| Métodos de pago | `trusteed/pagos` | „Zahlungsarten“: von Trusteed gemeldete Zahlungswege |
+| Seguridad | `trusteed/seguridad` | „Sicherheit“: Audit-Log und Anomalie-Warnungen |
 | Ajustes | `trusteed/ajustes` | „Einstellungen“, Modulkonfiguration |
 | Configuración | `trusteed/setup/wizard` | „Konfiguration“, Einrichtungsassistent (Shop verbinden / neu verbinden) |
 
@@ -180,14 +180,13 @@ widersprechen können:
 
 | Spalte | Was sie bedeutet |
 | --- | --- |
-| **Was ein Dritter sagt** | Das Urteil eines externen Scanners, wörtlich zitiert. Nie in eine eigene Skala übersetzt: Sobald man die Note eines anderen umrechnet, korrigiert man seine eigene Prüfung |
+| **Was ein Dritter sagt** | Das Urteil eines externen Scanners, wörtlich zitiert und nie in eine eigene Skala umgerechnet |
 | **Stimmt überein, was Sie sagen, mit dem, was Sie tun?** | 16 Prüfungen, die das, was Ihr Shop **ankündigt**, mit dem vergleichen, was er **tatsächlich antwortet**. Genau das kann kein externer Scanner leisten: Es braucht Ihre Zugangsdaten |
 | **Was wir gesehen haben** | Echter Agentenverkehr im gewählten Zeitraum: welche Agenten kamen, welche Werkzeuge sie nutzten, wie weit sie kamen und woran sie scheiterten |
 
 Eine Prüfung, die nicht durchgeführt werden konnte, wird als **nicht geprüft**
 ausgewiesen, mit Begründung. Sie wird nie stillschweigend verworfen und nie als
-bestanden gewertet. «Wir konnten nicht nachsehen» und «wir haben nachgesehen und
-es war in Ordnung» sind verschiedene Antworten, und die Seite sagt, welche gilt.
+bestanden gewertet.
 
 ### Was jede Prüfung betrachtet
 
@@ -213,17 +212,15 @@ es war in Ordnung» sind verschiedene Antworten, und die Seite sagt, welche gilt
 Einige Prüfungen brauchen mehr als Ihre Einstellungen, und die Seite sagt es,
 statt eine Lücke zu lassen:
 
-- **Erfordert einen verbundenen Shop** (C3, C4, C5, C14): Sie vergleichen mit
+- C3, C4, C5 und C14 erfordern einen verbundenen Shop. Sie vergleichen mit
   Ihrem echten Katalog, und ohne Zugangsdaten gibt es nichts zu vergleichen.
-- **Erfordert ausgelieferte Bestellungen** (C16): Vergleicht Zusage und
+- C16 erfordert ausgelieferte Bestellungen. Die Prüfung vergleicht Zusage und
   tatsächliche Einhaltung, was ohne Historie nicht möglich ist.
-- **Diesmal gab es nichts zu vergleichen**: C12 etwa hat nichts zu prüfen, bevor
-  ein Agent tatsächlich einen Kauf abgeschlossen hat. Das ist kein Durchfallen.
+- Diesmal gab es nichts zu vergleichen: C12 etwa hat nichts zu prüfen, bevor
+  ein Agent tatsächlich einen Kauf abgeschlossen hat, und das ist kein Fehler.
 
 Die Prüfungen laufen einmal täglich, und die Seite zeigt das Ergebnis **mit
-seinem Datum**, damit ein Urteil von gestern auch wie eines von gestern aussieht.
-Ein gespeichertes «alles in Ordnung», das als aktuell dargestellt wird, wäre
-genau die Selbsttäuschung, die diese Seite aufdecken soll.
+seinem Datum**, damit niemand das Urteil von gestern für das von heute hält.
 
 ## Änderungsprotokoll
 
@@ -249,7 +246,7 @@ genau die Selbsttäuschung, die diese Seite aufdecken soll.
 
 - Neu: Dashboard zur Agenten-Bereitschaft. *Finden mich Agenten?* ist jetzt im Verwaltungsbereich verfügbar. Es vergleicht, was Ihr Shop ankündigt, mit dem, was er tatsächlich antwortet, in **16 Prüfungen**, und zeigt alle sechzehn, nicht nur die fehlgeschlagenen. Eine Prüfung, die nicht laufen konnte, nennt den **Grund** (Shop nicht verbunden, noch keine ausgelieferten Bestellungen, diesmal nichts zu vergleichen), statt eine Lücke zu lassen, die wie ein Defekt wirkt. Siehe «Das Dashboard zur Agenten-Bereitschaft» oben.
 - Behoben: die Diagnose wurde innerhalb der API auf Spanisch verfasst und unverändert angezeigt: Wer den Bereich auf Englisch nutzte, las englische Überschriften über spanischen Befunden. Die Prüfungen liefern jetzt sprachneutrale Codes, und der Text wird beim Ausliefern in Ihrer Sprache erzeugt.
-- Behoben: Prüfung C1 («Sie kündigen Werkzeuge an, die Ihr Shop nicht bereitstellt») wertete den gesamten öffentlichen Katalog als bereitgestellt, wenn keine Werkzeugliste konfiguriert war: gemeldet wurden 46 von 48, tatsächlich liefert der Server 12. Der Fehler ging in die schmeichelhafte Richtung, genau die, die dieses Dashboard aufdecken soll.
+- Behoben: Prüfung C1 («Sie kündigen Werkzeuge an, die Ihr Shop nicht bereitstellt») wertete den gesamten öffentlichen Katalog als bereitgestellt, wenn keine Werkzeugliste konfiguriert war: gemeldet wurden 46 von 48, tatsächlich liefert der Server 12. Der Fehler fiel zugunsten des Shops aus.
 - Behoben: Prüfung C6 («Sie kündigen etwas als verfügbar an, das abgeschaltet ist») meldete eine Funktion als abgeschaltet, sobald ihr Schalter nicht gesetzt war, auch bei Schaltern, die standardmäßig aktiv sind. Das war ein Fehlalarm in jedem Shop.
 
 ### 1.2.1

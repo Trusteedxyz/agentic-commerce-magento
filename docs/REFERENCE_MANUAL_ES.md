@@ -1,6 +1,6 @@
-# Manual de Referencia — Trusteed Agentic Commerce para Magento 2
+# Manual de referencia: Trusteed Agentic Commerce para Magento 2
 
-Versión 1.3.4 · Referencia Técnica para Desarrolladores e Integradores de Sistemas
+Versión 1.3.4 · Referencia técnica para desarrolladores e integradores de sistemas
 
 ---
 
@@ -226,8 +226,8 @@ Para conceder a un rol personalizado acceso a las páginas de Trusteed, añada
 
 ## 8. Rutas de frontend
 
-**Nombre frontal:** `nlweb` (definido en `etc/frontend/routes.xml` — tanto el `id` de la
-ruta como el `frontName` son `nlweb`; no existe ninguna ruta de frontend `trusteed`)
+**Nombre frontal:** `nlweb` (definido en `etc/frontend/routes.xml`). Tanto el `id` de la
+ruta como el `frontName` son `nlweb`, y no existe ninguna ruta de frontend `trusteed`.
 
 | Patrón URL                     | Controlador                        | Descripción                                        |
 | ------------------------------ | ---------------------------------- | -------------------------------------------------- |
@@ -439,7 +439,7 @@ falte cualquiera de ellos se rechaza como `invalid` (véase `Service/AgentTokenV
 
 | Claim        | Tipo           | Cómo se valida                                                                                          |
 | ------------ | -------------- | ------------------------------------------------------------------------------------------------------- |
-| `iss`        | string         | DID del agente. Debe coincidir con el DID derivado del `kid` de la cabecera — guarda anti key-confusion  |
+| `iss`        | string         | DID del agente. Debe coincidir con el DID derivado del `kid` de la cabecera, como guarda anti key-confusion |
 | `aud`        | string         | Debe ser el literal `trusteed`. (**No** es el Merchant ID)                                               |
 | `merchantId` | string         | Opcional. Si viene, debe coincidir con el Merchant ID configurado en la tienda                           |
 | `exp`        | timestamp Unix | Vencimiento. Se rechaza en cuanto `ahora > exp + 30` (30 segundos de tolerancia de reloj)                |
@@ -499,9 +499,9 @@ Está firmado con una clave Ed25519 provisionada por Trusteed.
 
 Notas sobre la forma real:
 
-- `capabilities` es un **array plano de tres cadenas** — `checkout`, `catalog_search` y
-  `order_status` — no un objeto de banderas de características, y no incluye ninguna lista
-  de métodos de pago.
+- `capabilities` es un array plano de tres cadenas (`checkout`, `catalog_search` y
+  `order_status`). No es un objeto de banderas de características y no incluye ninguna
+  lista de métodos de pago.
 - `signature` es un **objeto** (`jws` / `kid` / `alg` / `signed_at`), no una cadena JWS suelta.
 - `issuer` es la URL base configurada de la API de Trusteed. No existen los campos
   `store_url`, `connection_id`, `platform`, `mcp_endpoint` ni `issued_at`.
@@ -557,7 +557,7 @@ requieren HTTPS y son validadas por `ApiBaseUrlValidator` (guardia SSRF).
 | `POST` | `/v1/embed/magento/issue-token`                           | Emisión de token del SPA de administración   | `X-Embed-Magento-Secret` (secreto de embed por conexión) | 10 s |
 | `POST` | `/v1/embed/support/report`                                | «Enviar diagnóstico» del administrador       | `Authorization: Bearer` (token de integración) | 10 s |
 
-**Los timeouts no son uniformes** — cambian según quién llama, tal como se lista arriba:
+Los timeouts no son uniformes. Cambian según quién llama, tal como se lista arriba:
 `EnforcementClient` y `ApiBaseUrlValidator` usan 5 s, `Manifest\Builder` 5 s
 (`SIGN_TIMEOUT_SECONDS`), `Webhook\SignaturePublisher` 10 s (`TIMEOUT_SECONDS`, y sirve
 además el latido y la llamada del evento de instalación), `Adminhtml\Token\Issue` y
@@ -640,10 +640,10 @@ bin/magento trusteed:webhook:status
 
 | Clase de Parche              | Propósito                                                                                                                                                                                                                                                                       | Idempotente |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| `AddAgenticVisibleAttribute` | Añade el atributo EAV de producto `is_agentic_visible` (booleano, por defecto 1). Solo filtrado de catálogo de spec-050 FR-A-013 — `Controller/Products/Index.php` sirve a los agentes únicamente los productos marcados con `1`. **No** es una regla: ninguna regla CEL lo lee | Sí          |
+| `AddAgenticVisibleAttribute` | Añade el atributo EAV de producto `is_agentic_visible` (booleano, por defecto 1). Solo filtrado de catálogo de spec-050 FR-A-013. `Controller/Products/Index.php` sirve a los agentes únicamente los productos marcados con `1`. **No** es una regla: ninguna regla CEL lo lee | Sí          |
 | `DisableBridgeOnHyva`        | Detecta temas Hyvä o PWA Studio y establece `trusteed_general/features/webmcp_enabled = 0` para evitar conflictos JS del storefront                                                                                                                                             | Sí          |
 | `EmitInstallEvent`           | Llama a `POST /api/v1/internal/magento/event` para registrar la marca temporal de instalación y la versión de Magento en el panel de Trusteed                                                                                                                                    | Sí          |
-| `ReportSignalCapabilities`   | Informa de qué señales de carrito puede proyectar esta instalación, vía `POST /api/v1/enforcement/capabilities`. Sin él, una regla cuya señal nunca llega devuelve `NO_SIGNAL` en cada pago — pasa en silencio mientras se muestra como ENFORCE                                   | Sí          |
+| `ReportSignalCapabilities`   | Informa de qué señales de carrito puede proyectar esta instalación, vía `POST /api/v1/enforcement/capabilities`. Sin él, una regla cuya señal nunca llega devuelve `NO_SIGNAL` en cada pago: pasa en silencio mientras se muestra como ENFORCE                                   | Sí          |
 
 ---
 
@@ -677,7 +677,7 @@ Entradas clave de inyección de dependencias:
 ```
 
 `Model\Webhook\OutboxRepository` se inyecta como **clase concreta**. No existe ninguna
-`OutboxRepositoryInterface` ni ninguna `<preference>` para ella — dependa de la clase.
+`OutboxRepositoryInterface` ni ninguna `<preference>` para ella, así que dependa de la clase.
 
 Consulte `etc/di.xml` y `etc/frontend/di.xml` para la configuración completa.
 

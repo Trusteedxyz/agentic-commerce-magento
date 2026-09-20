@@ -25,7 +25,7 @@ Los agentes de IA son un tipo nuevo de comprador online. Con Trusteed, la red qu
 |-------------|-------------|
 | ![Setup](docs/screenshots/screenshot-01-setup-wizard.png) | ![Config](docs/screenshots/screenshot-03-setup-wizard-config.png) |
 
-| Ventas IA — Listado de recibos automatizados |
+| Ventas IA: Listado de recibos automatizados |
 |------------------------------------------------|
 | ![Listado de recibos](docs/screenshots/screenshot-09-receipts-list.png) |
 
@@ -92,7 +92,7 @@ bin/magento cache:flush
 
 1. **Descarga el `.zip` instalable** desde la
    [**⬇ última GitHub Release**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest)
-   — el fichero adjunto se llama `trusteed-agentic-commerce-magento-<versión>.zip`.
+   El fichero adjunto se llama `trusteed-agentic-commerce-magento-<versión>.zip`.
    Todas las versiones publicadas están en la [página de Releases](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Descomprime en `app/code/Trusteed/AgenticCommerce/`
 3. Ejecuta los comandos `bin/magento` anteriores desde la raíz de tu Magento
@@ -126,7 +126,7 @@ Navega a **Stores → Configuration → Trusteed → Agentic Commerce**:
 | Ajuste | Descripción |
 |---------|-------------|
 | Enable WebMCP Bridge | Inyecta el bridge JavaScript del storefront. Se desactiva solo en temas Hyvä y PWA Studio |
-| Enable Phase B (Embedded SPA) | Reservado para una versión futura — déjalo apagado salvo que te lo indique el soporte de Trusteed |
+| Enable Phase B (Embedded SPA) | Reservado para una versión futura. Déjalo apagado salvo que te lo indique el soporte de Trusteed |
 
 El comportamiento del enforcement (incluida la puerta de aprobación humana R043) no se configura aquí:
 lo determinan las reglas que defines en **Trusteed → Mis Reglas** y el snapshot firmado de reglas que
@@ -176,14 +176,12 @@ preguntas distintas y pueden contradecirse con toda legitimidad:
 
 | Columna | Qué es |
 | --- | --- |
-| **Lo que dice un tercero** | El veredicto de un escáner externo, citado tal cual. Nunca reinterpretado a una escala nuestra: en cuanto reescalas la nota de otro, estás corrigiendo tu propio examen |
+| **Lo que dice un tercero** | El veredicto de un escáner externo, citado tal cual y nunca convertido a una escala nuestra |
 | **¿Coincide lo que dices con lo que haces?** | 16 comprobaciones que contrastan lo que tu tienda **anuncia** con lo que **responde de verdad**. Esta es la parte que ningún escáner externo puede hacer: necesita tus credenciales |
 | **Lo que hemos visto pasar** | Tráfico agéntico real en la ventana elegida: qué agentes llegaron, qué herramientas usaron, hasta dónde llegaron y dónde fallaron |
 
 Una comprobación que no se ha podido hacer se informa como **sin comprobar**,
-con el motivo. Nunca se descarta en silencio ni se cuenta como aprobado. «No
-hemos podido mirar» y «hemos mirado y está bien» son respuestas distintas, y la
-página dice cuál de las dos es.
+con el motivo. Nunca se descarta en silencio ni se cuenta como aprobado.
 
 ### Qué mira cada comprobación
 
@@ -209,23 +207,21 @@ página dice cuál de las dos es.
 Algunas comprobaciones necesitan algo más que tu configuración para ejecutarse, y
 la página lo dice en vez de dejar un hueco:
 
-- **Necesita tu tienda conectada** (C3, C4, C5, C14): comparan contra tu catálogo
+- C3, C4, C5 y C14 necesitan tu tienda conectada. Comparan contra tu catálogo
   real, y sin credenciales no hay con qué comparar.
-- **Necesita pedidos entregados** (C16): compara lo que prometes con lo que has
+- C16 necesita pedidos entregados. Compara lo que prometes con lo que has
   cumplido de verdad, y eso no se puede sin historial.
-- **Esta vez no había nada que comparar**: por ejemplo, C12 no tiene nada que
-  mirar hasta que un agente haya completado una compra. Eso no es un suspenso.
+- Esta vez no había nada que comparar: por ejemplo, C12 no tiene nada que
+  mirar hasta que un agente haya completado una compra, y eso no es un suspenso.
 
 Las comprobaciones se ejecutan una vez al día y la página enseña el resultado
-**con su fecha**, para que un veredicto de ayer se vea como un veredicto de ayer.
-Un «todo bien» guardado y presentado como actual sería justo el autoengaño que
-esta página existe para cazar.
+**con su fecha**, para que nadie tome por actual el veredicto de ayer.
 
 ## Registro de cambios
 
 ### 1.3.3
 
-- Nuevo: cuando una comprobación no se pudo ejecutar, el panel ahora explica qué la desbloquearía — nada que hacer, hay que configurar algo, falta esperar datos, o ha fallado una comprobación nuestra — en vez de una lista plana de grises sin explicar.
+- Nuevo: cuando una comprobación no se pudo ejecutar, el panel ahora explica qué la desbloquearía (nada que hacer, hay que configurar algo, falta esperar datos o ha fallado una comprobación nuestra) en vez de una lista plana de grises sin explicar.
 - Nuevo: el panel ahora muestra qué servidor nuestro respondió a tu petición, una etiqueta corta y opaca. Útil para comparar lo que ves aquí con lo que ve soporte; nunca revela un nombre de host o de servicio.
 
 ### 1.3.2
@@ -238,14 +234,14 @@ esta página existe para cazar.
 
 - Corregido: la página de disponibilidad para agentes se publicaba sin su hoja de estilos, así que el panel salía sin formato.
 - Corregido: el panel podía mostrar la carcasa en un idioma y el diagnóstico en otro. El idioma resuelto viaja ahora junto a los textos, en vez de detectarse dos veces por separado.
-- Nuevo: cada hallazgo lleva un enlace a donde se corrige, y las afirmaciones del comercio —el plazo de entrega y las demás— aparecen con el respaldo que tiene cada una.
+- Nuevo: cada hallazgo lleva un enlace a donde se corrige, y las afirmaciones del comercio (el plazo de entrega y las demás) aparecen con el respaldo que tiene cada una.
 - Cambiado: una tienda sin ninguna comprobación todavía se lee como «comprobando» en lugar de «se comprueba una vez al día»: abrir el panel ya lanza la primera comprobación en segundo plano.
 
 ### 1.3.0
 
-- **Nuevo — panel de preparación agéntica.** *¿Me encuentran los agentes?* llega al panel de administración. Contrasta lo que tu tienda anuncia con lo que responde de verdad, en **16 comprobaciones**, y las enseña las dieciséis, no sólo las que fallan. Una comprobación que no se ha podido hacer dice **por qué** (tienda sin conectar, todavía sin pedidos entregados, nada que comparar esta vez) en vez de dejar un hueco que se lee como avería. Ver «El panel de preparación agéntica» más arriba.
+- **Nuevo: panel de preparación agéntica.** *¿Me encuentran los agentes?* llega al panel de administración. Contrasta lo que tu tienda anuncia con lo que responde de verdad, en **16 comprobaciones**, y las enseña las dieciséis, no sólo las que fallan. Una comprobación que no se ha podido hacer dice **por qué** (tienda sin conectar, todavía sin pedidos entregados, nada que comparar esta vez) en vez de dejar un hueco que se lee como avería. Ver «El panel de preparación agéntica» más arriba.
 - Corregido: el diagnóstico se escribía en castellano dentro de la API y se mostraba tal cual, así que un comerciante con el panel en inglés leía encabezados en inglés y hallazgos en castellano. Las comprobaciones emiten ahora códigos neutros de idioma y el texto se compone al servirlo, en el idioma que estés usando.
-- Corregido: la comprobación C1 («anuncias herramientas que tu tienda no sirve») daba por servido el catálogo público entero cuando no había lista de herramientas configurada: informaba de 46 de 48 respondiendo cuando el servidor sirve 12. Fallaba en la dirección aduladora, que es justo la que este panel existe para cazar.
+- Corregido: la comprobación C1 («anuncias herramientas que tu tienda no sirve») daba por servido el catálogo público entero cuando no había lista de herramientas configurada: informaba de 46 de 48 respondiendo cuando el servidor sirve 12. Fallaba a favor de la tienda.
 - Corregido: la comprobación C6 («anuncias como disponible algo que está apagado») daba una capacidad por apagada siempre que su bandera no estuviera puesta, incluso en banderas que están encendidas por defecto. Era una falsa alarma en todas las tiendas.
 
 ### 1.2.1
@@ -256,7 +252,7 @@ esta página existe para cazar.
   `schema_version`), así que la comprobación no podía pasar. A los comercios que seguían la guía de
   instalación se les decía que su webserver estaba mal configurado cuando no lo estaba.
 - Corregido (documentación): el README anunciaba dos campos de configuración que no existen
-  ("modo de enforcement HITL" y "umbral de importe HITL" — R043 no tiene umbral de importe
+  ("modo de enforcement HITL" y "umbral de importe HITL", aunque R043 no tiene umbral de importe
   configurable), omitía siete que sí existen y daba la ventana del token de agente como 300 segundos
   en vez de 330. La tabla de páginas de administración listaba seis páginas con nombres inventados en
   inglés; son nueve, y el menú está en castellano. El párrafo de los recibos de confianza apuntaba a
@@ -268,15 +264,15 @@ esta página existe para cazar.
 
 - Corregido: el bundle del panel de administración (`view/adminhtml/web/js/admin-spa.js`) se distribuía sin minificar: 869 KB / 25.064 líneas en vez de los 490 KB / 41 líneas que produce el comando de build documentado. Su procedencia no se podía verificar. Reconstruido desde la fuente.
 - Corregido: la regla R047 (importe mínimo de aportación) no tenía campo en el panel de administración: sus parámetros existían en el esquema pero solo se podían configurar por API. También: al mostrar el nombre de una categoría del comercio se imprimían los delimitadores anti-inyección (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) alrededor en vez de quitarlos para la visualización.
-- Corregido (documentación): `USER_GUIDE.md`/`USER_GUIDE_ES.md` describían cinco de las seis filas de la tabla de configuración de reglas con la regla equivocada: le decía al comercio que configurase `R007` para restringir categorías (R007 en realidad bloquea señales de abuso entre comercios) y `R005` como tope de importe (R005 en realidad bloquea agentes revocados). Corregido contra las definiciones reales; se añaden `R030`/`R032`/`R035`/`R042` para que la guía responda lo que el comercio pregunta de verdad. También se retira el claim falso de que R001/R007 "se evalúan siempre localmente" (el evaluador offline resuelve nueve reglas distintas, ninguna es R001 ni R007) y el claim falso de que R007 controla la visibilidad del catálogo vía un atributo `trusteed_agentic_visible` (el atributo real es `is_agentic_visible`, sin relación con ninguna regla CEL).
+- Corregido (documentación): `USER_GUIDE.md`/`USER_GUIDE_ES.md` describían cinco de las seis filas de la tabla de configuración de reglas con la regla equivocada: le decía al comercio que configurase `R007` para restringir categorías (R007 en realidad bloquea señales de abuso entre comercios) y `R005` como tope de importe (R005 en realidad bloquea agentes revocados). Corregido contra las definiciones reales; se añaden `R030`/`R032`/`R035`/`R042` para que la guía responda lo que el comercio pregunta de verdad. También se retira la afirmación falsa de que R001/R007 "se evalúan siempre localmente" (el evaluador offline resuelve nueve reglas distintas, ninguna es R001 ni R007) y la afirmación falsa de que R007 controla la visibilidad del catálogo vía un atributo `trusteed_agentic_visible` (el atributo real es `is_agentic_visible`, sin relación con ninguna regla CEL).
 
 ### 1.2.0
 
 - Corrección de seguridad: el verificador de tokens de agente trataba `exp`, `iat` y `nonce` como opcionales. Las dos comprobaciones de tiempo colgaban de `> 0`, así que un token que simplemente OMITÍA el claim se saltaba entera la caducidad y el tope de antigüedad: era válido para siempre. Los tres claims son ahora obligatorios (`nonce` de 16 a 64 caracteres), igual que en el esquema canónico del token y en los demás conectores.
-- Corrección de seguridad: se ignoraba la ventana de frescura que el snapshot de enforcement lleva FIRMADA (`validUntil`). Un snapshot vencido —servido por la API o por cualquier intermediario que lo cachee— se aplicaba como si estuviera vigente. Magento era el único conector que no lo miraba. Ahora un snapshot vencido se trata como ausente, de modo que se aplica la política de reserva del comerciante. `validUntil` viaja DENTRO del payload firmado, así que nadie puede alargarla; si falta o no se puede leer, no se considera vencido, porque degradar ante un formato inesperado bloquearía compras legítimas.
+- Corrección de seguridad: se ignoraba la ventana de frescura que el snapshot de enforcement lleva FIRMADA (`validUntil`). Un snapshot vencido, ya lo sirviera la API o cualquier intermediario que lo cachee, se aplicaba como si estuviera vigente. Magento era el único conector que no lo miraba. Ahora un snapshot vencido se trata como ausente, de modo que se aplica la política de reserva del comerciante. `validUntil` viaja DENTRO del payload firmado, así que nadie puede alargarla; si falta o no se puede leer, no se considera vencido, porque degradar ante un formato inesperado bloquearía compras legítimas.
 - Corrección: las puntuaciones de confianza con decimal se mostraban como "sin puntuación". La pestaña de Estado leía la puntuación con `is_int()`, y el motor redondea a un decimal, que `json_decode` convierte en un `float` de PHP: `is_int(81.4)` es falso, así que la puntuación se volvía `null` en silencio. Sólo sobrevivían los números enteros. Medido sobre las tiendas de producción el 2026-07-27: 44,7, 52,7, 55,7, 61,5 y 81,4 se mostraban todas como "sin puntuación". Ahora pasa por un único normalizador y se muestra con su decimal (`81.4`, no `81`), igual que en el resto de paneles.
 - Corrección: la regla R036 (valor máximo por línea) leía su tope de un parámetro llamado `maxCents`; el nombre canónico es `maxCentsPerLine`, y es el único que acepta el esquema estricto del panel del comerciante. Con la clave equivocada la regla no podía dispararse nunca.
-- Novedad: el conector informa ahora de qué señales de carrito sabe proyectar esta instalación (`POST /api/v1/enforcement/capabilities`, firmado con HMAC, una vez por versión del conjunto de capacidades). Sin eso, una regla cuya señal no llega devuelve `NO_SIGNAL` en cada compra: pasa en silencio, y el comerciante ve una regla en ENFORCE que no bloquea nada. Con el reporte, el panel puede avisarle justo al activarla. Magento proyecta 31 señales —más del doble que cualquier otra plataforma— porque además proyecta el historial del agente, que en las demás resuelve el servidor.
+- Novedad: el conector informa ahora de qué señales de carrito sabe proyectar esta instalación (`POST /api/v1/enforcement/capabilities`, firmado con HMAC, una vez por versión del conjunto de capacidades). Sin eso, una regla cuya señal no llega devuelve `NO_SIGNAL` en cada compra: pasa en silencio, y el comerciante ve una regla en ENFORCE que no bloquea nada. Con el reporte, el panel puede avisarle justo al activarla. Magento proyecta 31 señales, más del doble que cualquier otra plataforma, porque además proyecta el historial del agente, que en las demás resuelve el servidor.
 
 ### 1.1.1
 

@@ -1,4 +1,4 @@
-# Guía de Usuario — Trusteed Agentic Commerce para Magento 2
+# Guía de usuario: Trusteed Agentic Commerce para Magento 2
 
 Versión 1.3.4
 
@@ -18,7 +18,7 @@ Versión 1.3.4
 10. [Trust Receipts (Recibos de Confianza)](#10-trust-receipts-recibos-de-confianza)
 11. [Ver pedidos de agentes en el Magento estándar](#11-ver-pedidos-de-agentes-en-el-magento-estándar)
 12. [Comprender la insignia de Trust Receipt](#12-comprender-la-insignia-de-trust-receipt)
-13. [HITL — Aprobaciones Humanas en el Proceso](#13-hitl--aprobaciones-humanas-en-el-proceso)
+13. [HITL: aprobaciones humanas en el proceso](#13-hitl-aprobaciones-humanas-en-el-proceso)
 14. [Preguntas frecuentes](#14-preguntas-frecuentes)
 
 ---
@@ -56,7 +56,7 @@ Cliente → Agente IA → Descubrimiento MCP → Su Tienda Magento
 | Término | Significado |
 |---------|-------------|
 | **Agente** | Un asistente IA (Claude, ChatGPT, etc.) que actúa en nombre de un cliente |
-| **MCP** | Model Context Protocol — el estándar abierto que los agentes usan para interactuar con tiendas |
+| **MCP** | Model Context Protocol, el estándar abierto que los agentes usan para interactuar con tiendas |
 | **Trust Receipt** | Registro firmado criptográficamente de cada transacción de agente (Ed25519) |
 | **Regla** | Una restricción definida por el comerciante (valor máximo, agentes permitidos, lista de categorías bloqueadas) |
 | **HITL** | Human-in-the-Loop: pedidos de agentes que esperan su aprobación manual antes de completarse |
@@ -175,19 +175,20 @@ Cada regla puede estar en modo `observe` (solo registrar) o `enforce` (bloquear 
 | R030   | Controles simples                   | Tope de importe y países permitidos, en una sola regla                                           |
 | R032   | Lista de categorías bloqueadas      | Bloquea las compras de agente en las categorías que usted liste (alcohol, tabaco, armas, adulto) |
 | R035   | Importe máximo de pedido            | Limita el importe total de un pedido de agente                                                   |
-| R042   | Máximo de pedidos por agente al día | Limita los pedidos con éxito por agente cada 24 h — complementa a R011, que cuenta los fallos    |
+| R042   | Máximo de pedidos por agente al día | Limita los pedidos con éxito por agente cada 24 h. Complementa a R011, que cuenta los fallos     |
 | R043   | Aprobación de checkout obligatoria  | Exige su aprobación manual para **cada** pedido de agente, vía el flujo HITL                     |
 
 Los códigos y nombres de arriba son los canónicos. Un código significa lo mismo en
-todas las plataformas, así que `R035` es el tope de importe en todas — no deduzca
-una regla por su número. El motor trae **46** reglas en total; esta tabla es el
-subconjunto que los comercios configuran más a menudo.
+todas las plataformas, así que `R035` es el tope de importe en todas. No deduzca
+qué hace una regla por su número. El motor trae 46 reglas en total, y esta tabla es
+el subconjunto que los comercios configuran más a menudo.
 
 ### Modos de regla
 
-- **Observe**: la regla evalúa y registra su veredicto, pero nunca bloquea un pedido.
-  Úselo al desplegar inicialmente una regla para entender su impacto antes de aplicarla.
-- **Enforce**: la regla bloquea o escala los pedidos que la infringen.
+En modo `observe` la regla evalúa y registra su veredicto, pero nunca bloquea un
+pedido. Úselo cuando despliegue una regla por primera vez, para ver su impacto antes
+de aplicarla. En modo `enforce` la regla bloquea o escala los pedidos que la
+infringen.
 
 ### Cambiar una regla al modo enforce
 
@@ -274,18 +275,17 @@ bloquea sea cual sea el modo. Si no coincide ninguna, decide el modo:
 
 Cuando la API es inaccesible, este módulo recurre a su evaluador offline incluido
 (`Enforcement/OfflineSafetyValveEvaluator.php`), que resuelve nueve reglas por sí
-solo: **R014** (solo la dimensión de país — la de historial de cancelaciones
-necesita consultar el backend), **R018**, **R019**, **R020**, **R025**, **R027**,
-**R028**, **R029** y **R030**. Esas nueve siguen funcionando con cualquiera de los
-dos modos de arriba.
+solo: R014 (solo la dimensión de país, porque la de historial de cancelaciones
+necesita consultar el backend), R018, R019, R020, R025, R027, R028, R029 y R030.
+Esas nueve siguen funcionando con cualquiera de los dos modos de arriba.
 
-El resto de reglas necesita el backend, **incluidas R001 y R007** — con `observe`
-se omiten, y con `enforce` el pedido lo bloquea la configuración de arriba en
-lugar de evaluarse.
+El resto de reglas necesita el backend, incluidas R001 y R007. Con `observe` se
+omiten. Con `enforce` el pedido lo bloquea la configuración de arriba en lugar de
+evaluarse.
 
 ---
 
-## 10. Trust Receipts (Recibos de Confianza)
+## 10. Trust Receipts (recibos de confianza)
 
 **Ruta:** Trust Receipts → Verify Receipt
 
@@ -315,11 +315,11 @@ cada pedido de agente exitoso.
 2. Pegue la cadena JWS del recibo del cliente
 3. Haga clic en **Verify**
 
-Resultados:
-
-- **VERIFIED**: la firma es válida y el recibo es auténtico e inalterado
-- **INVALID**: la firma no coincide, por lo que el recibo puede haber sido alterado
-- **INDETERMINATE**: la verificación no pudo completarse (p. ej., endpoint JWKS inaccesible)
+La verificación devuelve uno de tres resultados. VERIFIED significa que la firma es
+válida y el recibo es auténtico e inalterado. INVALID significa que la firma no
+coincide, por lo que el recibo puede haber sido alterado. INDETERMINATE significa que
+la verificación no pudo completarse, por ejemplo porque el endpoint JWKS es
+inaccesible.
 
 ### Auto-Test
 
@@ -361,7 +361,7 @@ firma. Para comprobarla, pegue el recibo en **Trust Receipts → Verify Receipt*
 
 ---
 
-## 13. HITL — Aprobaciones Humanas en el Proceso
+## 13. HITL: aprobaciones humanas en el proceso
 
 Cuando la regla **R043** está activa en modo `enforce` y un pedido de agente necesita
 aprobación, el pedido no se crea. En su lugar:
