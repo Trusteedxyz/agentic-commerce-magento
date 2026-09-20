@@ -2,14 +2,14 @@
 
 # Trusteed Agentic Commerce für Magento 2
 
-Ermöglichen Sie den neuen Online-Käufern, den KI-Agenten, sicher und zuverlässig in Ihrem Shop einzukaufen — dank Trusteed, dem Netzwerk, das Vertrauen zwischen Unternehmen und Agenten schafft.
+KI-Agenten sind eine neue Art von Online-Käufern. Mit Trusteed, dem Netzwerk, das Unternehmen und Agenten verbindet, können sie zu Ihren Bedingungen in Ihrem Shop einkaufen.
 
-- **Legen Sie Ihre Geschäftsregeln fest**: wem Sie den Kauf erlauben, bis zu welchem Betrag, welche Kategorien Sie Agenten nicht anbieten möchten, setzen Sie Preisgrenzen, halten Sie Lagerbestände aufrecht, um sich vor potenziell betrügerischen Agenten zu schützen, und vieles mehr.
-- **Manipulationssichere Belege**: Wir erzeugen elektronisch signierte und kryptographisch manipulationssichere Belege, die im Streitfall als Nachweis der tatsächlichen Transaktion dienen. Kompatibel mit eIDAS (EU, Großbritannien) und eSIGN (USA).
-- **Agenten-Analytik**: Sehen Sie sich Statistiken zu Agentenkäufen an — wie viel sie ausgeben, welche Produkte sie kaufen und wie oft.
-- **Agenten-Blockierung**: Blockieren Sie potenziell gefährliche oder problematische Agenten.
-- **Digitale Währungen**: ermöglicht Käufe in digitalen Währungen dank des X402-Protokolls.
-- **Peer-to-Peer-Transaktionen**: ermöglicht direkten Peer-to-Peer-Handel zwischen Agenten und Händlern.
+- Legen Sie Ihre Geschäftsregeln fest: wer kaufen darf, bis zu welchem Betrag, welche Kategorien Sie Agenten nicht anbieten, Preisgrenzen, Lagerbestände, die Sie vor betrügerischen Agenten schützen, und mehr.
+- Erhalten Sie signierte Belege. Jede Transaktion erzeugt einen kryptografisch signierten Beleg, an dem sich jede Manipulation erkennen lässt und den Sie im Streitfall als Nachweis des Kaufs verwenden können. An eIDAS (EU) und eSIGN (USA) ausgerichtet.
+- Sehen Sie, was Agenten tun: wie viel sie ausgeben, was sie kaufen und wie oft.
+- Sperren Sie Agenten, die gefährlich wirken oder Probleme verursachen.
+- Nehmen Sie Käufe in digitalen Währungen über das X402-Protokoll an.
+- Lassen Sie Agenten und Händler direkt miteinander handeln, Peer-to-Peer.
 
 ## Screenshots
 
@@ -29,17 +29,17 @@ Ermöglichen Sie den neuen Online-Käufern, den KI-Agenten, sicher und zuverläs
 |------------------------------------------------|
 | ![Belegliste](docs/screenshots/screenshot-09-receipts-list.png) |
 
-Jede von einem Agenten ausgelöste Bestellung erzeugt einen signierten Trust Receipt, aufgeführt unter **Trusteed → Mis ventas → Recibos de venta** mit Verifizierungsstatus und Beleg-URI — verlinkt zum öffentlichen Prüfer unter `receipts.trusteed.xyz`, oder füge den JWS direkt in das **Trust Receipts**-Tool ein (siehe oben), um ihn zu prüfen.
+Jede von einem Agenten ausgelöste Bestellung erhält einen signierten Trust Receipt. Er steht unter **Trusteed → Mis ventas → Recibos de venta**, mit Verifizierungsstatus und Beleg-URI. Von dort können Sie den öffentlichen Prüfer unter `receipts.trusteed.xyz` öffnen oder den JWS direkt in das **Trust Receipts**-Tool (siehe oben) einfügen, um ihn zu prüfen.
 
 ## Funktionen
 
-- **MCP-Endpunkt** unter `/.well-known/mcp-manifest.json` — wird automatisch von KI-Agentenplattformen erkannt
-- **Webhook-Outbox** — zuverlässige Zustellung von Bestellungen/Versand/Rückerstattungen an das Trusteed-Backend mit automatischem Wiederholungsversuch und Backoff
-- **Agenten-Token-Verifizierung** — validiert die Identität des Agenten bei jeder Checkout-Anfrage
-- **Freigabe-Gate (HITL)** — konfigurierbare Freigabe durch einen Menschen (human-in-the-loop) für hochwertige Agentenbestellungen
-- **Trust Receipts** — jede Agententransaktion erzeugt einen kryptographisch signierten Beleg (Ed25519)
-- **Admin-Dashboard** — SPA mit Agentensitzungen, Verkäufen, Regeln und Statusübersicht
-- **Audit-Log** — jede Interaktion eines Agenten wird mit Identität und Ergebnis protokolliert
+- MCP-Endpunkt unter `/.well-known/mcp-manifest.json`, den KI-Agentenplattformen automatisch erkennen.
+- Webhook-Outbox: zuverlässige Zustellung von Bestellungen, Sendungen und Rückerstattungen an das Trusteed-Backend, mit automatischem Wiederholungsversuch und Backoff.
+- Verifizierung des Agenten-Tokens: prüft bei jeder Checkout-Anfrage die Identität des Agenten.
+- Freigabeschranke (HITL): konfigurierbare Human-in-the-Loop-Freigabe für hochwertige Agentenbestellungen.
+- Trust Receipts: Jede Agententransaktion erzeugt einen kryptografisch signierten Beleg (Ed25519).
+- Admin-Dashboard: eine SPA mit Agentensitzungen, Verkäufen, Regeln und Statusübersicht.
+- Audit-Log: Jede Interaktion eines Agenten wird mit Identität und Ergebnis protokolliert.
 
 ## Kompatibilität
 
@@ -54,7 +54,7 @@ Jede von einem Agenten ausgelöste Bestellung erzeugt einen signierten Trust Rec
 
 - Magento Open Source oder Adobe Commerce 2.4.7+
 - PHP 8.2 oder 8.3
-- Ein Trusteed-Konto — [kostenlos registrieren auf trusteed.xyz](https://trusteed.xyz)
+- Ein Trusteed-Konto ([kostenlos registrieren auf trusteed.xyz](https://trusteed.xyz))
 
 ## Installation
 
@@ -70,23 +70,23 @@ bin/magento cache:flush
 
 ### Manueller Upload
 
-1. **Laden Sie die installierbare `.zip`** von der neuesten GitHub Release herunter:
+1. **Laden Sie die installierbare `.zip`** aus dem neuesten GitHub-Release herunter:
    [**⬇ trusteed-agentic-commerce-magento-1.1.1.zip**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest/download/trusteed-agentic-commerce-magento-1.1.1.zip)
-   — oder durchsuchen Sie alle Versionen auf der [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
+   oder durchsuchen Sie alle Versionen auf der [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Entpacken Sie das Archiv nach `app/code/Trusteed/AgenticCommerce/`
 3. Führen Sie die obigen Befehle im Root-Verzeichnis Ihres Magento aus
 
 ## Konfiguration
 
 1. Melden Sie sich in Ihrem Magento-**Admin Panel** an
-2. Gehen Sie zu **Trusteed → Setup Wizard**
-3. Geben Sie Ihren **API Key** von [app.trusteed.xyz/settings](https://app.trusteed.xyz/settings) ein
+2. Gehen Sie zu **Trusteed → Configuración** (dem Einrichtungsassistenten)
+3. Klicken Sie auf **Conectar con Trusteed →**. Der Assistent testet die Verbindung und registriert Ihren Shop
 4. Wählen Sie die Store-Ansichten aus, die Sie KI-Agenten zugänglich machen möchten
-5. Klicken Sie auf **Save & Verify** — der Assistent testet die Verbindung und registriert Ihren Shop
+5. Klicken Sie auf **Guardar**
 
 ### Erweiterte Einstellungen
 
-Navigieren Sie zu **Stores → Configuration → Trusteed → Agentic Commerce**:
+Gehen Sie zu **Stores → Configuration → Trusteed → Agentic Commerce**:
 
 | Einstellung | Standardwert | Beschreibung |
 |---------|---------|-------------|
@@ -98,7 +98,7 @@ Navigieren Sie zu **Stores → Configuration → Trusteed → Agentic Commerce**
 
 ## Admin-Seiten
 
-Nach der Installation erscheint ein **Trusteed**-Menü in der Seitenleiste des Magento-Admins:
+Nach der Installation erscheint in der Seitenleiste des Magento-Admins ein **Trusteed**-Menü:
 
 | Seite | Pfad | Beschreibung |
 |------|------|-------------|
@@ -129,16 +129,16 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ### 1.1.1
 
-- **Fix** — die Seite "Mis Ventas" band einen statischen Platzhalter ein (Dashboard-Block + `ventas.phtml`), der nie die echte TrustReceipt-Liste erreichte. Sie bindet jetzt das echte Admin-SPA im Bereich "Mis Ventas" ein, genau wie Regeln und Agenten.
+- Fix: Die Seite „My Sales → Ventas“ band einen statischen Platzhalter ein (Dashboard-Block + `ventas.phtml`), der nie die echte TrustReceipt-Liste erreichte. Sie bindet jetzt das echte Admin-SPA im Bereich „Mis Ventas“ ein, genau wie Regeln und Agenten.
 - Admin-SPA-Bundle neu gebaut.
 
 ### 1.1.0
 
-- **Fix** — die Checkout-Durchsetzung wurde bei organischen (agentenlosen) Checkouts komplett übersprungen: Händlerregeln wie Höchstbetrag, gesperrte Länder und Geschäftszeiten-Beschränkungen liefen nur, wenn eine Agenten-DID vorhanden war. Diese Regeln gelten jetzt bei jedem Checkout, unabhängig von der Agenten-Präsenz.
-- **Hinzugefügt** — ein Offline-Sicherheitsventil-Evaluator, der dieselben universellen Händlerregeln lokal durchsetzt, wenn die entfernte Regel-Auswertungs-API nicht erreichbar ist, statt nur auf eine pauschale Erlauben/Blockieren-Richtlinie zurückzufallen.
-- **Sicherheitskorrektur** — der vom Trusteed-Backend abgerufene Enforcement-Snapshot wird nun vor der Verwendung kryptographisch verifiziert (Ed25519-Signaturprüfung gegen den veröffentlichten JWKS), statt ohne Verifizierung dekodiert zu werden.
-- **Sicherheitskorrektur** — `EnforcementClient` erzeugt nicht mehr eine Platzhalter-Signatur `dev-bypass`, wenn das HMAC-Secret noch nicht konfiguriert ist; Anfragen schlagen jetzt sicher offen fehl (`ALLOW`, entsprechend der bestehenden Haltung „ein unkonfigurierter Connector blockiert niemals"), mit einer eigenen Log-Zeile, damit der Betrieb eine Installation mitten in der Einrichtung von einer vollständig unkonfigurierten unterscheiden kann.
-- Behoben: Der Support-Endpunkt „Send diagnostics" rief den falschen Backend-Pfad auf (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
+- Fix: Die Checkout-Durchsetzung wurde bei organischen Checkouts (ohne Agent) komplett übersprungen. Händlerregeln wie Höchstbetrag, gesperrte Länder und Geschäftszeiten-Beschränkungen liefen nur, wenn eine Agenten-DID vorhanden war. Diese Regeln gelten jetzt bei jedem Checkout, unabhängig davon, ob ein Agent beteiligt ist.
+- Neu: ein Offline-Sicherheitsventil-Evaluator, der dieselben universellen Händlerregeln lokal durchsetzt, wenn die entfernte API zur Regelauswertung nicht erreichbar ist, statt nur auf eine pauschale Erlauben-/Blockieren-Richtlinie zurückzufallen.
+- Sicherheitsfix: Der vom Trusteed-Backend abgerufene Enforcement-Snapshot wird jetzt kryptografisch verifiziert (Ed25519-Signaturprüfung gegen den veröffentlichten JWKS), bevor ihm vertraut wird, statt ohne Verifizierung dekodiert zu werden.
+- Sicherheitsfix: `EnforcementClient` erzeugt keine Platzhalter-Signatur `dev-bypass` mehr, wenn das HMAC-Secret noch nicht konfiguriert ist. Anfragen schlagen jetzt sicher offen fehl (`ALLOW`, entsprechend der bestehenden Haltung „ein unkonfigurierter Connector blockiert nie“), mit einer eigenen Log-Zeile, damit der Betrieb eine Installation mitten in der Einrichtung von einer vollständig unkonfigurierten unterscheiden kann.
+- Behoben: Der Support-Endpunkt „Send diagnostics“ rief den falschen Backend-Pfad auf (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
 
 ### 1.0.0 (2026-06-18)
 
@@ -146,7 +146,7 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 - MCP-Manifest-Endpunkt
 - Webhook-Outbox mit Wiederholung/Backoff
 - Agenten-Token-Verifizierung (Ed25519)
-- HITL-Freigabe-Gate
+- HITL-Freigabeschranke
 - Admin-SPA-Dashboard
 
 ## Support
@@ -156,4 +156,4 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ## Lizenz
 
-Open Software License 3.0 (OSL-3.0). Vollständiger Text siehe [LICENSE](LICENSE).
+Open Software License 3.0 (OSL-3.0). Den vollständigen Text finden Sie in [LICENSE](LICENSE).

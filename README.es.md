@@ -2,14 +2,14 @@
 
 # Trusteed Agentic Commerce para Magento 2
 
-Permite que los nuevos compradores online, los agentes de IA, realicen compras en tu tienda de forma segura y fiable gracias a Trusteed: la red que fomenta la confianza entre negocios y agentes.
+Los agentes de IA son un tipo nuevo de comprador online. Con Trusteed, la red que conecta a negocios y agentes, pueden comprar en tu tienda con las condiciones que tú fijes.
 
-- **Define tus reglas de negocio**: a quién permites comprar, hasta qué importe, qué categorías no quieres ofrecer a los agentes, establece límites de precio, mantén niveles de stock para protegerte frente a posibles agentes fraudulentos, y mucho más.
-- **Recibos a prueba de manipulaciones**: generamos recibos firmados electrónicamente y criptográficamente invulnerables que sirven como prueba de la transacción real en caso de disputa. Compatible con las normativas eIDAS (UE, Reino Unido) y eSIGN (EE. UU.).
-- **Analítica de agentes**: consulta estadísticas sobre las compras de los agentes — cuánto gastan, qué productos compran y con qué frecuencia.
-- **Bloqueo de agentes**: bloquea agentes potencialmente peligrosos o problemáticos.
-- **Divisas digitales**: habilita compras en divisas digitales gracias al protocolo X402.
-- **Transacciones entre pares**: permite el comercio directo entre pares (peer-to-peer) entre agentes y comercios.
+- Define tus reglas de negocio: a quién dejas comprar, hasta qué importe, qué categorías no quieres ofrecer a los agentes, límites de precio, niveles de stock que te protejan de agentes fraudulentos, y más.
+- Recibe recibos firmados. Cada transacción genera un recibo firmado criptográficamente, en el que cualquier manipulación se detecta, y que te sirve como evidencia de la compra si hay una disputa. Alineado con eIDAS (UE) y eSIGN (EE. UU.).
+- Consulta lo que hacen los agentes: cuánto gastan, qué productos compran y con qué frecuencia.
+- Bloquea a los agentes que parezcan peligrosos o den problemas.
+- Acepta compras en divisas digitales mediante el protocolo X402.
+- Deja que agentes y comercios comercien directamente entre pares (peer-to-peer).
 
 ## Capturas de pantalla
 
@@ -29,17 +29,17 @@ Permite que los nuevos compradores online, los agentes de IA, realicen compras e
 |------------------------------------------------|
 | ![Listado de recibos](docs/screenshots/screenshot-09-receipts-list.png) |
 
-Cada pedido originado por un agente genera un recibo de confianza firmado, listado en **Trusteed → Mis ventas → Recibos de venta** con su estado de verificación y URI del recibo — enlaza al verificador público en `receipts.trusteed.xyz`, o pega el JWS directamente en la herramienta **Trust Receipts** (ver arriba) para comprobarlo.
+Cada pedido originado por un agente genera un recibo de confianza firmado. Aparece en **Trusteed → Mis ventas → Recibos de venta** con su estado de verificación y el URI del recibo. Desde ahí puedes abrir el verificador público en `receipts.trusteed.xyz`, o pegar el JWS directamente en la herramienta **Trust Receipts** (ver arriba) para comprobarlo.
 
 ## Características
 
-- **Endpoint MCP** en `/.well-known/mcp-manifest.json` — descubierto automáticamente por las plataformas de agentes de IA
-- **Cola de salida de webhooks (outbox)** — entrega fiable de pedidos/envíos/reembolsos al backend de Trusteed con reintento y backoff automáticos
-- **Verificación del token del agente** — valida la identidad del agente en cada solicitud de checkout
-- **Puerta de aprobación (HITL)** — aprobación humana configurable (human-in-the-loop) para pedidos de agentes de alto valor
-- **Trust Receipts** — cada transacción de un agente genera un recibo firmado criptográficamente (Ed25519)
-- **Panel de administración** — SPA que muestra sesiones de agentes, ventas, reglas y estado de salud
-- **Registro de auditoría** — cada interacción de un agente queda registrada con su identidad y el veredicto
+- Endpoint MCP en `/.well-known/mcp-manifest.json`, que las plataformas de agentes de IA descubren automáticamente.
+- Cola de salida de webhooks (outbox): entrega fiable de pedidos, envíos y reembolsos al backend de Trusteed, con reintento y backoff automáticos.
+- Verificación del token del agente: valida la identidad del agente en cada solicitud de checkout.
+- Puerta de aprobación (HITL): aprobación humana (human-in-the-loop) configurable para pedidos de agentes de alto valor.
+- Trust Receipts: cada transacción de un agente genera un recibo firmado criptográficamente (Ed25519).
+- Panel de administración: un SPA que muestra sesiones de agentes, ventas, reglas y estado de salud.
+- Registro de auditoría: cada interacción de un agente queda registrada con su identidad y el veredicto.
 
 ## Compatibilidad
 
@@ -54,7 +54,7 @@ Cada pedido originado por un agente genera un recibo de confianza firmado, lista
 
 - Magento Open Source o Adobe Commerce 2.4.7+
 - PHP 8.2 u 8.3
-- Una cuenta de Trusteed — [regístrate gratis en trusteed.xyz](https://trusteed.xyz)
+- Una cuenta de Trusteed ([regístrate gratis en trusteed.xyz](https://trusteed.xyz))
 
 ## Instalación
 
@@ -72,17 +72,17 @@ bin/magento cache:flush
 
 1. **Descarga el `.zip` instalable** desde la última GitHub Release:
    [**⬇ trusteed-agentic-commerce-magento-1.1.1.zip**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest/download/trusteed-agentic-commerce-magento-1.1.1.zip)
-   — o consulta todas las versiones en la [página de Releases](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
+   o consulta todas las versiones en la [página de Releases](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Descomprime en `app/code/Trusteed/AgenticCommerce/`
 3. Ejecuta los comandos anteriores desde la raíz de tu Magento
 
 ## Configuración
 
 1. Inicia sesión en tu **Panel de Administración** de Magento
-2. Ve a **Trusteed → Setup Wizard**
-3. Introduce tu **API Key** desde [app.trusteed.xyz/settings](https://app.trusteed.xyz/settings)
+2. Ve a **Trusteed → Configuración** (el asistente de configuración)
+3. Haz clic en **Conectar con Trusteed →**. El asistente comprueba la conectividad y registra tu tienda
 4. Selecciona las vistas de tienda que quieres exponer a los agentes de IA
-5. Haz clic en **Save & Verify** — el asistente comprueba la conectividad y registra tu tienda
+5. Haz clic en **Guardar**
 
 ### Ajustes avanzados
 
@@ -129,16 +129,16 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ### 1.1.1
 
-- **Corrección** — la página "Mis Ventas" montaba un placeholder estático (bloque Dashboard + `ventas.phtml`) que nunca llegaba al listado real de TrustReceipts. Ahora monta el SPA de administración real en la sección "Mis Ventas", igual que Reglas y Agentes.
+- Corrección: la página «Mis Ventas» montaba un placeholder estático (bloque Dashboard + `ventas.phtml`) que nunca llegaba al listado real de TrustReceipts. Ahora monta el SPA de administración real en la sección «Mis Ventas», igual que Reglas y Agentes.
 - Bundle del SPA de administración reconstruido.
 
 ### 1.1.0
 
-- **Corrección** — la aplicación de reglas en checkout se saltaba por completo en checkouts orgánicos (sin agente): reglas del comerciante como monto máximo, países bloqueados y restricciones de horario comercial nunca se ejecutaban salvo que hubiera un DID de agente presente. Estas reglas ahora aplican en todo checkout sin importar la presencia del agente.
-- **Añadido** — un evaluador de válvula de seguridad offline que aplica las mismas reglas universales del comerciante localmente cuando la API remota de evaluación de reglas no está disponible, en vez de recurrir solo a una política general de permitir/bloquear todo.
-- **Corrección de seguridad** — el snapshot de enforcement obtenido del backend de Trusteed ahora se verifica criptográficamente (comprobación de firma Ed25519 contra el JWKS publicado) antes de confiar en él, en lugar de decodificarse sin verificación.
-- **Corrección de seguridad** — `EnforcementClient` ya no fabrica una firma `dev-bypass` de relleno cuando el secreto HMAC aún no está configurado; ahora las solicitudes fallan de forma segura y abierta (`ALLOW`, manteniendo la postura existente de "un conector sin configurar nunca bloquea") con una línea de log distinta para que el equipo de operaciones pueda distinguir una instalación a medio configurar de una totalmente sin configurar.
-- Se corrigió que el endpoint de soporte "Send diagnostics" llamaba a la ruta de backend incorrecta (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
+- Corrección: la aplicación de reglas en checkout se saltaba por completo en checkouts orgánicos (sin agente). Reglas del comerciante como monto máximo, países bloqueados y restricciones de horario comercial nunca se ejecutaban salvo que hubiera un DID de agente presente. Estas reglas ahora aplican en todo checkout, con o sin agente.
+- Añadido: un evaluador de válvula de seguridad offline que aplica las mismas reglas universales del comerciante localmente cuando la API remota de evaluación de reglas no está disponible, en vez de recurrir solo a una política general de permitir/bloquear todo.
+- Corrección de seguridad: el snapshot de enforcement obtenido del backend de Trusteed ahora se verifica criptográficamente (comprobación de firma Ed25519 contra el JWKS publicado) antes de confiar en él, en lugar de decodificarse sin verificación.
+- Corrección de seguridad: `EnforcementClient` ya no fabrica una firma `dev-bypass` de relleno cuando el secreto HMAC aún no está configurado. Ahora las solicitudes fallan de forma segura y abierta (`ALLOW`, manteniendo la postura existente de «un conector sin configurar nunca bloquea») con una línea de log distinta para que el equipo de operaciones distinga una instalación a medio configurar de una totalmente sin configurar.
+- Se corrigió que el endpoint de soporte «Send diagnostics» llamaba a la ruta de backend incorrecta (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
 
 ### 1.0.0 (2026-06-18)
 

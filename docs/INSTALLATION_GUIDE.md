@@ -1,26 +1,26 @@
 # Installation Guide — Trusteed Agentic Commerce for Magento 2
 
-Version 1.0.0 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
+Version 1.1.1 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
 ---
 
-## Table of Contents
+## Table of contents
 
-1. [System Requirements](#1-system-requirements)
-2. [Pre-Installation Checklist](#2-pre-installation-checklist)
+1. [System requirements](#1-system-requirements)
+2. [Pre-installation checklist](#2-pre-installation-checklist)
 3. [Installation via Composer](#3-installation-via-composer)
-4. [Manual Installation](#4-manual-installation)
+4. [Manual installation](#4-manual-installation)
 5. [Post-Installation Setup](#5-post-installation-setup)
 6. [Connecting to Trusteed](#6-connecting-to-trusteed)
-7. [Verifying the Installation](#7-verifying-the-installation)
-8. [Cron Configuration](#8-cron-configuration)
-9. [Upgrade Instructions](#9-upgrade-instructions)
+7. [Verifying the installation](#7-verifying-the-installation)
+8. [Cron configuration](#8-cron-configuration)
+9. [Upgrade instructions](#9-upgrade-instructions)
 10. [Uninstallation](#10-uninstallation)
 11. [Troubleshooting](#11-troubleshooting)
 
 ---
 
-## 1. System Requirements
+## 1. System requirements
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
@@ -32,13 +32,13 @@ Version 1.0.0 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 | Composer | 2.x | 2.7+ |
 | Cron | Required | — |
 
-> **`ext-sodium` is strongly recommended.** The module ships a pure-PHP fallback
+> **Install `ext-sodium`.** The module includes a pure-PHP fallback
 > (`paragonie/sodium_compat`) for Ed25519 agent token verification, but native
-> `ext-sodium` is ~40× faster and is available in all PHP 8.2+ builds.
+> `ext-sodium` is the better choice and is available in all PHP 8.2+ builds.
 
 ---
 
-## 2. Pre-Installation Checklist
+## 2. Pre-installation checklist
 
 Before installing, confirm:
 
@@ -111,7 +111,7 @@ bin/magento maintenance:disable
 
 ---
 
-## 4. Manual Installation
+## 4. Manual installation
 
 Use this method if you do not have Magento Marketplace credentials, or if you
 obtained the module as a `.zip` file from the Marketplace download page.
@@ -119,7 +119,7 @@ obtained the module as a `.zip` file from the Marketplace download page.
 ### 4.1 Extract the archive
 
 ```bash
-unzip trusteed-agentic-commerce-magento-1.0.0.zip -d /tmp/trusteed-module
+unzip trusteed-agentic-commerce-magento-1.1.1.zip -d /tmp/trusteed-module
 ```
 
 ### 4.2 Copy files into Magento
@@ -144,21 +144,22 @@ After installation the **Trusteed** menu appears in the Magento admin sidebar
 
 Navigate to **Trusteed → Configuración** (Setup Wizard).
 
-The wizard presents three sections:
+The wizard presents four sections:
 
 | Section | Purpose |
 |---------|---------|
-| Internal HMAC Secret | Signs internal heartbeat calls to the Trusteed API |
-| Checkout Enforcement (CEL) | Configures fail-mode and enforcement rules |
-| Conecta tu tienda con Trusteed | API key entry and store connection |
+| Internal HMAC Secret | Signs internal heartbeat requests to the Trusteed API |
+| Checkout Enforcement (CEL) | Holds the Enforcement Installation ID and the Enforcement HMAC Secret that Trusteed provides. Until both are set, enforcement does nothing |
+| Conecta tu tienda con Trusteed | The **Conectar con Trusteed →** button, which connects the store to your Trusteed account |
+| ¿Qué tiendas quieres activar? | The store views that agents can see |
 
-### 5.2 Generate the Internal HMAC Secret
+### 5.2 Generate the internal HMAC secret
 
-The HMAC secret signs internal API calls (X-Internal-Auth header). It must
+The HMAC secret signs internal heartbeat requests to the Trusteed API. It must
 match the value configured in the Trusteed backend for your merchant account.
 
-Trusteed Operations provisions this value — copy it from your account dashboard
-at [app.trusteed.xyz/settings/integration](https://app.trusteed.xyz/settings/integration).
+Trusteed Operations provisions this value. Use the one Trusteed gave you for your
+merchant account.
 
 Paste it into **Internal HMAC Secret** and click **Guardar**.
 
@@ -187,10 +188,10 @@ Log in to [app.trusteed.xyz](https://app.trusteed.xyz) and navigate to
 
 Navigate to **Stores → Configuration → Trusteed → Agentic Commerce**:
 
-1. **API Base URL** — `https://api.trusteed.xyz` (do not change unless instructed)
-2. **Merchant ID** — paste from your Trusteed account
-3. **Integration Token** — paste the integration token (stored encrypted)
-4. **Webhook Secret** — paste the webhook secret (stored encrypted)
+1. **API Base URL**: `https://api.trusteed.xyz`. Leave it unchanged unless Trusteed tells you otherwise.
+2. **Merchant ID**: paste the value from your Trusteed account.
+3. **Integration Token**: paste the integration token. Magento stores it encrypted.
+4. **Webhook Secret**: paste the webhook secret. Magento stores it encrypted.
 
 Click **Save Config**.
 
@@ -201,14 +202,14 @@ In the Setup Wizard (**Trusteed → Configuración**) click the
 
 1. Validates connectivity to the Trusteed API
 2. Registers your Magento instance as a connected store
-3. Returns a **Connection ID** — saved automatically to config
+3. Returns a **Connection ID**, which Magento saves to the configuration automatically
 
 A green **"Your store is connected"** banner will appear on the Dashboard
 (**Trusteed → Inicio**) once the connection is established.
 
 ---
 
-## 7. Verifying the Installation
+## 7. Verifying the installation
 
 ### 7.1 Check module status
 
@@ -220,8 +221,6 @@ bin/magento module:status Trusteed_AgenticCommerce
 ### 7.2 Verify database tables
 
 ```bash
-bin/magento doctrine:schema:validate
-# Or directly:
 mysql -u <user> -p <dbname> -e "DESCRIBE trusteed_webhook_outbox;"
 mysql -u <user> -p <dbname> -e "SHOW COLUMNS FROM sales_order LIKE 'trusteed_%';"
 ```
@@ -229,13 +228,14 @@ mysql -u <user> -p <dbname> -e "SHOW COLUMNS FROM sales_order LIKE 'trusteed_%';
 ### 7.3 Verify the MCP manifest endpoint
 
 ```bash
-curl -sf https://<YOUR_STORE>/trusteed/wellknown/mcpmanifest
+curl -sf https://<YOUR_STORE>/.well-known/mcp.json
 # Should return a JSON manifest with store capabilities
 ```
 
 ### 7.4 Check the admin dashboard
 
 Navigate to **Trusteed → Inicio**. The dashboard should show:
+
 - Green "Your store is connected" banner
 - Store ID matching your Trusteed account
 - Count of active store views
@@ -250,7 +250,7 @@ grep trusteed var/log/cron.log
 
 ---
 
-## 8. Cron Configuration
+## 8. Cron configuration
 
 The module registers two cron jobs in the `default` group:
 
@@ -273,7 +273,7 @@ requires no additional configuration.
 
 ---
 
-## 9. Upgrade Instructions
+## 9. Upgrade instructions
 
 ### From a previous 1.x version
 
@@ -284,8 +284,7 @@ bin/magento setup:di:compile
 bin/magento cache:flush
 ```
 
-Check the Changelog in this package for any configuration changes required
-between versions.
+Check the changelog in this package for configuration changes between versions.
 
 ---
 
@@ -320,9 +319,12 @@ ALTER TABLE sales_order
 
 ### 10.4 Clean up configuration
 
+```sql
+DELETE FROM core_config_data
+  WHERE path LIKE 'trusteed_general/%' OR path LIKE 'trusteed/%';
+```
+
 ```bash
-bin/magento config:delete trusteed_general/general
-bin/magento config:delete trusteed/enforcement
 bin/magento cache:flush
 ```
 
@@ -343,7 +345,7 @@ bin/magento cache:flush
 1. Verify `API Base URL` is `https://api.trusteed.xyz` (HTTPS required)
 2. Check that your server can reach the Trusteed API:
    ```bash
-   curl -sf https://api.trusteed.xyz/health
+   curl -sf https://api.trusteed.xyz/api/v1/health
    ```
 3. Verify the Integration Token is correct (no trailing spaces)
 4. Check `var/log/system.log` for `[trusteed]` entries
@@ -374,8 +376,8 @@ sudo dnf install php-sodium
 sudo systemctl restart php8.2-fpm
 ```
 
-The pure-PHP fallback activates automatically if `ext-sodium` is absent — no
-configuration change required.
+The pure-PHP fallback activates automatically if `ext-sodium` is absent. You don't
+need to change any configuration.
 
 ### Orders not appearing in the Trusteed dashboard
 

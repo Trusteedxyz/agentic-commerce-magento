@@ -2,14 +2,14 @@
 
 # Trusteed Agentic Commerce pour Magento 2
 
-Permettez aux nouveaux acheteurs en ligne, les agents d'IA, d'effectuer des achats dans votre boutique de manière sûre et fiable grâce à Trusteed : le réseau qui instaure la confiance entre les entreprises et les agents.
+Les agents IA sont un nouveau type d'acheteur en ligne. Avec Trusteed, le réseau qui met en relation les entreprises et les agents, ils peuvent acheter dans votre boutique selon vos conditions.
 
-- **Définissez vos règles métier** : qui vous autorisez à acheter, jusqu'à quel montant, quelles catégories vous ne voulez pas proposer aux agents, fixez des limites de prix, maintenez des niveaux de stock pour vous protéger contre d'éventuels agents frauduleux, et bien plus encore.
-- **Reçus infalsifiables** : nous générons des reçus signés électroniquement et cryptographiquement infalsifiables, qui font office de preuve de la transaction réelle en cas de litige. Compatible avec les réglementations eIDAS (UE, Royaume-Uni) et eSIGN (États-Unis).
-- **Analytique des agents** : consultez des statistiques sur les achats des agents — combien ils dépensent, quels produits ils achètent et à quelle fréquence.
-- **Blocage d'agents** : bloquez les agents potentiellement dangereux ou problématiques.
-- **Monnaies numériques** : permet les achats en monnaies numériques grâce au protocole X402.
-- **Transactions pair à pair** : permet le commerce direct de pair à pair entre agents et commerçants.
+- Définissez vos règles métier : qui peut acheter, jusqu'à quel montant, quelles catégories vous ne proposez pas aux agents, des limites de prix, des niveaux de stock qui vous protègent des agents frauduleux, et plus encore.
+- Recevez des reçus signés. Chaque transaction produit un reçu signé cryptographiquement, dont toute altération est détectable, que vous pouvez utiliser comme élément de preuve de l'achat en cas de litige. Aligné sur eIDAS (UE) et eSIGN (États-Unis).
+- Voyez ce que font les agents : combien ils dépensent, ce qu'ils achètent et à quelle fréquence.
+- Bloquez les agents qui semblent dangereux ou qui posent problème.
+- Acceptez des achats en monnaies numériques grâce au protocole X402.
+- Laissez agents et marchands échanger directement, de pair à pair.
 
 ## Captures d'écran
 
@@ -29,17 +29,17 @@ Permettez aux nouveaux acheteurs en ligne, les agents d'IA, d'effectuer des acha
 |--------------------------------------------|
 | ![Liste des reçus](docs/screenshots/screenshot-09-receipts-list.png) |
 
-Chaque commande initiée par un agent génère un reçu de confiance signé, répertorié sous **Trusteed → Mis ventas → Recibos de venta** avec son statut de vérification et son URI — lien vers le vérificateur public sur `receipts.trusteed.xyz`, ou collez le JWS directement dans l'outil **Trust Receipts** (voir ci-dessus) pour le vérifier.
+Chaque commande initiée par un agent reçoit un reçu de confiance signé. Il est répertorié sous **Trusteed → Mis ventas → Recibos de venta**, avec son statut de vérification et son URI. De là, vous pouvez ouvrir le vérificateur public sur `receipts.trusteed.xyz`, ou coller le JWS directement dans l'outil **Trust Receipts** (voir ci-dessus) pour le vérifier.
 
 ## Fonctionnalités
 
-- **Point de terminaison MCP** sur `/.well-known/mcp-manifest.json` — découvert automatiquement par les plateformes d'agents d'IA
-- **File d'attente sortante de webhooks (outbox)** — livraison fiable des commandes/expéditions/remboursements au backend de Trusteed, avec réessai et backoff automatiques
-- **Vérification du jeton de l'agent** — valide l'identité de l'agent à chaque requête de checkout
-- **Verrou d'application (HITL)** — approbation humaine configurable (human-in-the-loop) pour les commandes d'agents de forte valeur
-- **Trust Receipts** — chaque transaction d'un agent génère un reçu signé cryptographiquement (Ed25519)
-- **Tableau de bord d'administration** — SPA affichant les sessions d'agents, les ventes, les règles et l'état de santé
-- **Journal d'audit** — chaque interaction d'un agent est enregistrée avec son identité et le verdict
+- Point de terminaison MCP sur `/.well-known/mcp-manifest.json`, que les plateformes d'agents IA découvrent automatiquement.
+- Outbox de webhooks : livraison fiable des commandes, des expéditions et des remboursements au backend Trusteed, avec réessai et backoff automatiques.
+- Vérification du token de l'agent : valide l'identité de l'agent à chaque requête de checkout.
+- Verrou d'application (HITL) : approbation humaine (human-in-the-loop) configurable pour les commandes d'agents de forte valeur.
+- Trust Receipts : chaque transaction d'un agent produit un reçu signé cryptographiquement (Ed25519).
+- Tableau de bord d'administration : un SPA qui affiche les sessions d'agents, les ventes, les règles et l'état de santé.
+- Journal d'audit : chaque interaction d'un agent est enregistrée avec son identité et le verdict.
 
 ## Compatibilité
 
@@ -54,7 +54,7 @@ Chaque commande initiée par un agent génère un reçu de confiance signé, ré
 
 - Magento Open Source ou Adobe Commerce 2.4.7+
 - PHP 8.2 ou 8.3
-- Un compte Trusteed — [inscrivez-vous gratuitement sur trusteed.xyz](https://trusteed.xyz)
+- Un compte Trusteed ([inscrivez-vous gratuitement sur trusteed.xyz](https://trusteed.xyz))
 
 ## Installation
 
@@ -70,23 +70,23 @@ bin/magento cache:flush
 
 ### Téléversement manuel
 
-1. **Téléchargez le `.zip` installable** depuis la dernière GitHub Release :
+1. **Téléchargez le `.zip` installable** depuis la dernière Release GitHub :
    [**⬇ trusteed-agentic-commerce-magento-1.1.1.zip**](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest/download/trusteed-agentic-commerce-magento-1.1.1.zip)
-   — ou parcourez toutes les versions sur la [page des Releases](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
+   ou parcourez toutes les versions sur la [page des Releases](https://github.com/Trusteedxyz/agentic-commerce-magento/releases).
 2. Extrayez-le dans `app/code/Trusteed/AgenticCommerce/`
 3. Exécutez les commandes ci-dessus depuis la racine de votre Magento
 
 ## Configuration
 
 1. Connectez-vous à votre **Panneau d'administration** Magento
-2. Allez dans **Trusteed → Setup Wizard**
-3. Renseignez votre **API Key** depuis [app.trusteed.xyz/settings](https://app.trusteed.xyz/settings)
-4. Sélectionnez les vues de boutique que vous souhaitez exposer aux agents d'IA
-5. Cliquez sur **Save & Verify** — l'assistant teste la connectivité et enregistre votre boutique
+2. Allez dans **Trusteed → Configuración** (l'assistant de configuration)
+3. Cliquez sur **Conectar con Trusteed →**. L'assistant teste la connexion et enregistre votre boutique
+4. Sélectionnez les vues de boutique que vous souhaitez exposer aux agents IA
+5. Cliquez sur **Guardar**
 
 ### Paramètres avancés
 
-Accédez à **Stores → Configuration → Trusteed → Agentic Commerce** :
+Allez dans **Stores → Configuration → Trusteed → Agentic Commerce** :
 
 | Paramètre | Valeur par défaut | Description |
 |---------|---------|-------------|
@@ -94,7 +94,7 @@ Accédez à **Stores → Configuration → Trusteed → Agentic Commerce** :
 | Webhook secret version | `1` | À faire tourner après compromission d'une clé |
 | HITL enforcement mode | `observe` | `observe` se contente de journaliser ; `enforce` bloque les commandes au-delà du seuil |
 | HITL amount threshold | `500.00` | Les commandes au-delà de cette valeur nécessitent une approbation humaine |
-| Agent token TTL | `300` | Durée de vie maximale (en secondes) d'un jeton d'agent valide |
+| Agent token TTL | `300` | Durée de vie maximale (en secondes) d'un token d'agent valide |
 
 ## Pages d'administration
 
@@ -117,7 +117,7 @@ bin/magento setup:upgrade
 composer remove trusteed/agentic-commerce-magento
 ```
 
-Pour supprimer les tables de base de données :
+Pour supprimer les tables de la base de données :
 
 ```bash
 bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_AgenticCommerce
@@ -129,23 +129,23 @@ bin/magento setup:db-declaration:generate-whitelist --module-name=Trusteed_Agent
 
 ### 1.1.1
 
-- **Correctif** — la page « Mes Ventes » montait un placeholder statique (bloc Dashboard + `ventas.phtml`) qui n'atteignait jamais la vraie liste de TrustReceipts. Elle monte désormais le vrai SPA d'administration dans la section « Mes Ventes », comme Règles et Agents.
+- Correctif : la page « My Sales → Ventas » montait un placeholder statique (bloc Dashboard + `ventas.phtml`) qui n'atteignait jamais la vraie liste de TrustReceipts. Elle monte désormais le vrai SPA d'administration dans la section « Mis Ventas », comme Règles et Agents.
 - Bundle du SPA d'administration reconstruit.
 
 ### 1.1.0
 
-- **Correctif** — l'application des règles au checkout était entièrement ignorée pour les checkouts organiques (sans agent) : les règles du marchand comme le montant maximum, les pays bloqués et les restrictions d'horaires d'ouverture ne s'exécutaient que si un DID d'agent était présent. Ces règles s'appliquent désormais à chaque checkout, indépendamment de la présence d'un agent.
-- **Ajout** — un évaluateur de soupape de sécurité hors ligne qui applique les mêmes règles universelles du marchand localement lorsque l'API distante d'évaluation des règles est inaccessible, au lieu de se rabattre uniquement sur une politique globale d'autorisation/blocage.
-- **Correctif de sécurité** — l'instantané d'application (enforcement snapshot) récupéré depuis le backend de Trusteed est désormais vérifié cryptographiquement (contrôle de signature Ed25519 par rapport au JWKS publié) avant d'être approuvé, au lieu d'être décodé sans vérification.
-- **Correctif de sécurité** — `EnforcementClient` ne fabrique plus de signature `dev-bypass` de substitution lorsque le secret HMAC n'est pas encore configuré ; les requêtes échouent désormais de façon sûre et ouverte (`ALLOW`, conformément à la posture existante « un connecteur non configuré ne bloque jamais ») avec une ligne de log distincte permettant aux équipes d'exploitation de distinguer une installation en cours de configuration d'une installation totalement non configurée.
-- Correction du point de terminaison de support « Send diagnostics » qui appelait le mauvais chemin backend (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
+- Correctif : l'application des règles au checkout était entièrement ignorée pour les checkouts organiques (sans agent). Les règles du marchand, comme le montant maximal, les pays bloqués et les restrictions d'horaires d'ouverture, ne s'exécutaient que si un DID d'agent était présent. Ces règles s'appliquent désormais à chaque checkout, qu'un agent soit présent ou non.
+- Ajout : un évaluateur de soupape de sécurité hors ligne qui applique localement les mêmes règles universelles du marchand lorsque l'API distante d'évaluation des règles est inaccessible, au lieu de se rabattre uniquement sur une politique générale qui autorise ou bloque tout.
+- Correctif de sécurité : l'instantané d'application (enforcement snapshot) récupéré auprès du backend Trusteed est désormais vérifié cryptographiquement (contrôle de la signature Ed25519 par rapport au JWKS publié) avant d'être considéré comme fiable, au lieu d'être décodé sans vérification.
+- Correctif de sécurité : `EnforcementClient` ne fabrique plus de signature `dev-bypass` de substitution lorsque le secret HMAC n'est pas encore configuré. Les requêtes échouent désormais de façon sûre et ouverte (`ALLOW`, conformément à la posture existante « un connecteur non configuré ne bloque jamais »), avec une ligne de log distincte pour que l'exploitation puisse distinguer une installation en cours de configuration d'une installation totalement non configurée.
+- Correction du point de terminaison de support « Send diagnostics », qui appelait le mauvais chemin du backend (`/api/v1/embed/support/report` → `/v1/embed/support/report`).
 
 ### 1.0.0 (2026-06-18)
 
 - Version initiale
-- Point de terminaison de manifeste MCP
-- File d'attente sortante de webhooks avec réessai/backoff
-- Vérification du jeton d'agent (Ed25519)
+- Point de terminaison du manifeste MCP
+- Outbox de webhooks avec réessai/backoff
+- Vérification du token d'agent (Ed25519)
 - Verrou d'application HITL
 - Tableau de bord d'administration SPA
 

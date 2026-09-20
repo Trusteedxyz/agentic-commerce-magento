@@ -1,14 +1,14 @@
 # Guía de Usuario — Trusteed Agentic Commerce para Magento 2
 
-Versión 1.0.0
+Versión 1.1.1
 
 ---
 
-## Tabla de Contenidos
+## Tabla de contenidos
 
-1. [Descripción General](#1-descripción-general)
-2. [Cómo Funciona el Comercio con Agentes IA](#2-cómo-funciona-el-comercio-con-agentes-ia)
-3. [Panel de Administración](#3-panel-de-administración)
+1. [Descripción general](#1-descripción-general)
+2. [Cómo funciona el comercio con agentes IA](#2-cómo-funciona-el-comercio-con-agentes-ia)
+3. [Panel de administración](#3-panel-de-administración)
 4. [Mis ventas](#4-mis-ventas)
 5. [A quién le vendo](#5-a-quién-le-vendo)
 6. [Mis Reglas](#6-mis-reglas)
@@ -16,14 +16,14 @@ Versión 1.0.0
 8. [Seguridad](#8-seguridad)
 9. [Ajustes](#9-ajustes)
 10. [Trust Receipts (Recibos de Confianza)](#10-trust-receipts-recibos-de-confianza)
-11. [Ver Pedidos de Agentes en el Magento Estándar](#11-ver-pedidos-de-agentes-en-el-magento-estándar)
-12. [Comprender la Insignia de Trust Receipt](#12-comprender-la-insignia-de-trust-receipt)
+11. [Ver pedidos de agentes en el Magento estándar](#11-ver-pedidos-de-agentes-en-el-magento-estándar)
+12. [Comprender la insignia de Trust Receipt](#12-comprender-la-insignia-de-trust-receipt)
 13. [HITL — Aprobaciones Humanas en el Proceso](#13-hitl--aprobaciones-humanas-en-el-proceso)
-14. [Preguntas Frecuentes](#14-preguntas-frecuentes)
+14. [Preguntas frecuentes](#14-preguntas-frecuentes)
 
 ---
 
-## 1. Descripción General
+## 1. Descripción general
 
 Trusteed Agentic Commerce conecta su tienda Magento con asistentes de compras IA
 como Claude, ChatGPT y otros agentes compatibles con MCP. Cuando un cliente le pide
@@ -39,7 +39,7 @@ del administrador.
 
 ---
 
-## 2. Cómo Funciona el Comercio con Agentes IA
+## 2. Cómo funciona el comercio con agentes IA
 
 ```
 Cliente → Agente IA → Descubrimiento MCP → Su Tienda Magento
@@ -57,29 +57,29 @@ Cliente → Agente IA → Descubrimiento MCP → Su Tienda Magento
 |---------|-------------|
 | **Agente** | Un asistente IA (Claude, ChatGPT, etc.) que actúa en nombre de un cliente |
 | **MCP** | Model Context Protocol — el estándar abierto que los agentes usan para interactuar con tiendas |
-| **Trust Receipt** | Prueba firmada criptográficamente de cada transacción de agente (Ed25519) |
+| **Trust Receipt** | Registro firmado criptográficamente de cada transacción de agente (Ed25519) |
 | **Regla** | Una restricción definida por el comerciante (valor máximo, agentes permitidos, umbral HITL) |
 | **HITL** | Human-in-the-Loop — los pedidos por encima de un umbral requieren su aprobación manual |
 | **Modo de cumplimiento** | `observe` = solo registrar; `enforce` = bloquear pedidos que infrinjan reglas |
 
 ---
 
-## 3. Panel de Administración
+## 3. Panel de administración
 
 **Ruta:** Trusteed → Inicio
 
 El panel es su punto de partida. Muestra:
 
-- **Estado de conexión** — banner verde que confirma que su tienda está conectada a Trusteed
-- **Store ID** — su identificador único en la red Trusteed
-- **Accesos rápidos** — atajos a las cuatro secciones principales
+- Estado de conexión: un banner verde confirma que su tienda está conectada a Trusteed
+- Store ID: su identificador único en la red Trusteed
+- Accesos rápidos: atajos a las cuatro secciones principales
 
 ### Estados del banner de conexión
 
 | Banner | Significado |
 |--------|-------------|
 | Verde "Your store is connected" | La tienda está activa y recibiendo tráfico de agentes |
-| Amarillo "Connection pending" | El Asistente de Configuración no se ha completado — vaya a Trusteed → Configuración |
+| Amarillo "Connection pending" | El Asistente de Configuración no se ha completado. Vaya a Trusteed → Configuración |
 | Rojo "Store disconnected" | Credenciales de API no válidas o API de Trusteed inaccesible |
 
 ---
@@ -93,10 +93,11 @@ Esta sección muestra todos los pedidos realizados por agentes IA en su tienda. 
 ### Pestaña My orders (Mis pedidos)
 
 Lista los pedidos realizados por agentes con:
+
 - Número de pedido (enlaza a la vista de pedido estándar de Magento)
 - Identidad del agente (plataforma IA + cliente)
 - Total del pedido
-- Estado del Trust Receipt (PENDING / ISSUED / VERIFIED)
+- Trust Receipt, con una vista de detalle
 - Fecha
 
 Los pedidos realizados por agentes aparecen aquí **y** en la lista estándar de
@@ -123,13 +124,14 @@ de token y decisión de cumplimiento para cada pedido de agente.
 
 ## 5. A quién le vendo
 
-**Ruta:** Trusteed → Agentes
+**Ruta:** Trusteed → A quién le vendo
 
 Gestione qué agentes IA tienen permitido comprar en su tienda.
 
 ### Lista de agentes
 
 Muestra todos los agentes que han accedido a su tienda, con:
+
 - DID del agente (identificador descentralizado)
 - Plataforma (Claude, ChatGPT, etc.)
 - Primera visita / última visita
@@ -156,21 +158,25 @@ Puede configurar niveles mínimos de confianza en **Mis Reglas**.
 
 ## 6. Mis Reglas
 
-**Ruta:** Trusteed → Reglas
+**Ruta:** Trusteed → Mis Reglas
 
 Las reglas definen cómo se evalúan los pedidos de agentes antes de realizarse.
 Cada regla puede estar en modo `observe` (solo registrar) o `enforce` (bloquear infracciones).
 
 ### Reglas comunes
 
+El catálogo tiene 46 reglas en total (de R001 a R062, no contiguas). Estas son las que
+cita esta guía:
+
 | Código | Nombre | Descripción |
 |--------|--------|-------------|
-| R001 | Identidad de agente requerida | Rechaza agentes anónimos |
-| R005 | Importe máximo de pedido | Bloquea pedidos por encima de un umbral configurado |
-| R007 | Categorías de productos permitidas | Restringe qué categorías pueden comprar los agentes |
-| R011 | Guardia de abandono de carrito | Marca patrones sospechosos de abandono de carrito |
-| R022 | Guardia de abuso de reintentos | Limita la frecuencia de reintentos de pedido por agente |
-| R043 | Umbral HITL | Envía pedidos por encima de un valor para revisión humana en lugar de aprobación automática |
+| R001 | `verified-agent-required` | Bloquea el checkout cuando no hay una identidad de agente verificada |
+| R011 | `repeat-failed-checkout` | Bloquea a los agentes que superan un número de intentos de checkout fallidos dentro de una ventana de tiempo |
+| R017 | `discount-anomaly-applied` | Limita el número de códigos de descuento del carrito y la profundidad total del descuento |
+| R022 | `payment-rail-restriction` | Permite o bloquea métodos de pago concretos |
+| R032 | `category-blocklist` | Bloquea las compras de agentes de productos de las categorías que usted indique |
+| R035 | `max-order-value` | Bloquea pedidos de agentes por encima de un total máximo. No tiene valor por defecto, así que no hace nada hasta que fije un límite |
+| R043 | `agent-checkout-approval-required` | Envía los pedidos de agentes a aprobación manual en lugar de aprobarlos automáticamente |
 
 ### Modos de regla
 
@@ -180,7 +186,7 @@ Cada regla puede estar en modo `observe` (solo registrar) o `enforce` (bloquear 
 
 ### Cambiar una regla al modo enforce
 
-1. Navegue a **Trusteed → Reglas**
+1. Navegue a **Trusteed → Mis Reglas**
 2. Haga clic en la regla que desea aplicar
 3. Cambie **Modo** de `observe` a `enforce`
 4. Haga clic en **Guardar**
@@ -197,8 +203,8 @@ Cada regla puede estar en modo `observe` (solo registrar) o `enforce` (bloquear 
 
 Configure el orden en que Trusteed intenta cobrar los pedidos de agentes:
 
-1. **Método principal** — se intenta primero (p. ej., protocolo de micropago x402)
-2. **Método alternativo** — se intenta si el principal falla (p. ej., tarjeta guardada)
+1. Método principal: se intenta primero (p. ej., protocolo de micropago x402)
+2. Método alternativo: se intenta si el principal falla (p. ej., tarjeta guardada)
 
 Cuando un agente realiza un pedido, Trusteed intenta el método principal. Si falla,
 pasa al siguiente método en la secuencia. Si todos los métodos fallan, el pedido no
@@ -218,6 +224,7 @@ La página de Seguridad le ofrece visibilidad y control sobre quién accede a su
 ### Registro de auditoría
 
 Un registro cronológico de cada interacción de agente:
+
 - Marca temporal
 - Identidad del agente
 - Acción (navegar / añadir al carrito / pago / cobro)
@@ -227,6 +234,7 @@ Un registro cronológico de cada interacción de agente:
 ### Alertas de anomalías
 
 Trusteed monitoriza los patrones de comportamiento de los agentes y le alerta cuando:
+
 - Un agente intenta pedidos de valor inusualmente alto
 - El mismo agente reintenta un pedido bloqueado múltiples veces
 - Una plataforma de agente desconocida intenta acceder
@@ -234,6 +242,7 @@ Trusteed monitoriza los patrones de comportamiento de los agentes y le alerta cu
 ### Estado de webhooks
 
 Muestra la salud del pipeline de entrega de webhooks:
+
 - Profundidad de la bandeja de salida (entregas pendientes)
 - Marca temporal de la última entrega exitosa
 - Tasa de errores de entrega
@@ -246,15 +255,23 @@ Muestra la salud del pipeline de entrega de webhooks:
 
 ### Modo de fallo del sistema de cumplimiento
 
-Controla qué sucede cuando la API de Trusteed es temporalmente inaccesible:
+Controla qué sucede cuando la API de Trusteed es temporalmente inaccesible.
+
+Primero, el módulo comprueba el último snapshot de reglas que descargó con un
+pequeño conjunto de reglas que puede evaluar por sí solo: la comprobación de país de
+R014, R018, R019, R020, R025, R027, R028, R029 y R030. Si coincide alguna, el pedido se
+bloquea sea cual sea el modo. Si no coincide ninguna, decide el modo:
 
 | Modo | Comportamiento |
 |------|----------------|
-| `observe` | Si la API está caída, todos los pedidos se permiten. Las infracciones se registran retroactivamente. Use en entornos de bajo riesgo. |
-| `enforce` | Si la API está caída, todos los pedidos de agentes se bloquean. Use en entornos de alto valor o regulados. |
+| `observe` | El pedido se permite. Use en entornos de bajo riesgo. |
+| `enforce` (por defecto) | El pedido se bloquea. Use en entornos de alto valor o regulados. |
 
-Las reglas de nivel 1 (R001, R007) siempre se evalúan localmente, incluso cuando
-la API es inaccesible, independientemente de esta configuración.
+Las reglas fuera de ese conjunto, como R001 o R035, necesitan la API para evaluarse.
+
+### Orden de los métodos de pago
+
+Consulte [Métodos de pago](#7-métodos-de-pago).
 
 ---
 
@@ -262,9 +279,16 @@ la API es inaccesible, independientemente de esta configuración.
 
 **Ruta:** Trust Receipts → Verify Receipt
 
-Los Trust Receipts son pruebas firmadas criptográficamente de las transacciones de
+Los Trust Receipts son registros firmados criptográficamente de las transacciones de
 agentes. Usan firmas Ed25519 (RFC 8037) y son emitidos por la API de Trusteed tras
 cada pedido de agente exitoso.
+
+> **Módulo aparte.** El menú **Trust Receipts** (Verify Receipt, Self-Test y Audit
+> Log) y la insignia del pedido de la sección 12 pertenecen al módulo Trusteed Trust
+> Receipt Verifier (paquete Composer `trusteed/trust-verifier-for-magento`, módulo de
+> Magento `Trusteed_TrustVerifier`). Instálelo junto con Trusteed Agentic Commerce
+> para tenerlos. Sin él, el pedido sigue guardando la dirección de su recibo en el
+> campo `trusteed_receipt_uri`.
 
 ### Qué contiene un Trust Receipt
 
@@ -282,23 +306,24 @@ cada pedido de agente exitoso.
 3. Haga clic en **Verify**
 
 Resultados:
-- **VERIFIED** — la firma es válida; el recibo es auténtico e inalterado
-- **INVALID** — la firma no coincide; el recibo puede haber sido alterado
-- **INDETERMINATE** — la verificación no pudo completarse (p. ej., endpoint JWKS inaccesible)
+
+- **VERIFIED**: la firma es válida y el recibo es auténtico e inalterado
+- **INVALID**: la firma no coincide, por lo que el recibo puede haber sido alterado
+- **INDETERMINATE**: la verificación no pudo completarse (p. ej., endpoint JWKS inaccesible)
 
 ### Auto-Test
 
 **Trust Receipts → Self-Test** ejecuta la suite de conformidad integrada contra su
 instalación para confirmar que el verificador funciona correctamente.
 
-### Registro de Auditoría
+### Registro de auditoría
 
 **Trust Receipts → Audit Log** muestra cada intento de verificación con el veredicto,
 la latencia y el usuario administrador que realizó la verificación.
 
 ---
 
-## 11. Ver Pedidos de Agentes en el Magento Estándar
+## 11. Ver pedidos de agentes en el Magento estándar
 
 Los pedidos de agentes son pedidos normales de Magento y aparecen en
 **Ventas → Pedidos** junto a los pedidos realizados por humanos. Se distinguen por:
@@ -312,51 +337,44 @@ a través de la bandeja de salida de webhooks.
 
 ---
 
-## 12. Comprender la Insignia de Trust Receipt
+## 12. Comprender la insignia de Trust Receipt
 
-En la página de detalle del pedido (**Ventas → Pedidos → [Pedido]**), una insignia
-de Trust Receipt muestra el estado del recibo:
+Esta insignia procede del módulo Trusteed Trust Receipt Verifier (véase la sección 10).
 
-| Insignia | Significado |
-|----------|-------------|
-| **PENDING** | Pedido creado; recibo aún no emitido por Trusteed |
-| **ISSUED** | Recibo emitido y URI almacenada en el pedido |
-| **VERIFIED** | El recibo ha sido verificado a través del verificador de Trust Receipts |
+En la página de detalle del pedido (**Ventas → Pedidos → [Pedido]**), el módulo añade
+una insignia verde en la cabecera cuando el pedido tiene almacenada la dirección de
+un Trust Receipt. La insignia dice **VERIFIED · Order** seguido del estado del pedido:
+Completed, Refunded, Cancelled, On Hold o Processing.
 
-La insignia enlaza directamente a la página Trust Receipts → Verify Receipt con
-el URI del recibo pre-rellenado.
+La insignia solo indica que el pedido tiene una dirección de recibo. No comprueba la
+firma. Para comprobarla, pegue el recibo en **Trust Receipts → Verify Receipt**.
 
 ---
 
 ## 13. HITL — Aprobaciones Humanas en el Proceso
 
-Cuando la regla **R043** está activa en modo `enforce` y un pedido de agente supera
-su umbral HITL configurado, el pedido no se crea automáticamente. En su lugar:
+Cuando la regla **R043** está activa en modo `enforce` y un pedido de agente necesita
+aprobación, el pedido no se crea. En su lugar:
 
-1. El agente recibe una respuesta de "aprobación del comerciante pendiente"
-2. El pedido aparece en **Trusteed → Mis ventas** con estado **HITL_PENDING**
-3. Usted recibe una notificación en la campana de notificaciones del administrador
+1. El módulo congela el carrito, de modo que la intención del comprador queda
+   registrada como pendiente de aprobación del comerciante
+2. El agente recibe el mensaje "Your order is pending review and requires merchant
+   approval before it can be completed"
 
-### Aprobar un pedido pendiente
+El módulo solo congela el carrito. La decisión de aprobación se gestiona a través de
+su panel de Trusteed, no desde una pantalla del administrador de Magento.
 
-1. Abra **Trusteed → Mis ventas**
-2. Haga clic en el pedido con estado **HITL_PENDING**
-3. Revise los detalles del pedido y la identidad del agente
-4. Haga clic en **Aprobar** para crear el pedido, o en **Rechazar** para cancelarlo
+### Configurar la regla HITL
 
-Los pedidos aprobados siguen el procesamiento normal de pedidos de Magento.
-Los pedidos rechazados quedan registrados en el historial de auditoría y el
-agente es notificado.
+R043 tiene dos ajustes, que usted configura en **Trusteed → Mis Reglas**:
 
-### Configurar el umbral HITL
-
-El umbral se configura en el panel de su cuenta de Trusteed en
-[app.trusteed.xyz/settings/rules/r043](https://app.trusteed.xyz/settings/rules/r043).
-Se aplica globalmente a todas las plataformas que se conectan a su tienda.
+- `minCents`: el importe a partir del cual un pedido de agente necesita aprobación. Si
+  lo deja sin fijar, la regla se aplica a todos los checkouts de agentes.
+- `ttlMinutes`: cuánto tiempo permanece abierta la ventana de aprobación.
 
 ---
 
-## 14. Preguntas Frecuentes
+## 14. Preguntas frecuentes
 
 **P: ¿Los pedidos de agentes cuentan para mis análisis e informes de Magento?**
 
@@ -365,20 +383,23 @@ informes estándar (Ventas → Informes, Business Intelligence, etc.).
 
 **P: ¿Pueden los agentes aplicar códigos de descuento?**
 
-Solo los códigos de descuento que hayan sido explícitamente incluidos en la lista
-permitida de sus reglas de Trusteed. Por defecto, los agentes no pueden aplicar
-cupones arbitrarios (regla R009).
+Los agentes pueden aplicar los códigos de descuento que acepte su tienda. La regla
+**R017** (`discount-anomaly-applied`) limita el número de códigos de descuento de un
+carrito y la profundidad total del descuento, de modo que puede frenar los carritos
+con descuentos fuera de lo normal.
 
 **P: ¿Qué ocurre con los pedidos de agentes si Trusteed está caído?**
 
-Depende de su configuración de **Modo de fallo del sistema de cumplimiento**
-(consulte Ajustes). En modo `observe`, los pedidos se procesan normalmente. En
-modo `enforce`, los pedidos de agentes se bloquean hasta que se restaure la
+El módulo comprueba primero las reglas locales descritas en **Ajustes**. Si no
+coincide ninguna, decide su configuración de **Modo de fallo del sistema de
+cumplimiento**. En modo `observe`, los pedidos se procesan normalmente. En modo
+`enforce` (el valor por defecto), los pedidos se bloquean hasta que se restaure la
 conectividad.
 
 **P: ¿Puedo limitar qué productos pueden comprar los agentes?**
 
-Sí — configure la regla **R007 (Categorías de productos permitidas)** en **Mis Reglas**.
+Sí. Configure la regla **R032 (Lista de categorías bloqueadas)** en **Mis Reglas** para
+bloquear las categorías a las que no quiere que compren los agentes.
 
 **P: ¿Cómo se gestionan los pagos de los agentes?**
 
