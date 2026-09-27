@@ -222,7 +222,20 @@ leaving a gap:
 The checks run once a day and the page shows the result **with its date**, so
 nobody mistakes yesterday's verdict for today's.
 
+## Security Acknowledgements
+
+We thank **MD Rabbi Hossain** ([LinkedIn](https://www.linkedin.com/in/csrrabbi/) · [X](https://x.com/csrrabbi)) for a responsible disclosure report against our identity provider, `auth.trusteed.xyz`.
+
+The report's central claim is accurate: our OAuth dynamic client registration endpoint (`/oidc/register`, RFC 7591) accepts requests without a credential. That is deliberate — our MCP connectors, including Claude's, self-register through this endpoint before they can authorize at all, and requiring a credential there would break them. The access it enables is consent phishing, a property of any open dynamic-registration flow rather than unauthenticated access, and it does not reach checkout: our payment path requires a verified agent-identity claim that a token obtained this way does not carry.
+
+Investigating the report surfaced something it did not flag: an OAuth scope (`mcp:admin`) was published across our discovery documents and offered on the consent screen, but no code enforced it — a token holding it carried the exact same privileges as `mcp:read`. That scope has been retired platform-wide. The fix lives in our private API and dashboard, not in this module, but we record the credit here as agreed with the reporter.
+
 ## Changelog
+
+### 1.3.4
+
+- Fixed: the connection guide sent merchants to a settings screen that doesn't exist (Dashboard → Settings → Integrations → Magento) to copy the Merchant ID, Integration Token, and Webhook Secret by hand. The real flow is a one-time popup token exchanged for the final credentials automatically; the guide now describes it, with a note not to hand-edit the webhook secret afterward, since that breaks the signature without saying so.
+- New: an admin notice now appears when checkout enforcement is silently off because the store hasn't finished connecting yet (no installation ID). Previously the assistant answered "configuration saved successfully" while no rule was actually being evaluated on any checkout.
 
 ### 1.3.3
 
