@@ -508,7 +508,7 @@ Notas sobre la forma real:
 - `store_views[]` enumera cada vista de tienda publicada con su URL base, para que los
   agentes puedan hacer coincidencia por prefijo más largo entre varios dominios.
 - El `signed_payload` que devuelve el backend se sirve **literalmente**: el backend es la
-  autoridad sobre `issuer`, `merchant_id` y `capabilities` (ADR-014), y servir sus bytes
+  autoridad sobre `issuer`, `merchant_id` y `capabilities`, y servir sus bytes
   exactos es lo que hace que el JWS desacoplado verifique contra lo que recibió el agente.
 - `schema_version` es la clave que busca `bin/magento trusteed:check-webserver` para decidir
   si el endpoint está sirviendo un manifiesto de verdad.

@@ -14,7 +14,7 @@ use Trusteed\AgenticCommerce\Model\Webhook\OutboxRepository;
 use Psr\Log\LoggerInterface;
 
 /**
- * Spec-050 Gap #5 â€” emits `order_fulfilled` when a shipment is created.
+ * €” emits `order_fulfilled` when a shipment is created.
  *
  * Observes `sales_order_shipment_save_after` (dispatched by Magento core when a
  * shipment record is persisted) and enqueues a signed `order_fulfilled` outbox

@@ -12,18 +12,18 @@ use Trusteed\AgenticCommerce\Service\EnforcementClient;
 use Trusteed\AgenticCommerce\Service\NonceOutcome;
 
 /**
- * PL-F6 (fable audit 2026-07-02) regression.
+ * Regression: an empty HMAC secret must not produce a signed-looking request.
  *
  * Root cause: `buildSignature()` used to fabricate a placeholder signature
  * `"t=<ts>,s=dev-bypass"` whenever the HMAC secret config was empty, instead
  * of failing. A merchant who completed the `api_base_url` + `installation_id`
  * steps of the connector wizard but never set the HMAC secret would silently
  * send requests that LOOK signed (a well-formed `X-Trusteed-Signature`
- * header is present) but carry no real HMAC — the enforcement API would
+ * header is present) but carry no real HMAC. The enforcement API would
  * reject them, but the client had no way to distinguish "genuinely
- * unconfigured" from "signature rejected" in its own logs/behaviour.
+ * unconfigured" from "signature rejected" in its own logs or behaviour.
  *
- * Fix: an empty HMAC secret now joins the existing "unconfigured connector →
+ * Fix: an empty HMAC secret now joins the existing "unconfigured connector:
  * never call the API, never block" short-circuit (mirrors the
  * apiBase/installationId-empty branches already covered by
  * EnforcementActivationTest), and `buildSignature()` itself refuses to
@@ -66,7 +66,7 @@ class EmptyHmacSecretTest extends TestCase
         $config = array_merge([
             'trusteed_general/general/api_base_url' => 'https://api.trusteed.test',
             'trusteed/enforcement/installation_id'  => 'inst_abc',
-            // hmac_secret intentionally ABSENT — this is the scenario under test.
+            // hmac_secret intentionally ABSENT: this is the scenario under test.
             'trusteed_general/general/merchant_id'  => 'merchant_xyz',
         ], $overrides);
 
@@ -96,7 +96,7 @@ class EmptyHmacSecretTest extends TestCase
         ];
     }
 
-    /** F6-01 — evaluate(): empty HMAC secret → ALLOW, no network call. */
+    /** evaluate(): empty HMAC secret gives ALLOW, no network call. */
     public function testEvaluateShortCircuitsOnEmptyHmacSecret(): void
     {
         $calls = new \stdClass();
@@ -119,7 +119,7 @@ class EmptyHmacSecretTest extends TestCase
         $this->assertFalse($calls->called, 'No API call may be made when the HMAC secret is unconfigured');
     }
 
-    /** F6-02 — getDidResolver()/fetchSnapshotPayload(): empty HMAC secret → null payload, no network call. */
+    /** getDidResolver()/fetchSnapshotPayload(): empty HMAC secret gives a null payload, no network call. */
     public function testSnapshotFetchShortCircuitsOnEmptyHmacSecret(): void
     {
         $calls = new \stdClass();
@@ -142,7 +142,7 @@ class EmptyHmacSecretTest extends TestCase
         $this->assertFalse($calls->called, 'No API call may be made when the HMAC secret is unconfigured');
     }
 
-    /** F6-03 — consumeNonce(): empty HMAC secret → INDETERMINATE hmac_secret_missing, no network call. */
+    /** consumeNonce(): empty HMAC secret gives INDETERMINATE hmac_secret_missing, no network call. */
     public function testConsumeNonceShortCircuitsOnEmptyHmacSecret(): void
     {
         $calls = new \stdClass();
@@ -168,7 +168,7 @@ class EmptyHmacSecretTest extends TestCase
     }
 
     /**
-     * F6-04 — direct backstop: buildSignature() itself must refuse to
+     * Direct backstop: buildSignature() itself must refuse to
      * fabricate a signature for an empty secret (defense-in-depth, in case a
      * future caller forgets to short-circuit).
      */

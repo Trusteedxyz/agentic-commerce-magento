@@ -15,10 +15,9 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 
 /**
- * Unit tests for OrderRepositoryPlugin (T079a) set-once semantics.
+ * Unit tests for OrderRepositoryPlugin set-once semantics.
  *
- * Spec 050 T080.
- */
+ *  */
 class OrderExtensionAttributeTest extends TestCase
 {
     private OrderRepositoryPlugin $plugin;

@@ -30,8 +30,6 @@ use Psr\Log\LoggerInterface;
  *             so callers (Module C badge, Magento admin) see the persisted URI.
  *
  * afterGetList: same hydration applied to every order in the result set.
- *
- * Spec 050 T079a + T079b.
  */
 class OrderRepositoryPlugin
 {

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Minimal Magento EAV setup stubs for the spec-050 FR-A-013 patch unit test.
+ * Minimal Magento EAV setup stubs for the attribute patch unit test.
  *
  * Only includes the surface exercised by AddAgenticVisibleAttribute:
  *   - Magento\Eav\Setup\EavSetup (getAttributeId, addAttribute, removeAttribute)
@@ -143,7 +143,7 @@ namespace Trusteed\AgenticCommerce\Test\Unit\Setup\Patch\Data {
     class FakeCategorySetup extends FakeEavSetup {}
 
     /**
-     * Generic factory that returns a pre-built instance — Magento factories
+     * Generic factory that returns a pre-built instance. Magento factories
      * normally accept a `['setup' => ModuleDataSetupInterface]` argument; we
      * ignore it for the test.
      */

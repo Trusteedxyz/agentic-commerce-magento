@@ -35,12 +35,12 @@ use Psr\Log\LoggerInterface;
  *   - page:       1-based page number (default: 1; clamped to >= 1)
  *   - pageSize:   items per page (default: 20; clamped to 1..MAX_PAGE_SIZE)
  *
- * Filtering (Spec 050 FR-A-013): only products where the `is_agentic_visible`
+ * Filtering: only products where the `is_agentic_visible`
  * EAV flag is `1` AND Magento catalog visibility includes the catalog surface
  * (VISIBILITY_IN_CATALOG or VISIBILITY_BOTH) are exposed. This mirrors the
  * connector enforcement in `packages/connectors/magento/src/connector.ts`.
  *
- * Spec 050 FR-A-007: lazy on-demand catalog (no bulk pre-sync).
+ * lazy on-demand catalog (no bulk pre-sync).
  */
 class Index implements HttpGetActionInterface
 {
@@ -197,7 +197,7 @@ class Index implements HttpGetActionInterface
 
         $criteria = $this->criteriaBuilder
             ->addFilter('status', 1)
-            // Spec 050 FR-A-013: only agentic-visible products.
+            // only agentic-visible products.
             ->addFilter('is_agentic_visible', 1)
             // Respect Magento catalog visibility (in-catalog or both); excludes
             // "not visible individually" (1) and "search only" (2).

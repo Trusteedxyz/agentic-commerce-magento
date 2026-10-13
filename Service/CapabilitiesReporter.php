@@ -1,6 +1,6 @@
 <?php
 /**
- * Spec-048 4.9 — reporta a Trusteed qué señales de carrito sabe proyectar
+ * �� reporta a Trusteed qué señales de carrito sabe proyectar
  * ESTA instalación de Magento.
  *
  * POR QUÉ EXISTE. El servidor sabe qué señal lee cada regla
@@ -72,7 +72,7 @@ class CapabilitiesReporter
             }
         } catch (\Throwable $e) {
             // Que el diagnóstico no llegue nunca puede romper el flujo del comprador.
-            $this->logger->warning('[spec-048 4.9] capabilities report failed: ' . $e->getMessage());
+            $this->logger->warning('[trusteed] capabilities report failed: ' . $e->getMessage());
         }
     }
 

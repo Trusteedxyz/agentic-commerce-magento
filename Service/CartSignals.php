@@ -511,7 +511,7 @@ final class CartSignals
     }
 
     // ═════════════════════════════════════════════════════════════════════
-    // Spec-048 Sprint E (T-E43, ADR-054) — Agentic Starter Kit signals.
+    // �� Agentic Starter Kit signals.
     //   R032 (blocked-category) — Magento category lineage match.
     //   R034 (blocked-sku-list) — Product SKU Set lookup.
     //   R038 (max-items-per-order) — Σ quantities.
@@ -668,7 +668,7 @@ final class CartSignals
     // ─── Sprint E.4 — Magento R035 / R036 instance evaluators ─────────────────
     //
     // Mirrors PrestaShop `evaluateR035` / `evaluateR036` in
-    // `packages/prestashop-module-agenticmcpstores/src/Service/CartSignals.php`
+    // `the PrestaShop module CartSignals`
     // and the canonical catalog in
     // `packages/shared/src/enforcement/rule-catalog.ts`.
     // Boundary inclusive (strict `>`). Missing `maxCents` → no-op PASS.

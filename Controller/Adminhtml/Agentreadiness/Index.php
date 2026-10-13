@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 /**
- * Spec 065 F1 — Dashboard Agent-Friendly.
+ * Agent-friendly dashboard.
  *
- * Monta la misma SPA embebida que el resto de secciones, en la sección
- * `agent-readiness`. Un solo build sirve a los cuatro hosts.
+ * Mounts the same embedded SPA as the other sections, in the
+ * `agent-readiness` section. A single build serves all four hosts.
  */
-namespace Trusteed\AgenticCommerce\Controller\Adminhtml\AgentReadiness;
+namespace Trusteed\AgenticCommerce\Controller\Adminhtml\Agentreadiness;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;

@@ -4,32 +4,36 @@
     <menu>
         <add id="Trusteed_AgenticCommerce::trusteed" title="Trusteed" module="Trusteed_AgenticCommerce"
              sortOrder="80" resource="Magento_Backend::stores"/>
+        <!--
+            Unified 7-entry menu: same order and wording as Shopify,
+            WooCommerce and PrestaShop. Ids, actions and ACL resources are unchanged.
+            Security (trusteed/seguridad/index) and Agent Readiness (trusteed/agentreadiness/index)
+            left the menu: they are intentionally NOT declared here, but their routes, controllers
+            and ACL are untouched, so they stay reachable by URL and from the SPA's internal links.
+        -->
         <add id="Trusteed_AgenticCommerce::inicio" title="Home" module="Trusteed_AgenticCommerce"
              sortOrder="10" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/dashboard/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::health" title="How is my store doing?" module="Trusteed_AgenticCommerce"
-             sortOrder="20" parent="Trusteed_AgenticCommerce::trusteed"
-             action="trusteed/health/index" resource="Trusteed_AgenticCommerce::config"/>
         <add id="Trusteed_AgenticCommerce::ventas" title="My sales" module="Trusteed_AgenticCommerce"
-             sortOrder="30" parent="Trusteed_AgenticCommerce::trusteed"
+             sortOrder="20" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/ventas/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::agentes" title="Who I'm selling to" module="Trusteed_AgenticCommerce"
-             sortOrder="35" parent="Trusteed_AgenticCommerce::trusteed"
+        <add id="Trusteed_AgenticCommerce::agentes" title="Agents" module="Trusteed_AgenticCommerce"
+             sortOrder="30" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/agentes/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::reglas" title="My Rules" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::reglas" title="My rules" module="Trusteed_AgenticCommerce"
              sortOrder="40" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/reglas/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::pagos" title="Payment Methods" module="Trusteed_AgenticCommerce"
-             sortOrder="45" parent="Trusteed_AgenticCommerce::trusteed"
-             action="trusteed/pagos/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::seguridad" title="Security" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::pagos" title="Payment methods" module="Trusteed_AgenticCommerce"
              sortOrder="50" parent="Trusteed_AgenticCommerce::trusteed"
-             action="trusteed/seguridad/index" resource="Trusteed_AgenticCommerce::config"/>
+             action="trusteed/pagos/index" resource="Trusteed_AgenticCommerce::config"/>
+        <add id="Trusteed_AgenticCommerce::health" title="Trust" module="Trusteed_AgenticCommerce"
+             sortOrder="60" parent="Trusteed_AgenticCommerce::trusteed"
+             action="trusteed/health/index" resource="Trusteed_AgenticCommerce::config"/>
         <add id="Trusteed_AgenticCommerce::ajustes" title="Settings" module="Trusteed_AgenticCommerce"
-             sortOrder="55" parent="Trusteed_AgenticCommerce::trusteed"
+             sortOrder="70" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/ajustes/index" resource="Trusteed_AgenticCommerce::config"/>
         <add id="Trusteed_AgenticCommerce::setup_wizard" title="Setup Wizard" module="Trusteed_AgenticCommerce"
-             sortOrder="60" parent="Trusteed_AgenticCommerce::trusteed"
+             sortOrder="90" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/setup/wizard" resource="Trusteed_AgenticCommerce::config"/>
     </menu>
 </config>

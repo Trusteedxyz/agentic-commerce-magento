@@ -11,7 +11,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Spec-048 G1 â€” Magento coupon-attempt-failed emitter.
+ * €” Magento coupon-attempt-failed emitter.
  *
  * Observes `salesrule_validator_process_negative` (dispatched by
  * Magento\SalesRule\Model\Validator when a rule fails to apply to a quote)
@@ -88,11 +88,11 @@ class CouponInvalidObserver implements ObserverInterface
             $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
             $this->curl->addHeader('Content-Type', 'application/json');
             $this->curl->addHeader('Accept', 'application/json');
-            $this->curl->addHeader('User-Agent', 'Trusteed-Magento/1.0 spec-048-g1');
+            $this->curl->addHeader('User-Agent', 'Trusteed-Magento/1.0');
             $this->curl->post($url, $payload);
         } catch (\Throwable $e) {
             $this->logger->warning(
-                '[spec-048 G1] coupon-attempt-failed emit exception: ' . $e->getMessage()
+                '[trusteed] coupon-attempt-failed emit exception: ' . $e->getMessage()
             );
         }
     }

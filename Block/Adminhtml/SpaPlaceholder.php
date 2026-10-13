@@ -8,14 +8,14 @@ use Magento\Backend\Block\Template;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 
 /**
- * SpaPlaceholder block — Phase B seam reservation (T117-T119, US4).
+ * SpaPlaceholder block — Phase B seam reservation.
  *
  * Renders a minimal mount-point div so the future Phase B SPA can be
  * injected without any code change to Module A.
  *
  * Security note: only merchant_id (non-secret identifier) is exposed as a
  * data attribute. No credentials, tokens or PII are rendered here.
- * Phase B SPA bootstrap uses the embed-bootstrap service (spec-039) which
+ * Phase B SPA bootstrap uses the embed-bootstrap service which
  * issues a short-lived HS256 token via a separate authenticated request.
  */
 class SpaPlaceholder extends Template

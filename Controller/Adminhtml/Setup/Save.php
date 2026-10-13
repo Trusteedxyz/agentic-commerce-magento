@@ -34,8 +34,7 @@ use Psr\Log\LoggerInterface;
  *     a non-blocking warning if tier prices are found.
  *   - Invalidates the manifest cache to trigger regeneration.
  *
- * Spec 050 T064, FR-A-017, clarification Q3 (magento:store:write scope).
- */
+ *  */
 class Save extends Action implements HttpPostActionInterface
 {
     private const RESOURCE = 'Trusteed_AgenticCommerce::config';

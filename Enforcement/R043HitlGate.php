@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Trusteed\AgenticCommerce\Enforcement;
 
 /**
- * Spec-048 Sprint E.2 T-E45 — Magento R043 HITL Gate.
+ * Magento R043 human-in-the-loop (HITL) gate.
  *
  * Detects R043 HITL outcomes from /v1/rules/evaluate responses and is consumed
  * by the `sales_model_service_quote_submit_before` observer
@@ -13,22 +13,21 @@ namespace Trusteed\AgenticCommerce\Enforcement;
  * quote (`is_active=0`) plus stamp custom flags from the freeze payload.
  *
  * Freeze semantics on Magento:
- *   - Quote.is_active = 0 → prevents customer-facing recapture.
- *   - Quote.trusteed_hitl_pending = 1 → set on the quote in the observer.
+ *   - Quote.is_active = 0: prevents customer-facing recapture.
+ *   - Quote.trusteed_hitl_pending = 1: set on the quote in the observer.
  *   - The observer additionally throws a LocalizedException so the order is NOT
  *     created while the intent is recorded as pending merchant approval.
  *   - When merchant approves via dashboard, quote is reactivated via the
  *     enforcement-hitl-receipt resolve path.
  *
- * Detection contract (matches buildHitlResponse in
- * packages/shared/src/enforcement/rule-evaluator.service.ts):
+ * Detection contract (matches the response the rule evaluator builds for a human-approval pause):
  *   - response.decision === 'BLOCK'
  *   - response.ucp.state === 'requires_escalation'
  *   - response.ucp.reason_code starts with 'trusteed:R043'
  *
- * Compuerta HITL R043 para Magento — congela quote.is_active=0 + flag pending.
+ * Freezes the quote (is_active=0) and sets the pending flag.
  *
- * @since 1.6.0 (spec-048 Sprint E.2 T-E45)
+ * @since 1.6.0
  */
 final class R043HitlGate
 {

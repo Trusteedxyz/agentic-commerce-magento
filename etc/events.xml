@@ -16,12 +16,12 @@
         <observer name="trusteed_checkout_submit_before"
                   instance="Trusteed\AgenticCommerce\Observer\CheckoutSubmitBefore"/>
     </event>
-    <!-- Spec-048 P0b: R011 dedicated CheckoutFailureEvent signal. -->
+    <!-- R011 dedicated CheckoutFailureEvent signal. -->
     <event name="sales_order_payment_failed">
         <observer name="trusteed_order_payment_failed"
                   instance="Trusteed\AgenticCommerce\Observer\SalesOrderPaymentFailedObserver"/>
     </event>
-    <!-- Spec-050 Gap #5: shipment creation emits order_fulfilled (fulfillment
+    <!-- shipment creation emits order_fulfilled (fulfillment
          / delivery state advance). Previously the backend order_fulfilled
          handler was dead-but-reserved with no Magento emitter. -->
     <event name="sales_order_shipment_save_after">

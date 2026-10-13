@@ -8,5 +8,9 @@
         <job name="trusteed_lag_heartbeat" instance="Trusteed\AgenticCommerce\Cron\EmitLagHeartbeat" method="execute">
             <schedule>* * * * *</schedule>
         </job>
+        <!-- Capabilities heartbeat (refreshes lastSeenAt on the server). -->
+        <job name="trusteed_report_capabilities" instance="Trusteed\AgenticCommerce\Cron\ReportCapabilities" method="execute">
+            <schedule>17 * * * *</schedule>
+        </job>
     </group>
 </config>

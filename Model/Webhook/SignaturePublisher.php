@@ -70,7 +70,7 @@ class SignaturePublisher
             return false;
         }
 
-        // P3 (spec-050): the backend resolves MagentoStoreConnection by
+        // P3: the backend resolves MagentoStoreConnection by
         // connection_id. A merchant_id fallback for the webhook route param 401s
         // (no connection lookup), so REQUIRE connection_id — never publish without
         // it. The connection is provisioned by validate-connect-token; until then
@@ -144,7 +144,7 @@ class SignaturePublisher
 
         $integrationToken = $this->secretReader->read('trusteed_general/general/integration_token');
 
-        // P3 (spec-050): route strictly on connection_id (guarded above). A
+        // P3: route strictly on connection_id (guarded above). A
         // merchant_id fallback 401s because the backend looks up
         // MagentoStoreConnection by connection_id only.
         $url = "{$apiBase}/api/v1/webhook/magento/{$connectionId}";

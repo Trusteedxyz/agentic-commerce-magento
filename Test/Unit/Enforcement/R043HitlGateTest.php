@@ -8,7 +8,7 @@ use Trusteed\AgenticCommerce\Enforcement\R043HitlGate;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Spec-048 Sprint E.2 T-E45 — R043 HITL Gate (Magento).
+ * R043 HITL gate (Magento).
  */
 final class R043HitlGateTest extends TestCase
 {

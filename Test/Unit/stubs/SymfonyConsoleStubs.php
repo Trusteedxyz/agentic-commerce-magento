@@ -6,8 +6,8 @@ declare(strict_types=1);
  * Minimal Symfony Console stubs for local PHPUnit runs.
  *
  * `symfony/console` arrives transitively with the real Magento framework via
- * `composer install` against repo.magento.com. Locally — and in environments
- * without those credentials — these just-enough shapes let the console-command
+ * `composer install` against repo.magento.com. Locally, and in environments
+ * without those credentials, these just-enough shapes let the console-command
  * unit tests compile and execute against pure-PHP Trusteed sources.
  *
  * Each declaration is guarded by `*_exists()` so this file is a no-op when the

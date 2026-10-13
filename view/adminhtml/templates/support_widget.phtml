@@ -3,7 +3,7 @@
 $submitUrl = $block->getUrl('trusteed/support/submit');
 $formKey   = $block->getFormKey();
 ?>
-<!-- Widget de soporte Trusteed — se incluye en cada página admin del módulo -->
+<!-- Trusteed support widget, included in every admin page of the module -->
 <style>
 #trusteed-support-btn {
     position: fixed;
@@ -88,7 +88,7 @@ $formKey   = $block->getFormKey();
                     style="background:none;border:none;font-size:20px;cursor:pointer;color:#555;padding:2px 6px;">×</button>
         </div>
 
-        <!-- Formulario -->
+        <!-- Form -->
         <div id="trusteed-support-form-wrap">
             <p class="desc"><?= $block->escapeHtml(__('Cuéntanos qué pasó con tus propias palabras. Incluiremos información técnica automáticamente.')) ?></p>
             <form id="trusteed-support-form" method="post">
@@ -109,7 +109,7 @@ $formKey   = $block->getFormKey();
             </form>
         </div>
 
-        <!-- Éxito -->
+        <!-- Success -->
         <div id="trusteed-support-success">
             <div style="font-size:40px;">✅</div>
             <p style="font-weight:700;margin:12px 0 4px;color:#1a7f4f;">
@@ -140,7 +140,7 @@ $formKey   = $block->getFormKey();
     var success   = document.getElementById('trusteed-support-success');
     var errorEl   = document.getElementById('trusteed-support-error');
     var ticketEl  = document.getElementById('trusteed-support-ticket-num');
-    var submitUrl = <?= json_encode($submitUrl) ?>;
+    var submitUrl = <?= json_encode($submitUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
     function open() {
         backdrop.classList.add('open');
@@ -169,7 +169,7 @@ $formKey   = $block->getFormKey();
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         submitBtn.disabled = true;
-        submitBtn.textContent = <?= json_encode((string)__('Enviando…')) ?>;
+        submitBtn.textContent = <?= json_encode((string)__('Enviando…'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         errorEl.style.display = 'none';
 
         var fd = new FormData();
@@ -183,21 +183,21 @@ $formKey   = $block->getFormKey();
                 if (d.success) {
                     formWrap.style.display = 'none';
                     if (d.ticketNumber) {
-                        ticketEl.textContent = <?= json_encode((string)__('Número de ticket:')) ?> + ' #' + d.ticketNumber;
+                        ticketEl.textContent = <?= json_encode((string)__('Número de ticket:'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?> + ' #' + d.ticketNumber;
                     }
                     success.style.display = 'block';
                 } else {
-                    errorEl.textContent = d.error || <?= json_encode((string)__('Error desconocido')) ?>;
+                    errorEl.textContent = d.error || <?= json_encode((string)__('Error desconocido'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
                     errorEl.style.display = 'block';
                     submitBtn.disabled = false;
-                    submitBtn.textContent = <?= json_encode((string)__('Enviar')) ?>;
+                    submitBtn.textContent = <?= json_encode((string)__('Enviar'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
                 }
             })
             .catch(function () {
-                errorEl.textContent = <?= json_encode((string)__('No pudimos conectar. Inténtalo de nuevo.')) ?>;
+                errorEl.textContent = <?= json_encode((string)__('No pudimos conectar. Inténtalo de nuevo.'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
                 errorEl.style.display = 'block';
                 submitBtn.disabled = false;
-                submitBtn.textContent = <?= json_encode((string)__('Enviar')) ?>;
+                submitBtn.textContent = <?= json_encode((string)__('Enviar'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
             });
     });
 }());

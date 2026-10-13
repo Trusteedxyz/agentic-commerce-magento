@@ -12,11 +12,11 @@ use Trusteed\AgenticCommerce\Service\EnforcementClient;
 use Trusteed\AgenticCommerce\Service\NonceOutcome;
 
 /**
- * Spec-048 P2.8 — nonce-consume HTTP client tests.
+ * Nonce-consume HTTP client tests.
  *
- * Mirrors WC NonceConsumeTest + PS SnapshotClientNonceTest. Verifies the four
- * canonical outcomes (ACCEPTED 200 / REPLAY 409 / INDETERMINATE network /
- * INDETERMINATE 503) on POST /v1/agent-events/nonce-consume.
+ * Mirrors the WooCommerce NonceConsumeTest and the PrestaShop SnapshotClientNonceTest.
+ * Verifies the four canonical outcomes (ACCEPTED 200 / REPLAY 409 /
+ * INDETERMINATE network / INDETERMINATE 503) on POST /v1/agent-events/nonce-consume.
  */
 class NonceConsumeTest extends TestCase
 {
@@ -70,7 +70,7 @@ class NonceConsumeTest extends TestCase
         );
     }
 
-    /** NC-01 — 200 → ACCEPTED */
+    /** 200 gives ACCEPTED */
     public function testNonceAccepted200(): void
     {
         $r = $this->client(200)->consumeNonce('did:web:agent.example', 'abc123XYZ_nonce-0001', time() + 300);
@@ -79,7 +79,7 @@ class NonceConsumeTest extends TestCase
         $this->assertSame(200, $r['httpStatus']);
     }
 
-    /** NC-02 — 409 → REPLAY */
+    /** 409 gives REPLAY */
     public function testNonceReplay409(): void
     {
         $r = $this->client(409)->consumeNonce('did:web:agent.example', 'abc123XYZ_nonce-0001', time() + 300);
@@ -88,7 +88,7 @@ class NonceConsumeTest extends TestCase
         $this->assertSame(409, $r['httpStatus']);
     }
 
-    /** NC-03 — network error (post() throws) → INDETERMINATE network_error */
+    /** Network error (post() throws) gives INDETERMINATE network_error */
     public function testNonceIndeterminateNetwork(): void
     {
         $r = $this->client(0, true)->consumeNonce('did:web:agent.example', 'abc123XYZ_nonce-0001', time() + 300);
@@ -97,7 +97,7 @@ class NonceConsumeTest extends TestCase
         $this->assertNull($r['httpStatus']);
     }
 
-    /** NC-04 — 503 → INDETERMINATE http_5xx */
+    /** 503 gives INDETERMINATE http_5xx */
     public function testNonceIndeterminate503(): void
     {
         $r = $this->client(503)->consumeNonce('did:web:agent.example', 'abc123XYZ_nonce-0001', time() + 300);

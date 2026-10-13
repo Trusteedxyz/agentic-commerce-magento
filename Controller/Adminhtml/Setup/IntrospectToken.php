@@ -24,7 +24,7 @@ use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
  *   - If merchant_id already configured, token merchant_id must match
  *   - Master/admin tokens (scope 'admin' present) are rejected
  *
- * Security hardening (Spec 050 SSRF closure 2026-05-26):
+ * Security hardening:
  *   - Host allowlist is exact-match (no wildcard suffix). See {@see ApiBaseUrlValidator}.
  *   - Self-hosted deployments require sha256(host) sealed at config save time;
  *     mismatch ⇒ reject (detects post-save admin tampering / CSRF / stored XSS).
@@ -32,8 +32,7 @@ use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
  *     HTTPS-only protocols, 5s timeout, no HTTP downgrade.
  *   - Every call is audit-logged with {adminUserId, hostUsed, outcome}.
  *
- * Spec 050 T063, FR-A-002.
- */
+ *  */
 class IntrospectToken extends Action implements HttpPostActionInterface
 {
     private const RESOURCE = 'Trusteed_AgenticCommerce::config';

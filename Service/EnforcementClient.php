@@ -4,20 +4,26 @@ declare(strict_types=1);
 
 namespace Trusteed\AgenticCommerce\Service;
 
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\HTTP\Client\Curl;
 use Psr\Log\LoggerInterface;
+use Trusteed\AgenticCommerce\Enforcement\FailurePolicy;
+use Trusteed\AgenticCommerce\Enforcement\JwksPositiveCache;
+use Trusteed\AgenticCommerce\Enforcement\JwksRetryVerdictStore;
 use Trusteed\AgenticCommerce\Enforcement\OfflineSafetyValveEvaluator;
+use Trusteed\AgenticCommerce\Enforcement\SnapshotJwsVerifier;
+use Trusteed\AgenticCommerce\Enforcement\SnapshotPayloadDecoder;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
 
 /**
- * Outcome of consumeNonce() — single-use replay protection (spec-048 P2.8).
+ * Outcome of consumeNonce(), single-use replay protection.
  *
- *   ACCEPTED       — HTTP 200, nonce stored, token may be used.
- *   REPLAY         — HTTP 409, nonce already seen — caller must mark token INVALID.
- *   INDETERMINATE  — network / 5xx / 4xx / bad response — caller maps per failure_mode.
+ *   ACCEPTED      , HTTP 200, nonce stored, token may be used.
+ *   REPLAY        , HTTP 409, nonce already seen, caller must mark token INVALID.
+ *   INDETERMINATE , network / 5xx / 4xx / bad response, caller maps per failure_mode.
  *
- * Mirrors WC Amcp_Nonce_Outcome + PS Mcpwebstore\Enforcement\NonceOutcome.
+ * Mirrors the nonce outcome enums of the WooCommerce and PrestaShop modules.
  */
 class NonceOutcome
 {
@@ -32,44 +38,72 @@ class NonceOutcome
  * Signs requests with HMAC-SHA256 in Stripe-style format:
  *   X-Trusteed-Signature: t=<unix>,s=<sha256-hex>
  *
- * Failure semantics (spec-050 audit Stream B — M1 fail-closed in enforce mode):
- *   - evaluate(): on transport error / non-2xx / SSRF-guard rejection, returns
- *     'BLOCK' when `trusteed/enforcement/failure_mode` === 'enforce', else
- *     'ALLOW' (observe). Snapshot/history fetches always degrade to a safe empty
- *     default so they never themselves block a checkout.
+ * Failure semantics (since 1.3.5):
+ *   - evaluate(): on transport error / non-2xx / SSRF-guard rejection / an
+ *     unreadable 2xx body / an internal error, {@see FailurePolicy::decideDegraded()}
+ *     decides by the CAUSE read from the snapshot: verified means the
+ *     offline safety valve (scoped by who is checking out) and then the mode , 
+ *     an AGENTIC checkout gets DECISION_UNAVAILABLE when
+ *     `trusteed/enforcement/failure_mode` resolves to 'enforce' (the default)
+ *     or to a value outside enforce|observe, ALLOW with 'observe'; no usable
+ *     snapshot: an agent with a token is held in every mode, one without
+ *     follows the mode; tampered snapshot: an agent is held in every mode. A
+ *     HUMAN checkout (no agentId, no `endpointClass: agentic_endpoint`, no
+ *     token) is never held by our outage, only by the valve of a verified
+ *     snapshot. The snapshot/history fetches themselves never throw.
  *
  * Decision outcomes returned by evaluate():
- *   - 'ALLOW'    — proceed with checkout.
- *   - 'BLOCK'    — hard block (rule violation or fail-closed transport error).
- *   - 'ESCALATE' — R043 HITL: the order must NOT be created but the intent is
+ *   - 'ALLOW'   , proceed with checkout.
+ *   - 'BLOCK'   , hard block by a rule (server decision or offline safety valve).
+ *   - 'UNAVAILABLE', agentic checkout closed because the evaluator could not
+ *                  decide (failure_mode 'enforce' or unresolved; or, whatever
+ *                  the mode, a tampered snapshot / a token without snapshot). Since 1.3.5.
+ *   - 'ESCALATE', R043 HITL: the order must NOT be created but the intent is
  *                  recorded as pending merchant approval.
  *
- * @since 1.0.0 (spec-050 enforcement layer)
+ * @since 1.0.0
  */
 class EnforcementClient
 {
     public const DECISION_ALLOW    = 'ALLOW';
     public const DECISION_BLOCK    = 'BLOCK';
     public const DECISION_ESCALATE = 'ESCALATE';
+    /**
+     * The evaluator could not decide (outage, SSRF rejection, unreadable body,
+     * internal error, degraded snapshot) and its cause or the merchant's
+     * failure_mode closes for this AGENTIC checkout. Distinct from DECISION_BLOCK so the caller never tells an agent
+     * that "a store rule" rejected it when it was our outage.
+     * Never returned for a human checkout.
+     */
+    public const DECISION_UNAVAILABLE = 'UNAVAILABLE';
 
     private const TIMEOUT_SECONDS = 5;
+
+    /** Most bytes read from a snapshot / JWKS response (a legitimate compact JWS is ≤ ~4 MiB). */
+    public const MAX_RESPONSE_BYTES = 4194304;
+
+    /** Snapshot status when the connector is not configured (layer_disabled). */
+    public const SNAPSHOT_DISABLED = 'disabled';
     private const SNAPSHOT_CACHE_TTL = 60;
 
-    /** In-memory cache: agentDidResolver per merchantId (legacy callers). */
-    private array $snapshotCache = [];
-
-    /** In-memory cache: full decoded snapshot payload per merchantId (B7b). */
-    private array $payloadCache = [];
+    /**
+     * In-memory cache (per request): snapshot outcome per merchantId , 
+     * {status: ok|tampered|unavailable|disabled, payload, detail}.
+     * Only an `ok` outcome carries a (verified) payload.
+     */
+    private array $snapshotResults = [];
 
     /**
      * In-memory cache: JWKS keys (kid => raw Ed25519 pubkey) per apiBase
-     * (fable audit 2026-07-02, PL-F5). Per-request only — mirrors the scope
-     * of $snapshotCache/$payloadCache above; this client is DI-constructed
+     * Per-request only, mirrors the scope
+     * of $snapshotResults above; this client is DI-constructed
      * per request, unlike the WC/PS clients which persist via APCu.
      */
     private array $jwksCache = [];
 
     /**
+     * @param CacheInterface|null $cache Negative cache of the forced JWKS retry. Nullable
+     *        like `urlValidator`, and like it NOT auto-injected: etc/di.xml binds it (covered by EnforcementClientDiWiringTest).
      * @param ApiBaseUrlValidator|null $urlValidator SSRF guard for the
      *        admin-configurable api_base_url. Production DI auto-wires this by
      *        type-hint; legacy unit tests that construct the client positionally
@@ -81,7 +115,14 @@ class EnforcementClient
         private readonly Curl $curl,
         private readonly LoggerInterface $logger,
         private readonly ?ApiBaseUrlValidator $urlValidator = null,
+        private readonly ?CacheInterface $cache = null,
     ) {}
+
+    /** Clock for the JWKS negative cache (protected so tests can pin it). */
+    protected function now(): int
+    {
+        return time();
+    }
 
     /**
      * SSRF + HTTPS guard for an admin-configurable api_base_url. Returns true
@@ -126,32 +167,45 @@ class EnforcementClient
         $this->curl->setOption(CURLOPT_SSL_VERIFYPEER, true);
         $this->curl->setOption(CURLOPT_SSL_VERIFYHOST, 2);
         $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
+        // libcurl refuses a body announced (and, in recent versions, streamed) above the cap.
+        $this->curl->setOption(CURLOPT_MAXFILESIZE, self::MAX_RESPONSE_BYTES);
     }
 
     /**
-     * Call /v1/rules/evaluate and return one of DECISION_ALLOW / DECISION_BLOCK
+     * Call /v1/rules/evaluate and return one of DECISION_ALLOW / DECISION_BLOCK / DECISION_UNAVAILABLE
      * / DECISION_ESCALATE.
      *
-     * Fail behaviour (M1): on transport error, non-2xx, or SSRF-guard rejection
-     * this returns DECISION_BLOCK when failure_mode === 'enforce', else
-     * DECISION_ALLOW (observe). The unconfigured short-circuit (no installation)
-     * still returns ALLOW so a store that hasn't completed the connector wizard
-     * is never blocked.
+     * Fail behaviour: on transport error, non-2xx, SSRF-guard
+     * rejection, unreadable 2xx body or an internal error, see the class
+     * docblock, a human is never blocked by it; an agent by cause and mode.
+     * The unconfigured short-circuit (no installation / no HMAC secret) still
+     * returns ALLOW for everyone so a store that hasn't completed the connector
+     * wizard is never blocked.
      *
-     * H3: when the backend responds BLOCK + ucp.state === 'requires_escalation'
+     * When the backend responds BLOCK + ucp.state === 'requires_escalation'
      * with an R043 reason code, evaluate() surfaces DECISION_ESCALATE so the
      * observer can apply the HITL freeze instead of a hard block.
      *
-     * @param array $payload {merchantId, agentId, orderContext, platform, installationId, timestamp}
+     * @param array $payload {merchantId, agentId, orderContext, platform, installationId, timestamp[, endpointClass]}
      */
     public function evaluate(array $payload): string
     {
+        // Who is checking out, read once from what the observer sends:
+        // an agentId, or the explicit `endpointClass: agentic_endpoint` of an
+        // anonymous agent. Governs only the outage branches below.
+        $agentId   = $payload['agentId'] ?? null;
+        $isAgentic = FailurePolicy::isAgentic(
+            is_string($agentId) ? $agentId : null,
+            false,
+            ($payload['endpointClass'] ?? '') === 'agentic_endpoint'
+        );
+
         $apiBase        = rtrim($this->getApiBase(), '/');
         $installationId = $this->getInstallationId();
         $hmacSecret     = $this->getHmacSecret();
 
         // Unconfigured connector → never block (wizard not completed yet).
-        // PL-F6 (fable audit 2026-07-02): an empty HMAC secret joins this
+        // An empty HMAC secret joins this
         // short-circuit rather than falling through to buildSignature(),
         // which used to fabricate a "t=...,s=dev-bypass" header that LOOKED
         // signed but wasn't. Ops needs a distinct log line to find merchants
@@ -165,20 +219,20 @@ class EnforcementClient
             return self::DECISION_ALLOW;
         }
 
-        // H1 — SSRF + HTTPS guard before signing anything outbound. A tampered
+        // SSRF + HTTPS guard before signing anything outbound. A tampered
         // api_base_url must fail per failure_mode, never silently exfiltrate the
         // HMAC-signed payload to an attacker-controlled host.
         if (!$this->isOutboundAuthorized($apiBase)) {
-            return $this->tryOfflineSafetyValve($payload) ?? $this->failClosedDecision();
+            return $this->decideOnOutage($payload, $isAgentic);
         }
 
         $url     = $apiBase . '/v1/rules/evaluate';
         $rawBody = json_encode($payload);
         if ($rawBody === false) {
-            // Local encode failure is not a transport/network condition — never
-            // fabricate a block from our own bug; degrade to ALLOW.
+            // Local encode failure is our own bug: never a reason to block a
+            // human, never a permission for an agent.
             $this->logger->warning('[trusteed] evaluate payload json_encode failed');
-            return self::DECISION_ALLOW;
+            return $this->decideOnOutage($payload, $isAgentic);
         }
 
         try {
@@ -192,27 +246,30 @@ class EnforcementClient
             $status = (int)$this->curl->getStatus();
             if ($status < 200 || $status >= 300) {
                 $this->logger->warning("[trusteed] evaluate HTTP {$status}");
-                return $this->tryOfflineSafetyValve($payload) ?? $this->failClosedDecision();
+                return $this->decideOnOutage($payload, $isAgentic);
             }
 
             $body = json_decode($this->curl->getBody(), true);
             if (!is_array($body) || empty($body['decision'])) {
-                // A 2xx with an unparseable body is a protocol error, not a
-                // transport failure — preserve historical fail-open behaviour.
-                return self::DECISION_ALLOW;
+                // A 2xx with an unreadable body is "no readable policy":
+                // a human still passes, as before; an agent gets failure_mode.
+                $this->logger->warning('[trusteed] evaluate returned an unreadable 2xx body');
+                return $this->decideOnOutage($payload, $isAgentic);
             }
             return $this->mapDecision($body);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // \Throwable, not \Exception: an \Error of ours used to escape and
+            // abort every checkout, a human's included.
             $this->logger->warning('[trusteed] evaluate error: ' . $e->getMessage());
-            return $this->tryOfflineSafetyValve($payload) ?? $this->failClosedDecision();
+            return $this->decideOnOutage($payload, $isAgentic);
         }
     }
 
     /**
-     * App Store remediation follow-up (2026-07-11/12) — before falling back
+     * Before falling back
      * to the blunt failure_mode policy (block everything / allow
      * everything), try the offline safety-valve evaluator against the last
-     * `getRules()` snapshot (request-cached — no extra network round trip
+     * `getRules()` snapshot (request-cached, no extra network round trip
      * when the snapshot was already fetched earlier in this request, e.g.
      * for the DID resolver). Lets a merchant's own universal policy rules
      * (max order amount, blocked countries, business hours, PO-box block,
@@ -221,25 +278,38 @@ class EnforcementClient
      * legitimate human checkout.
      *
      * Returns self::DECISION_BLOCK when the offline evaluator finds a
-     * match, or null when it finds nothing (or has no snapshot to evaluate
-     * against) — null tells the caller to fall through to
-     * failClosedDecision() as before.
+     * match, or null when it finds nothing (or has no verified snapshot to
+     * evaluate against). Only {@see decideOnOutage()} calls it, and only with
+     * a VERIFIED snapshot (`evaluator_unavailable`).
+     *
+     * Since 1.3.5 the rules are first scoped by who is checking out
+     * ({@see FailurePolicy::offlineRulesFor()}): a human only gets the
+     * merchant's `appliesTo: ALL`/`HUMAN` rules (R030 cap, countries…), never an
+     * AGENT rule such as R028/R029. Any error inside the valve counts as "found
+     * nothing": it never blocks by itself.
      *
      * @param array $payload {merchantId, orderContext, ...}
      */
-    private function tryOfflineSafetyValve(array $payload): ?string
+    private function tryOfflineSafetyValve(array $payload, bool $isAgentic): ?string
     {
         $merchantId = (string) ($payload['merchantId'] ?? '');
         if ($merchantId === '') {
             return null;
         }
-        $rules = $this->getRules($merchantId);
-        if (empty($rules)) {
+        try {
+            $rules = FailurePolicy::offlineRulesFor($this->getRules($merchantId), $isAgentic);
+            if (empty($rules)) {
+                return null;
+            }
+            // Actor signal for the valve's currency-not-comparable branch
+            // (agent: block, person: skip). Overrides anything in the payload.
+            $orderContext = array_merge((array) ($payload['orderContext'] ?? []), ['agentCheckout' => $isAgentic]);
+            $cartAttributes = (array) ($orderContext['cartAttributes'] ?? []);
+            $block = OfflineSafetyValveEvaluator::evaluate($rules, $orderContext, $cartAttributes);
+        } catch (\Throwable $e) {
+            $this->logger->warning('[trusteed.offline_safety_valve] error: ' . get_class($e));
             return null;
         }
-        $orderContext = (array) ($payload['orderContext'] ?? []);
-        $cartAttributes = (array) ($orderContext['cartAttributes'] ?? []);
-        $block = OfflineSafetyValveEvaluator::evaluate($rules, $orderContext, $cartAttributes);
         if ($block === null) {
             return null;
         }
@@ -252,7 +322,7 @@ class EnforcementClient
     }
 
     /**
-     * H3 — Map a 2xx evaluate() body to ALLOW / BLOCK / ESCALATE. A BLOCK whose
+     * Map a 2xx evaluate() body to ALLOW / BLOCK / ESCALATE. A BLOCK whose
      * `ucp.state` is `requires_escalation` with an R043 reason code surfaces as
      * ESCALATE so the observer can apply the HITL freeze rather than a hard
      * block. All other BLOCKs remain hard blocks.
@@ -274,173 +344,219 @@ class EnforcementClient
     }
 
     /**
-     * M1 — fail-closed decision: BLOCK when failure_mode === 'enforce', else
-     * ALLOW (observe). Used for transport errors, non-2xx and SSRF rejections.
+     * The evaluator could not decide (transport error,
+     * non-2xx, SSRF rejection, unreadable body, internal error). The CAUSE is
+     * read from the snapshot ({@see FailurePolicy::decideDegraded()}):
+     * verified snapshot: `evaluator_unavailable` (offline valve, then the
+     * mode); no usable snapshot: `missing_snapshot` (an agent with a token is
+     * held in every mode, one without decides by the mode); tampered:
+     * `invalid_signature` (an agent is held in every mode). A human is never
+     * held by our outage; only the valve of a VERIFIED snapshot blocks it.
+     * A valve match is a merchant rule (DECISION_BLOCK); anything else that
+     * closes is our outage (DECISION_UNAVAILABLE), never "a rule blocked you".
      */
-    private function failClosedDecision(): string
+    private function decideOnOutage(array $payload, bool $isAgentic): string
     {
-        return $this->getFailureMode() === 'enforce'
-            ? self::DECISION_BLOCK
-            : self::DECISION_ALLOW;
+        $cart         = (array) (((array) ($payload['orderContext'] ?? []))['cartAttributes'] ?? []);
+        $tokenPresent = ($cart['_agent_token_present'] ?? '') === 'true';
+        $snapshot     = $this->getSnapshotResult((string) ($payload['merchantId'] ?? ''));
+        $kind         = self::degradedKind($snapshot['status']);
+        $valve        = $kind === FailurePolicy::KIND_EVALUATOR_UNAVAILABLE
+            ? $this->tryOfflineSafetyValve($payload, $isAgentic || $tokenPresent)
+            : null;
+        $mode     = $this->getFailureMode();
+        $verdict  = FailurePolicy::decideDegraded($kind, $isAgentic, $tokenPresent, $mode, $valve !== null);
+        $decision = $verdict === 'ALLOW' ? self::DECISION_ALLOW
+            : ($valve !== null ? self::DECISION_BLOCK : self::DECISION_UNAVAILABLE);
+        $this->logger->warning(sprintf(
+            '[trusteed.enforcement_unavailable] kind=%s mode=%s agentic=%s token=%s decision=%s',
+            $kind,
+            $mode ?? 'unresolved',
+            $isAgentic ? 'true' : 'false',
+            $tokenPresent ? 'true' : 'false',
+            $decision
+        ));
+        return $decision;
+    }
+
+    /** Snapshot status to cause of the degraded layer (reference `PlatformDegradedKind`). */
+    public static function degradedKind(string $status): string
+    {
+        return match ($status) {
+            SnapshotJwsVerifier::OK       => FailurePolicy::KIND_EVALUATOR_UNAVAILABLE,
+            SnapshotJwsVerifier::TAMPERED => FailurePolicy::KIND_INVALID_SIGNATURE,
+            self::SNAPSHOT_DISABLED       => FailurePolicy::KIND_LAYER_DISABLED,
+            default                       => FailurePolicy::KIND_MISSING_SNAPSHOT,
+        };
     }
 
     /**
-     * Resolve `trusteed/enforcement/failure_mode`. Defaults to 'enforce'
-     * (fail-closed) when unset, matching CheckoutSubmitBefore::getFailureMode.
+     * A presented token needs the snapshot's DID resolver. When the
+     * snapshot is tampered or unavailable the token cannot be verified, so the
+     * agent is held in EVERY mode (`decideDegraded`) before any evaluate call
+     * and before its jti is spent. A verified snapshot, or a layer that is not
+     * configured, holds nobody here.
      */
-    private function getFailureMode(): string
+    public function holdsTokenOnDegradedSnapshot(string $merchantId): bool
     {
-        $mode = (string) ($this->scopeConfig->getValue('trusteed/enforcement/failure_mode') ?? 'enforce');
-        return $mode === 'observe' ? 'observe' : 'enforce';
+        $snapshot = $this->getSnapshotResult($merchantId);
+        if ($snapshot['status'] === SnapshotJwsVerifier::OK) {
+            return false;
+        }
+        $kind = self::degradedKind($snapshot['status']);
+        $held = FailurePolicy::decideDegraded($kind, true, true, $this->getFailureMode(), false) === 'BLOCK';
+        if ($held) {
+            $this->logger->warning(sprintf(
+                '[trusteed.snapshot_degraded] kind=%s detail=%s agent token held',
+                $kind,
+                $snapshot['detail']
+            ));
+        }
+        return $held;
     }
 
     /**
-     * Fetch snapshot and return agentDidResolver array.
-     * Returns empty array (fail-open) on any error.
+     * Resolve `trusteed/enforcement/failure_mode` against this module's
+     * vocabulary (trim + lowercase): absent gives 'enforce'; a value outside
+     * enforce|observe (e.g. `permissive` from another platform) gives null,
+     * "unresolved", which closes for an agent. See FailurePolicy.
+     */
+    private function getFailureMode(): ?string
+    {
+        return FailurePolicy::normalizeFailureMode(
+            $this->scopeConfig->getValue('trusteed/enforcement/failure_mode')
+        );
+    }
+
+    /**
+     * The snapshot's `agentDidResolver` as served (list, or legacy map), only
+     * from a VERIFIED snapshot; [] otherwise.
      *
-     * @param string $merchantId
-     * @return array<array{did: string, publicKeyJwk: array}>
+     * @return array<mixed>
      */
     public function getDidResolver(string $merchantId): array
     {
-        if (isset($this->snapshotCache[$merchantId])) {
-            return $this->snapshotCache[$merchantId];
-        }
-        $payload = $this->fetchSnapshotPayload($merchantId);
-        if ($payload === null) {
-            return [];
-        }
-        $resolver = isset($payload['agentDidResolver'])
-            ? (array) $payload['agentDidResolver']
-            : [];
-        $this->snapshotCache[$merchantId] = $resolver;
-        return $resolver;
+        $payload  = $this->getSnapshotResult($merchantId)['payload'];
+        $resolver = $payload['agentDidResolver'] ?? [];
+        return is_array($resolver) ? $resolver : [];
     }
 
     /**
-     * B7b — fetch snapshot and return the `rules` array so callers
-     * (CheckoutSubmitBefore) can extract per-rule params such as
-     * `R015.params.priceSnapHmacKeyHex`.
-     *
-     * Returns empty array on any failure (fail-open). Cached per-request.
+     * The VERIFIED snapshot's `rules` (e.g. `R015.params.priceSnapHmacKeyHex`,
+     * the offline valve). [] when there is no verified snapshot. Cached per request.
      *
      * @return array<int, array{ruleCode: string, params?: array, mode?: string, enabled?: bool}>
      */
     public function getRules(string $merchantId): array
     {
-        $payload = $this->fetchSnapshotPayload($merchantId);
-        if ($payload === null || !isset($payload['rules'])) {
-            return [];
-        }
-        return is_array($payload['rules']) ? $payload['rules'] : [];
+        $rules = $this->getSnapshotResult($merchantId)['payload']['rules'] ?? [];
+        return is_array($rules) ? $rules : [];
     }
 
     /**
-     * Shared snapshot fetch + JWS payload decode (fail-open). Caches full
-     * payload so `getDidResolver` and `getRules` share a single HTTP round
-     * trip per request.
+     * Fetch + verify the snapshot once per request and say why it
+     * cannot be used: `disabled` (connector not configured), `unavailable`
+     * (network, non-200, empty body, SSRF guard, stale `validUntil`, JWKS or
+     * sodium missing, unreadable authentic payload), `tampered` (the served
+     * JWS does not verify even after re-downloading the JWKS once) or `ok`.
+     * Magento keeps no snapshot across requests, so there is no stored copy to
+     * re-verify: every request pulls a fresh one.
+     *
+     * @return array{status:string, payload:?array, detail:string}
      */
-    private function fetchSnapshotPayload(string $merchantId): ?array
+    public function getSnapshotResult(string $merchantId): array
     {
-        if ($merchantId === '') {
-            return null;
+        if (!array_key_exists($merchantId, $this->snapshotResults)) {
+            $this->snapshotResults[$merchantId] = $this->pullSnapshot($merchantId);
         }
-        if (array_key_exists($merchantId, $this->payloadCache)) {
-            return $this->payloadCache[$merchantId];
-        }
+        return $this->snapshotResults[$merchantId];
+    }
 
-        $apiBase        = $this->getApiBase();
+    /** @return array{status:string, payload:?array, detail:string} */
+    private function pullSnapshot(string $merchantId): array
+    {
+        $apiBase        = rtrim($this->getApiBase(), '/');
         $installationId = $this->getInstallationId();
         $hmacSecret     = $this->getHmacSecret();
-
-        $apiBase = rtrim($apiBase, '/');
-
-        if ($apiBase === '' || $installationId === '') {
-            $this->payloadCache[$merchantId] = null;
-            return null;
+        if ($merchantId === '' || $apiBase === '' || $installationId === '') {
+            return self::snapshotOutcome(self::SNAPSHOT_DISABLED, 'not_configured');
         }
-        // PL-F6 — see evaluate() for rationale: an empty HMAC secret must
-        // short-circuit the same as an unconfigured apiBase/installationId,
-        // not fall through to a fabricated signature placeholder.
+        // An empty HMAC secret is an incomplete installation, like
+        // evaluate()'s short-circuit: never a fabricated signature.
         if ($hmacSecret === '') {
             $this->logger->warning('[trusteed] snapshot fetch skipped: HMAC secret not configured (installation incomplete)');
-            $this->payloadCache[$merchantId] = null;
-            return null;
+            return self::snapshotOutcome(self::SNAPSHOT_DISABLED, 'hmac_secret_missing');
         }
-
-        // H1 — SSRF + HTTPS guard. Snapshot fetch fails open (null) per the
-        // existing contract, so a rejected URL simply yields the safe default.
+        // SSRF + HTTPS guard before sending anything signed.
         if (!$this->isOutboundAuthorized($apiBase)) {
-            $this->payloadCache[$merchantId] = null;
-            return null;
+            return self::snapshotOutcome(SnapshotJwsVerifier::UNAVAILABLE, 'ssrf_guard_rejected');
         }
-
-        $url = $apiBase . '/v1/rules/snapshot/' . rawurlencode($merchantId);
 
         try {
             $this->curl->setTimeout(self::TIMEOUT_SECONDS);
             $this->applyTlsHardening();
             $this->curl->addHeader('X-Trusteed-Installation-Id', $installationId);
             $this->curl->addHeader('X-Trusteed-Signature', $this->buildSignature('', $hmacSecret));
-            // Spec-048 FR-008 — negotiate the contract wire format: a bare JWS
-            // Compact body with Content-Type application/jose. Mirrors the
-            // WP-plugin / PrestaShop / Odoo clients.
+            // Contract wire format: a bare JWS Compact body
+            // (Content-Type application/jose), as the WP/PrestaShop/Odoo clients.
             $this->curl->addHeader('Accept', 'application/jose');
-            $this->curl->get($url);
+            $this->curl->get($apiBase . '/v1/rules/snapshot/' . rawurlencode($merchantId));
 
             $status = (int)$this->curl->getStatus();
-            if ($status !== 200) {
-                $this->logger->warning("[trusteed] snapshot HTTP {$status}");
-                $this->payloadCache[$merchantId] = null;
-                return null;
-            }
-
-            // Contract response is the bare JWS Compact string. Trim any
-            // trailing whitespace/newlines before decoding.
-            $jws = trim((string)$this->curl->getBody());
-            if ($jws === '') {
-                $this->payloadCache[$merchantId] = null;
-                return null;
-            }
-
-            $payload = $this->verifyAndDecode($jws);
-
-            // C2 (verificación 2026-07-28) — honrar `validUntil`, la ventana de
-            // frescura que el snapshot lleva FIRMADA (60s con reglas tier-1,
-            // 300s en el resto). Magento era la única superficie que no la
-            // miraba: WooCommerce, PrestaShop, Odoo y el Wasm de Shopify ya
-            // tratan un snapshot vencido como ausente para que se aplique la
-            // política de fallback del comerciante. Sin esta comprobación, un
-            // snapshot caducado servido por la API (o por un intermediario que
-            // lo cachee) se aplicaba como si estuviera vigente.
-            if ($payload !== null && $this->isSnapshotStale($payload)) {
-                $this->logger->warning('[trusteed] snapshot stale (validUntil in the past) — applying fallback policy');
-                $this->payloadCache[$merchantId] = null;
-                return null;
-            }
-
-            $this->payloadCache[$merchantId] = $payload;
-            return $payload;
-        } catch (\Exception $e) {
-            $this->logger->warning('[trusteed] snapshot error: ' . $e->getMessage());
-            $this->payloadCache[$merchantId] = null;
-            return null;
+            $body   = (string)$this->curl->getBody();
+        } catch (\Throwable $e) {
+            $this->logger->warning('[trusteed] snapshot error: ' . get_class($e));
+            return self::snapshotOutcome(SnapshotJwsVerifier::UNAVAILABLE, 'network_error');
         }
+        // Over the cap nothing is verified.
+        if (strlen($body) > self::MAX_RESPONSE_BYTES) {
+            $this->logger->warning('[trusteed] snapshot response over the size cap');
+            return self::snapshotOutcome(SnapshotJwsVerifier::UNAVAILABLE, 'response_too_large');
+        }
+        $jws = trim($body);
+        if ($status !== 200 || $jws === '') {
+            $this->logger->warning("[trusteed] snapshot HTTP {$status}");
+            return self::snapshotOutcome(SnapshotJwsVerifier::UNAVAILABLE, 'http_' . $status);
+        }
+
+        // Signature verified against the platform JWKS;
+        // tampered vs unavailable, with one forced JWKS re-download.
+        $result = SnapshotJwsVerifier::verify(
+            $jws,
+            fn (bool $force): array => $this->fetchJwks($force),
+            new JwksRetryVerdictStore($this->cache, $apiBase, fn (): int => $this->now())
+        );
+        if ($result['status'] !== SnapshotJwsVerifier::OK) {
+            $this->logger->warning(sprintf('[trusteed] snapshot %s (%s)', $result['status'], $result['detail']));
+            return $result;
+        }
+        // The signed `validUntil`: an expired snapshot is absent.
+        if ($this->isSnapshotStale((array) $result['payload'])) {
+            $this->logger->warning('[trusteed] snapshot stale (validUntil in the past), applying fallback policy');
+            return self::snapshotOutcome(SnapshotJwsVerifier::UNAVAILABLE, 'stale');
+        }
+        return $result;
+    }
+
+    /** @return array{status:string, payload:null, detail:string} */
+    private static function snapshotOutcome(string $status, string $detail): array
+    {
+        return ['status' => $status, 'payload' => null, 'detail' => $detail];
     }
 
     /**
      * Call POST /v1/agent-events/nonce-consume to record a single-use
-     * agent-token jti (spec-048 P2.8 replay protection).
+     * agent-token jti (replay protection).
      *
-     * Mirrors WC consume_nonce() and PS SnapshotClient::consumeNonce(). Reuses
+     * Mirrors the WooCommerce and PrestaShop nonce calls. Reuses
      * the Stripe-style HMAC signing helper already used by evaluate().
      *
-     *   200 → ACCEPTED  (nonce stored)
-     *   409 → REPLAY    (nonce already seen — token must be downgraded)
-     *   timeout / 5xx / 4xx → INDETERMINATE  (caller maps per failure_mode)
+     *   200 = ACCEPTED  (nonce stored)
+     *   409 = REPLAY    (nonce already seen, token must be downgraded)
+     *   timeout / 5xx / 4xx = INDETERMINATE  (caller maps per failure_mode)
      *
      * @param string $agentDid Verified agent DID from token iss/kid claim.
-     * @param string $jti      Single-use nonce — base64url 16–128 chars.
+     * @param string $jti      Single-use nonce, base64url 16-128 chars.
      * @param int    $exp      Token exp (unix seconds). Used as TTL upper bound.
      * @return array{outcome:string,reason:string,httpStatus:int|null}
      */
@@ -456,7 +572,7 @@ class EnforcementClient
         if ($apiBase === '' || $installationId === '') {
             return ['outcome' => NonceOutcome::INDETERMINATE, 'reason' => 'config_missing', 'httpStatus' => null];
         }
-        // PL-F6 — see evaluate() for rationale. Distinguish "HMAC secret step
+        // See evaluate() for rationale. Distinguish "HMAC secret step
         // of setup skipped" from the generic config_missing reason so ops can
         // tell the two setup gaps apart in logs/metrics.
         if ($hmacSecret === '') {
@@ -464,8 +580,8 @@ class EnforcementClient
             return ['outcome' => NonceOutcome::INDETERMINATE, 'reason' => 'hmac_secret_missing', 'httpStatus' => null];
         }
 
-        // H1 — SSRF + HTTPS guard. A rejected URL maps to INDETERMINATE so the
-        // caller honours failure_mode (enforce → token treated INVALID).
+        // SSRF + HTTPS guard. A rejected URL maps to INDETERMINATE so the
+        // caller honours failure_mode (enforce: token treated INVALID).
         if (!$this->isOutboundAuthorized($apiBase)) {
             return ['outcome' => NonceOutcome::INDETERMINATE, 'reason' => 'ssrf_guard_rejected', 'httpStatus' => null];
         }
@@ -511,10 +627,10 @@ class EnforcementClient
     }
 
     /**
-     * PL-F6 (fable audit 2026-07-02): previously returned a placeholder
-     * "t=...,s=dev-bypass" signature when `$secret` was empty — a header
+     * Previously returned a placeholder
+     * "t=...,s=dev-bypass" signature when `$secret` was empty, a header
      * that LOOKS signed but isn't, sent silently to the enforcement API.
-     * All three call sites (evaluate/fetchSnapshotPayload/consumeNonce) now
+     * All three call sites (evaluate/pullSnapshot/consumeNonce) now
      * short-circuit before ever reaching this method when the HMAC secret is
      * unconfigured, matching the existing "unconfigured connector → never
      * block" fail-open posture used elsewhere in this file. This method
@@ -534,97 +650,42 @@ class EnforcementClient
     }
 
     /**
-     * Verify the snapshot JWS Ed25519 signature (sodium) and decode its
-     * payload. Returns null (fail-open per existing snapshot contract) when
-     * sodium is unavailable, the JWS is malformed, the kid is not found in
-     * the platform JWKS, or the signature does not verify.
+     * Has the snapshot passed its signed freshness window?
      *
-     * fable audit 2026-07-02 (PL-F5) — this used to be
-     * `decodeJwsPayloadUnsafe()`, which decoded the payload WITHOUT checking
-     * the signature at all (Tier-1 always failed open regardless of who
-     * produced the bytes). Woo/PS/Odoo clients already verify; this brings
-     * Magento to parity. Mirrors AgentTokenVerifier::verify() in this same
-     * module and PS SnapshotClient::verifyAndDecode().
-     */
-    /**
-     * C2 — ¿el snapshot ya pasó su ventana de frescura firmada?
-     *
-     * `validUntil` viaja DENTRO del payload firmado, así que un atacante no
-     * puede alargarla. Ausente o no parseable ⇒ no se considera vencido: es el
-     * comportamiento previo, y degradar a "vencido" por un formato inesperado
-     * bloquearía checkouts legítimos ante un cambio de formato del emisor.
-     * Mirrors PS `SnapshotClient::extractSnapshotValidUntil` y el
-     * stale-fail-closed del cliente de WooCommerce.
+     * `validUntil` travels INSIDE the signed payload, so an attacker cannot
+     * extend it. A missing or unreadable value is NOT treated as "current": a
+     * snapshot from our server always carries it, and without it there is no
+     * way to know whether it expired. {@see SnapshotJwsVerifier} rejects it
+     * earlier (`valid_until_*`); this is the same rule, in case a payload
+     * arrives by another path. Mirrors the PrestaShop payload decoder.
      */
     private function isSnapshotStale(array $payload): bool
     {
-        if (empty($payload['validUntil'])) {
-            return false;
-        }
-        $until = strtotime((string)$payload['validUntil']);
-        if ($until === false) {
-            return false;
-        }
-        return $until <= time();
-    }
-
-    private function verifyAndDecode(string $jwsCompact): ?array
-    {
-        if (!function_exists('sodium_crypto_sign_verify_detached') && !class_exists('\ParagonIE_Sodium_Compat')) {
-            $this->logger->warning('[trusteed] snapshot verify skipped: sodium unavailable');
-            return null;
-        }
-
-        $parts = explode('.', $jwsCompact);
-        if (count($parts) !== 3) {
-            return null;
-        }
-        [$headerB64, $payloadB64, $sigB64] = $parts;
-
-        $header = $this->decodeB64UrlJson($headerB64);
-        if (!is_array($header) || ($header['alg'] ?? '') !== 'EdDSA' || empty($header['kid'])) {
-            return null;
-        }
-
-        $jwks = $this->fetchJwks();
-        $pubkeyRaw = $jwks[(string)$header['kid']] ?? null;
-        if ($pubkeyRaw === null) {
-            return null;
-        }
-
-        $sig = $this->b64urlDecode($sigB64);
-        if ($sig === false || strlen($sig) !== SODIUM_CRYPTO_SIGN_BYTES) {
-            return null;
-        }
-
-        $signingInput = $headerB64 . '.' . $payloadB64;
-        try {
-            $valid = sodium_crypto_sign_verify_detached($sig, $signingInput, $pubkeyRaw);
-        } catch (\SodiumException $e) {
-            $this->logger->warning('[trusteed] snapshot sodium exception: ' . $e->getMessage());
-            return null;
-        }
-        if (!$valid) {
-            $this->logger->warning('[trusteed] snapshot signature verification failed');
-            return null;
-        }
-
-        $payload = $this->decodeB64UrlJson($payloadB64);
-        return is_array($payload) ? $payload : null;
+        return !SnapshotPayloadDecoder::isUsable($payload, time());
     }
 
     /**
      * Fetch + cache (per-request) the platform JWKS as kid => raw Ed25519
-     * public key. Returns an empty map on any transport/parse failure —
-     * verifyAndDecode() treats "kid not found" as fail-open, same as before.
+     * public key. Returns an empty map on any transport/parse failure (the
+     * snapshot is then `unavailable`, never `tampered`). `$force` skips the
+     * cache once (a key rotation must not look like tampering); a failed
+     * forced download leaves the cache as it was.
      *
      * @return array<string, string>
      */
-    private function fetchJwks(): array
+    private function fetchJwks(bool $force = false): array
     {
         $apiBase = rtrim($this->getApiBase(), '/');
-        if (isset($this->jwksCache[$apiBase])) {
+        if (!$force && isset($this->jwksCache[$apiBase])) {
             return $this->jwksCache[$apiBase];
+        }
+        // Current copy across requests (300 s); a forced retry skips it.
+        $positive = new JwksPositiveCache($this->cache, $apiBase, fn (): int => $this->now());
+        if (!$force) {
+            $copy = $positive->read();
+            if ($copy !== []) {
+                return $this->jwksCache[$apiBase] = $copy;
+            }
         }
 
         $keys = [];
@@ -634,8 +695,9 @@ class EnforcementClient
             $this->curl->addHeader('Accept', 'application/json');
             $this->curl->get($apiBase . '/.well-known/jwks.json');
 
-            if ((int)$this->curl->getStatus() === 200) {
-                $data = json_decode((string)$this->curl->getBody(), true);
+            $jwksBody = (string)$this->curl->getBody();
+            if ((int)$this->curl->getStatus() === 200 && strlen($jwksBody) <= self::MAX_RESPONSE_BYTES) {
+                $data = json_decode($jwksBody, true);
                 foreach ((is_array($data) ? ($data['keys'] ?? []) : []) as $key) {
                     if (!is_array($key)) {
                         continue;
@@ -646,7 +708,7 @@ class EnforcementClient
                     if (empty($key['kid']) || empty($key['x'])) {
                         continue;
                     }
-                    $raw = $this->b64urlDecode((string)$key['x']);
+                    $raw = SnapshotJwsVerifier::b64urlDecode((string)$key['x']);
                     if ($raw !== false && strlen($raw) === SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
                         $keys[(string)$key['kid']] = $raw;
                     }
@@ -656,30 +718,11 @@ class EnforcementClient
             $this->logger->warning('[trusteed] jwks fetch error: ' . $e->getMessage());
         }
 
-        $this->jwksCache[$apiBase] = $keys;
+        if (!$force || $keys !== []) {
+            $this->jwksCache[$apiBase] = $keys;
+        }
+        $positive->write($keys); // the fresh download REPLACES the copy; an empty result is not stored
         return $keys;
-    }
-
-    /** @return array<string,mixed>|null */
-    private function decodeB64UrlJson(string $b64): ?array
-    {
-        $json = $this->b64urlDecode($b64);
-        if ($json === false) {
-            return null;
-        }
-        $data = json_decode($json, true);
-        return is_array($data) ? $data : null;
-    }
-
-    /** @return string|false */
-    private function b64urlDecode(string $data)
-    {
-        $padded = strtr($data, '-_', '+/');
-        $mod    = strlen($padded) % 4;
-        if ($mod !== 0) {
-            $padded .= str_repeat('=', 4 - $mod);
-        }
-        return base64_decode($padded, true);
     }
 
     private function getApiBase(): string

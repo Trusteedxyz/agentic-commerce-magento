@@ -25,16 +25,14 @@ use Trusteed\AgenticCommerce\Model\Security\InternalHmacSigner;
  * - Payload is cached 300 s with tag TRUSTEED_MANIFEST; cache is busted when
  *   store views change (store_save_after observer triggers regeneration).
  *
- * Signing architecture (ADR-050 — Accepted, Option A, 2026-06-01):
+ * Signing architecture:
  * - The manifest is signed SERVER-SIDE by MCPWebStore. This module POSTs the
  *   canonical manifest payload to `POST /api/v1/internal/magento/manifest/sign`
  *   and embeds the returned detached JWS. The Ed25519 PRIVATE KEY NEVER LEAVES
  *   THE BACKEND — this module never holds key material.
  * - The previous flow (GET /api/v1/internal/magento/signing-key → local
  *   `sodium_crypto_sign_detached`) is REMOVED. Handing a private key to the
- *   merchant host was the rejected option (ADR-050 §Considered Options C/Option
- *   A; STRIDE Information Disclosure mitigation = "private key never leaves
- *   SecretVault").
+ *   merchant host was the rejected option.
  * - Auth reuses the canonical internal HMAC scheme already shipping for the
  *   analytics event sink (`internal_hmac_secret` + `connection_id`):
  *
@@ -47,13 +45,13 @@ use Trusteed\AgenticCommerce\Model\Security\InternalHmacSigner;
  *       signature      = HMAC-SHA256(internal_hmac_secret, signing_string)
  *
  *   The backend overwrites `issuer`/`merchant_id`/`capabilities` from the
- *   connection (ADR-014 ServerTrustedStoreId) and returns the exact canonical
+ *   connection and returns the exact canonical
  *   `signed_payload` it signed, which this module serves verbatim so the JWS
  *   `manifest_hash` verifies against the served bytes.
  *
  * - On signing failure: throws ManifestSigningException (caller returns 503 /
  *   serves last-known-good cache where available).
- * - Emits trusteed_manifest_published analytics event (T021b).
+ * - Emits trusteed_manifest_published analytics event.
  */
 class Builder
 {
@@ -67,7 +65,7 @@ class Builder
     private const CONFIG_INTERNAL_HMAC_SECRET = 'trusteed_general/general/internal_hmac_secret';
     private const CONFIG_STORE_VIEW_SELECTION = 'trusteed_general/general/store_view_selection';
 
-    /** Backend remote-sign endpoint (ADR-050 Option A). */
+    /** Backend remote-sign endpoint. */
     private const SIGN_PATH = '/api/v1/internal/magento/manifest/sign';
 
     private const SIGN_TIMEOUT_SECONDS = 5;
@@ -121,7 +119,7 @@ class Builder
             self::CACHE_LIFETIME
         );
 
-        // T021b: emit analytics event (fire-and-forget; failure must not block response)
+        // emit analytics event (fire-and-forget; failure must not block response)
         try {
             $this->eventManager->dispatch('trusteed_manifest_published', [
                 'merchant_id' => $merchantId,
@@ -159,7 +157,7 @@ class Builder
         $storeViews = $this->collectStoreViews();
 
         // Local payload draft. The backend overwrites issuer/merchant_id/
-        // capabilities from the connection (ADR-014); we send our best-effort
+        // capabilities from the connection; we send our best-effort
         // values and trust the server-authoritative `signed_payload` it returns.
         $payload = [
             'schema_version' => '1.0',

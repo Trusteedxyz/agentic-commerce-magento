@@ -9,7 +9,7 @@ use Magento\TestFramework\TestCase\AbstractController;
 /**
  * Integration test: NLWeb Products endpoint.
  *
- * Spec 050 T060 — verifies:
+ *  — verifies:
  *   - GET /nlweb/products → HTTP 200 with JSON-LD @context
  *   - ETag header present; second request with matching If-None-Match → 304
  *   - Last-Modified header present; request with If-Modified-Since = now → 304

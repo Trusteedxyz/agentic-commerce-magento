@@ -7,23 +7,22 @@ namespace Trusteed\AgenticCommerce\Test\Unit\Observer;
 use PHPUnit\Framework\TestCase;
 
 /**
- * App Store remediation (2026-07-11) — R030 (and every other merchant-wide
- * "appliesTo:ALL" policy rule: R014/R018/R019/R020/R025/R027) must apply to
- * a normal human (non-agentic) Magento checkout, not just agentic carts.
+ * Merchant-wide policy rules (the ones that apply to every checkout, such as
+ * R030) must also apply to a normal human (non-agentic) Magento checkout,
+ * not just to agentic carts.
  *
- * Root cause fixed in CheckoutSubmitBefore::execute(): the method used to
- * `return` immediately with the comment "Not an agent-initiated cart — skip
- * enforcement" whenever no agent DID was in the checkout session — before
- * ever calling `EnforcementClient::evaluate()` — so a merchant's universal
- * safety-valve rules never applied to a real customer.
+ * The bug: CheckoutSubmitBefore::execute() used to `return` immediately with
+ * the comment "Not an agent-initiated cart - skip enforcement" whenever no
+ * agent DID was in the checkout session. It did so before ever calling
+ * `EnforcementClient::evaluate()`, so a merchant's universal safety-valve
+ * rules never applied to a real customer.
  *
  * `CheckoutSubmitBefore::execute()` depends on the live Magento kernel
  * (Magento\Quote\Model\Quote, CheckoutSession, ScopeConfigInterface, etc.)
- * and cannot be instantiated in this unit-test process. Following the same
- * established pattern used for the WooCommerce and PrestaShop equivalents
- * of this fix, this test asserts the control-flow structurally against the
- * real source. Every substring below was verified byte-for-byte against the
- * real file (`grep`/`sed -n '<line>p' | cat -A`) before being written here.
+ * and cannot be instantiated in this unit-test process. As with the
+ * WooCommerce and PrestaShop equivalents, this test asserts the control flow
+ * structurally against the real source. The substrings below must match the
+ * source byte for byte.
  */
 final class OrganicCheckoutUniversalRulesTest extends TestCase
 {
@@ -49,8 +48,18 @@ final class OrganicCheckoutUniversalRulesTest extends TestCase
     public function testAgentDidResolutionPrecedesOrderContextBuild(): void
     {
         $src = $this->observerSource();
-        $agentDidPos = strpos($src, "\$agentDid = (string)(\$this->checkoutSession->getData(self::SESSION_AGENT_DID) ?? '');");
-        $buildContextPos = strpos($src, '$orderContext = $this->buildOrderContext($quote);');
+        // The identity no longer comes only from the session (nothing wrote
+        // it): it comes from the REST header with the session as fallback,
+        // resolved in execute() and passed to buildEvaluationPayload(). What
+        // this test protects is unchanged: the DID is resolved before the
+        // context is built, with no `return` in between. The search starts
+        // inside buildEvaluationPayload(), where the context is built (the same
+        // line also exists in execute(), and measuring from there would pass
+        // by coincidence).
+        $bodyPos = strpos($src, 'private function buildEvaluationPayload(');
+        $this->assertNotFalse($bodyPos);
+        $agentDidPos = strpos($src, "\$agentDid = \$identity['did'];", $bodyPos);
+        $buildContextPos = strpos($src, '$orderContext = $this->buildOrderContext($quote);', $bodyPos);
         $this->assertNotFalse($agentDidPos);
         $this->assertNotFalse($buildContextPos);
         $this->assertLessThan(
@@ -73,14 +82,28 @@ final class OrganicCheckoutUniversalRulesTest extends TestCase
         );
     }
 
-    public function testVerifiedDidPersistOnlyWhenNonEmpty(): void
+    /**
+     * This test used to accept persisting the DID as "verified" just because
+     * it was non-empty (`if ($agentDid !== '')`), without looking at the
+     * token. With header-based identity that would let anyone attribute orders
+     * to someone else's DID. Now only a DID proven by a VALID token
+     * (`$verifiedDid`) is persisted, and any other ALLOW clears it. The
+     * behavior is exercised in CheckoutSubmitBeforeIdentityChannelTest; this
+     * test only checks the shape of the code.
+     */
+    public function testVerifiedDidPersistOnlyWhenProvenByAValidToken(): void
     {
         $src = $this->observerSource();
-        $pos = strpos($src, 'SESSION_VERIFIED_AGENT_DID, $agentDid);');
-        $this->assertNotFalse($pos);
-        $guardPos = strpos($src, "if (\$agentDid !== '') {");
-        $this->assertNotFalse($guardPos);
-        $this->assertLessThan($pos, $guardPos);
-        $this->assertLessThan(120, $pos - $guardPos, 'the guard must directly wrap the setData call');
+        $this->assertStringNotContainsString('SESSION_VERIFIED_AGENT_DID, $agentDid);', $src);
+        $set = strpos($src, 'setData(self::SESSION_VERIFIED_AGENT_DID, $verifiedDid);');
+        $this->assertNotFalse($set);
+        $guard = strrpos(substr($src, 0, $set), "if (\$verifiedDid !== '') {");
+        $this->assertNotFalse($guard);
+        $this->assertLessThan(120, $set - $guard, 'the guard must directly wrap the setData call');
+        $this->assertStringContainsString(
+            "} else {\n            \$this->checkoutSession->unsetData(self::SESSION_VERIFIED_AGENT_DID);",
+            substr($src, $set, 200),
+            'an ALLOW without a proven DID clears it'
+        );
     }
 }

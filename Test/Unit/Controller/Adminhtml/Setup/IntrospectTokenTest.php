@@ -13,7 +13,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
 
 /**
- * Unit tests for IntrospectToken SSRF hardening (Spec 050).
+ * Unit tests for IntrospectToken SSRF hardening.
  *
  * The SSRF-critical surface is concentrated in {@see ApiBaseUrlValidator}
  * (host allowlist + sealed sha256(host) + DNS-aware private-IP guard + TLS

@@ -1,6 +1,6 @@
 <?php
 /**
- * Spec-048 4.9 — dispara el reporte de capacidades de señales.
+ * �� dispara el reporte de capacidades de señales.
  *
  * Va en un data patch porque los data patches corren en `setup:upgrade`, que es
  * exactamente cuando cambia la versión del módulo — y la versión es lo único
@@ -44,7 +44,7 @@ class ReportSignalCapabilities implements DataPatchInterface
             // el servidor simplemente no sabe qué aporta esta instalación
             // (`unknown`, que es un estado honesto y previsto).
             $this->logger->warning(
-                '[spec-048 4.9] capabilities data patch failed: ' . $e->getMessage()
+                '[trusteed] capabilities data patch failed: ' . $e->getMessage()
             );
         }
 

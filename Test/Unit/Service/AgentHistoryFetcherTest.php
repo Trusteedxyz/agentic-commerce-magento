@@ -18,10 +18,10 @@ use Psr\Log\LoggerInterface;
 require_once __DIR__ . '/../../../Service/AgentHistoryFetcher.php';
 
 /**
- * Spec-048 Residuales T20 — AgentHistoryFetcher::failedCheckoutCount.
+ * AgentHistoryFetcher::failedCheckoutCount.
  *
  * Verifies the Magento helper correctly wires up the backend
- * `GET /api/v1/checkout-failures/count` endpoint introduced in spec-048 T20.
+ * `GET /api/v1/checkout-failures/count` endpoint.
  *
  * Cases covered:
  *   - backend response 200 + count=5 → returns 5
@@ -32,7 +32,7 @@ require_once __DIR__ . '/../../../Service/AgentHistoryFetcher.php';
  *   - missing endpoint config → returns null (no curl issued)
  *   - empty agent hash / zero window → returns null short-circuit
  *
- * Pure unit test — depends on `Test/Unit/stubs/MagentoFrameworkStubs.php` for
+ * Pure unit test; depends on `Test/Unit/stubs/MagentoFrameworkStubs.php` for
  * the Magento framework surface area when running outside a full Magento env.
  */
 final class AgentHistoryFetcherTest extends TestCase
@@ -214,5 +214,97 @@ final class AgentHistoryFetcherTest extends TestCase
         $svc->failedCheckoutCount(str_repeat('1', 64), 900);
         self::assertStringContainsString('agentIdHash=' . str_repeat('1', 64), (string) $curl->lastUrl);
         self::assertStringContainsString('windowSeconds=900', (string) $curl->lastUrl);
+    }
+
+    // ── a read failure is recorded, not mistaken for "no data" ─────────────
+
+    /** @return array<string,array{0:int,1:string,2:?\Throwable}> */
+    public static function readFailureCases(): array
+    {
+        return [
+            'no-200'            => [500, '', null],
+            '404'               => [404, '{"error":"not_found"}', null],
+            '200 sin JSON'      => [200, '<html>gateway</html>', null],
+            '200 sin count'     => [200, '{"other":1}', null],
+            '200 count no int'  => [200, '{"count":"many"}', null],
+            'network exception' => [0, '', new \RuntimeException('Operation timed out')],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('readFailureCases')]
+    public function test_a_failed_read_is_reported_and_is_not_a_zero(int $status, string $body, ?\Throwable $throws): void
+    {
+        $svc = $this->buildFetcher($this->curlDouble($status, $body, $throws), $this->defaultConfig());
+
+        self::assertNull($svc->failedCheckoutCount(str_repeat('a', 64), 300));
+        self::assertSame(['failed_checkout_count'], $svc->takeReadFailures());
+        self::assertSame([], $svc->takeReadFailures(), 'takeReadFailures empties the list');
+    }
+
+    public function test_no_data_is_not_a_failure(): void
+    {
+        $curl = $this->curlDouble(200, json_encode(['count' => 0]));
+        $svc  = $this->buildFetcher($curl, $this->defaultConfig());
+        self::assertSame(0, $svc->failedCheckoutCount(str_repeat('b', 64), 300), 'un cero real sigue siendo un cero');
+        self::assertSame([], $svc->takeReadFailures());
+
+        // Not configured / arguments that need no network call: nobody to ask, so it is not a failure.
+        $svc = $this->buildFetcher($curl, []);
+        self::assertNull($svc->failedCheckoutCount(str_repeat('b', 64), 300));
+        self::assertNull($svc->failedCheckoutCount('', 300));
+        self::assertNull($svc->failedCheckoutCount(str_repeat('b', 64), 0));
+        self::assertSame([], $svc->takeReadFailures());
+    }
+
+    public function test_an_ssrf_or_non_https_rejection_is_a_failure_to_read(): void
+    {
+        $curl = $this->curlDouble(200, json_encode(['count' => 1]));
+        $svc  = $this->buildFetcher($curl, ['trusteed_general/general/api_base_url' => 'http://api.example.test'] + $this->defaultConfig());
+
+        self::assertNull($svc->failedCheckoutCount(str_repeat('c', 64), 300));
+        self::assertSame(0, $curl->getCallCount);
+        self::assertSame(['failed_checkout_count'], $svc->takeReadFailures());
+    }
+
+    public function test_failures_are_never_cached_and_an_unreadable_cache_entry_is_a_miss(): void
+    {
+        $store = [];
+        $cache = new class($store) implements CacheInterface {
+            public function __construct(public array &$store) {}
+            public function load($identifier) { return $this->store[$identifier] ?? false; }
+            public function save($data, $identifier, $tags = [], $lifeTime = null) { $this->store[$identifier] = $data; return true; }
+            public function remove($identifier) { return true; }
+            public function clean($tags = []) { return true; }
+        };
+        $make = fn (Curl $curl): AgentHistoryFetcher => new AgentHistoryFetcher(
+            new class($this->defaultConfig()) implements ScopeConfigInterface {
+                public function __construct(private array $v) {}
+                public function getValue($path, $scopeType = 'default', $scopeCode = null) { return $this->v[$path] ?? null; }
+                public function isSetFlag($path, $scopeType = 'default', $scopeCode = null) { return false; }
+            },
+            $curl,
+            $this->createMock(LoggerInterface::class),
+            $cache,
+            $this->createMock(OrderRepositoryInterface::class),
+            $this->createMock(CreditmemoRepositoryInterface::class),
+            new SearchCriteriaBuilder(),
+            new FilterBuilder(),
+        );
+
+        $hash = str_repeat('d', 64);
+        $make($this->curlDouble(500, ''))->failedCheckoutCount($hash, 300);
+        self::assertSame([], $store, 'a failure is not stored as "no signal" for 60 s');
+
+        $ok = $this->curlDouble(200, json_encode(['count' => 3]));
+        $fetcher = $make($ok);
+        self::assertSame(3, $fetcher->failedCheckoutCount($hash, 300));
+        self::assertSame(3, $fetcher->failedCheckoutCount($hash, 300));
+        self::assertSame(1, $ok->getCallCount, 'a success is cached');
+
+        foreach ($store as $k => $_) {
+            $store[$k] = 'basura';
+        }
+        $again = $this->curlDouble(200, json_encode(['count' => 7]));
+        self::assertSame(7, $make($again)->failedCheckoutCount($hash, 300), 'una entrada ilegible es un miss, no un null servido');
     }
 }

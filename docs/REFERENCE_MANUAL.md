@@ -505,7 +505,7 @@ Notes on the actual shape:
 - `store_views[]` lists every published store view with its base URL, so agents can do
   longest-prefix matching across multiple domains.
 - The `signed_payload` returned by the backend is served **verbatim**: the backend is
-  authoritative for `issuer`, `merchant_id` and `capabilities` (ADR-014), and serving its
+  authoritative for `issuer`, `merchant_id` and `capabilities`, and serving its
   exact bytes is what makes the detached JWS verify against what the agent received.
 - `schema_version` is the key `bin/magento trusteed:check-webserver` looks for when
   deciding whether the endpoint is serving a real manifest.

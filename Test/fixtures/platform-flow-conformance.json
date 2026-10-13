@@ -1,0 +1,2195 @@
+{
+  "_comment": "Shared conformance vectors for the platform enforcement flow. Every plugin port (PHP and Python) must reproduce these decisions. Invariant: a human checkout (no agentic signal) is never blocked by an outage on our side in any failure mode; only a merchant rule that applies to everyone can block it offline. For an agent, only the modes listed in _vocabulary.agentOpeningFailureModes let it through (exact comparison); any other value fails closed. Each port normalizes (trim and lowercase) and substitutes its default for missing values before deciding. Only true, 1 and \"1\" enable the layer. R999.human-only-example is a synthetic rule code.",
+  "_vocabulary": {
+    "failureModes": {
+      "woocommerce": [
+        "enforce",
+        "observe"
+      ],
+      "magento": [
+        "enforce",
+        "observe"
+      ],
+      "prestashop": [
+        "strict",
+        "balanced",
+        "permissive"
+      ],
+      "woocommerce_agentictools": [
+        "strict",
+        "balanced",
+        "permissive"
+      ],
+      "odoo": [
+        "strict",
+        "balanced",
+        "permissive"
+      ]
+    },
+    "agentOpeningFailureModes": {
+      "woocommerce": [
+        "observe"
+      ],
+      "magento": [
+        "observe"
+      ],
+      "prestashop": [
+        "balanced",
+        "permissive"
+      ],
+      "woocommerce_agentictools": [
+        "balanced",
+        "permissive"
+      ],
+      "odoo": [
+        "balanced",
+        "permissive"
+      ]
+    },
+    "unresolvedFailureModeSamples": [
+      "",
+      "unknown",
+      "STRICT",
+      "Enforce"
+    ]
+  },
+  "platformLocalRuleShortCodes": {
+    "prestashop": [],
+    "woocommerce_agentictools": [
+      "R001"
+    ]
+  },
+  "agenticDetection": [
+    {
+      "id": "organic-no-signal",
+      "signals": {
+        "agentId": null,
+        "tokenPresent": false,
+        "originMarker": false
+      },
+      "expected": false
+    },
+    {
+      "id": "empty-did-is-no-signal",
+      "signals": {
+        "agentId": "",
+        "tokenPresent": false,
+        "originMarker": false
+      },
+      "expected": false
+    },
+    {
+      "id": "did-only",
+      "signals": {
+        "agentId": "did:web:agent.example.com",
+        "tokenPresent": false,
+        "originMarker": false
+      },
+      "expected": true
+    },
+    {
+      "id": "token-only-even-if-invalid",
+      "signals": {
+        "agentId": null,
+        "tokenPresent": true,
+        "originMarker": false
+      },
+      "expected": true
+    },
+    {
+      "id": "origin-marker-only",
+      "signals": {
+        "agentId": null,
+        "tokenPresent": false,
+        "originMarker": true
+      },
+      "expected": true
+    },
+    {
+      "id": "all-signals",
+      "signals": {
+        "agentId": "did:web:agent.example.com",
+        "tokenPresent": true,
+        "originMarker": true
+      },
+      "expected": true
+    }
+  ],
+  "serverRouting": [
+    {
+      "id": "ps-only-r035-canonical",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R035.max-order-value",
+          "enabled": true
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "ps-only-r001",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R001.verified-agent-required",
+          "enabled": true
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "ps-only-r007-now-server",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R007.cross-merchant-abuse-signal",
+          "enabled": true
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "ps-only-r031-short",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R031",
+          "enabled": true
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "ps-disabled-only",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": false
+        }
+      ],
+      "expected": false
+    },
+    {
+      "id": "ps-enabled-absent-is-disabled",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls"
+        }
+      ],
+      "expected": false
+    },
+    {
+      "id": "ps-no-rules",
+      "port": "prestashop",
+      "rules": [],
+      "expected": false
+    },
+    {
+      "id": "wcat-only-r001",
+      "port": "woocommerce_agentictools",
+      "rules": [
+        {
+          "ruleCode": "R001.verified-agent-required",
+          "enabled": true
+        }
+      ],
+      "expected": false
+    },
+    {
+      "id": "wcat-only-r001-short",
+      "port": "woocommerce_agentictools",
+      "rules": [
+        {
+          "ruleCode": "R001",
+          "enabled": true
+        }
+      ],
+      "expected": false
+    },
+    {
+      "id": "wcat-r001-and-r043",
+      "port": "woocommerce_agentictools",
+      "rules": [
+        {
+          "ruleCode": "R001",
+          "enabled": true
+        },
+        {
+          "ruleCode": "R043.agent-checkout-approval-required",
+          "enabled": true
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "wcat-r001-and-disabled-r030",
+      "port": "woocommerce_agentictools",
+      "rules": [
+        {
+          "ruleCode": "R001",
+          "enabled": true
+        },
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": false
+        }
+      ],
+      "expected": false
+    },
+    {
+      "id": "wcat-only-r002-now-server",
+      "port": "woocommerce_agentictools",
+      "rules": [
+        {
+          "ruleCode": "R002.signature-spoof-block",
+          "enabled": true
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "wcat-only-r007-now-server",
+      "port": "woocommerce_agentictools",
+      "rules": [
+        {
+          "ruleCode": "R007.cross-merchant-abuse-signal",
+          "enabled": true
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "ps-enabled-int-1",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": 1
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "ps-enabled-string-1",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": "1"
+        }
+      ],
+      "expected": true
+    },
+    {
+      "id": "ps-enabled-int-0",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": 0
+        }
+      ],
+      "expected": false
+    },
+    {
+      "id": "ps-enabled-string-0",
+      "port": "prestashop",
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": "0"
+        }
+      ],
+      "expected": false
+    }
+  ],
+  "offlineValveScope": [
+    {
+      "id": "human-keeps-only-applies-to-all",
+      "isAgentic": false,
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": true,
+          "appliesTo": "ALL"
+        },
+        {
+          "ruleCode": "R029.merchant-preset",
+          "enabled": true,
+          "appliesTo": "AGENT"
+        },
+        {
+          "ruleCode": "R028.b2b-po-guard",
+          "enabled": true,
+          "appliesTo": "AGENT"
+        },
+        {
+          "ruleCode": "R019.country-jurisdiction",
+          "enabled": true,
+          "appliesTo": "ALL"
+        },
+        {
+          "ruleCode": "R014.delivery-risk-guard",
+          "enabled": true
+        }
+      ],
+      "expectedCodes": [
+        "R030.simple-controls",
+        "R019.country-jurisdiction"
+      ]
+    },
+    {
+      "id": "human-applies-to-is-case-insensitive",
+      "isAgentic": false,
+      "rules": [
+        {
+          "ruleCode": "R030",
+          "enabled": true,
+          "appliesTo": "all"
+        },
+        {
+          "ruleCode": "R029",
+          "enabled": true,
+          "appliesTo": "agent"
+        }
+      ],
+      "expectedCodes": [
+        "R030"
+      ]
+    },
+    {
+      "id": "human-without-applies-to-keeps-nothing",
+      "isAgentic": false,
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": true
+        },
+        {
+          "ruleCode": "R020.business-hours",
+          "enabled": true
+        }
+      ],
+      "expectedCodes": []
+    },
+    {
+      "id": "agent-keeps-everything",
+      "isAgentic": true,
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": true,
+          "appliesTo": "ALL"
+        },
+        {
+          "ruleCode": "R029.merchant-preset",
+          "enabled": true,
+          "appliesTo": "AGENT"
+        },
+        {
+          "ruleCode": "R014.delivery-risk-guard",
+          "enabled": true
+        }
+      ],
+      "expectedCodes": [
+        "R030.simple-controls",
+        "R029.merchant-preset",
+        "R014.delivery-risk-guard"
+      ]
+    },
+    {
+      "id": "human-keeps-applies-to-human",
+      "isAgentic": false,
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": true,
+          "appliesTo": "ALL"
+        },
+        {
+          "ruleCode": "R999.human-only-example",
+          "enabled": true,
+          "appliesTo": "HUMAN"
+        },
+        {
+          "ruleCode": "R001.verified-agent-required",
+          "enabled": true,
+          "appliesTo": "AGENT"
+        }
+      ],
+      "expectedCodes": [
+        "R030.simple-controls",
+        "R999.human-only-example"
+      ]
+    },
+    {
+      "id": "agent-drops-applies-to-human",
+      "isAgentic": true,
+      "rules": [
+        {
+          "ruleCode": "R030.simple-controls",
+          "enabled": true,
+          "appliesTo": "ALL"
+        },
+        {
+          "ruleCode": "R999.human-only-example",
+          "enabled": true,
+          "appliesTo": "HUMAN"
+        },
+        {
+          "ruleCode": "R001.verified-agent-required",
+          "enabled": true,
+          "appliesTo": "AGENT"
+        },
+        {
+          "ruleCode": "R014.delivery-risk-guard",
+          "enabled": true
+        }
+      ],
+      "expectedCodes": [
+        "R030.simple-controls",
+        "R001.verified-agent-required",
+        "R014.delivery-risk-guard"
+      ]
+    }
+  ],
+  "unavailableDecision": [
+    {
+      "id": "human-enforce",
+      "isAgentic": false,
+      "failureMode": "enforce",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "human-observe",
+      "isAgentic": false,
+      "failureMode": "observe",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "human-strict",
+      "isAgentic": false,
+      "failureMode": "strict",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "human-balanced",
+      "isAgentic": false,
+      "failureMode": "balanced",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "human-permissive",
+      "isAgentic": false,
+      "failureMode": "permissive",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "human-own-cap-still-blocks-offline",
+      "isAgentic": false,
+      "failureMode": "enforce",
+      "offlineBlock": true,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "human-own-cap-blocks-offline-even-permissive",
+      "isAgentic": false,
+      "failureMode": "permissive",
+      "offlineBlock": true,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "agent-enforce",
+      "isAgentic": true,
+      "failureMode": "enforce",
+      "offlineBlock": false,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "agent-observe",
+      "isAgentic": true,
+      "failureMode": "observe",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "agent-observe-offline-block",
+      "isAgentic": true,
+      "failureMode": "observe",
+      "offlineBlock": true,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "agent-strict",
+      "isAgentic": true,
+      "failureMode": "strict",
+      "offlineBlock": false,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "agent-balanced",
+      "isAgentic": true,
+      "failureMode": "balanced",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "agent-permissive",
+      "isAgentic": true,
+      "failureMode": "permissive",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "agent-unresolved-empty",
+      "isAgentic": true,
+      "failureMode": "",
+      "offlineBlock": false,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "agent-unresolved-unknown",
+      "isAgentic": true,
+      "failureMode": "unknown",
+      "offlineBlock": false,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "agent-unresolved-STRICT",
+      "isAgentic": true,
+      "failureMode": "STRICT",
+      "offlineBlock": false,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "agent-unresolved-Enforce",
+      "isAgentic": true,
+      "failureMode": "Enforce",
+      "offlineBlock": false,
+      "expected": "BLOCK"
+    },
+    {
+      "id": "human-unresolved-empty",
+      "isAgentic": false,
+      "failureMode": "",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "human-unresolved-unknown",
+      "isAgentic": false,
+      "failureMode": "unknown",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "human-unresolved-STRICT",
+      "isAgentic": false,
+      "failureMode": "STRICT",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    },
+    {
+      "id": "human-unresolved-Enforce",
+      "isAgentic": false,
+      "failureMode": "Enforce",
+      "offlineBlock": false,
+      "expected": "ALLOW"
+    }
+  ],
+  "degradedEnforcement": {
+    "_comment": "Decisions when enforcement is degraded. Each vector carries the failureMode already resolved by the port. For an agent: invalid_signature blocks in every mode; missing_snapshot with a token blocks in every mode (the token cannot be verified without the snapshot resolver); missing_snapshot without a token follows the mode; evaluator_unavailable (verified snapshot, cached or not) follows the mode and the offline safety valve; layer_disabled is configuration, not an outage, and allows. A human is never closed by an outage; only the offline block of a VERIFIED snapshot (evaluator_unavailable) can block one. offlineBlock is ignored for invalid_signature and missing_snapshot.",
+    "adoption": {
+      "woocommerce": "Port note for woocommerce: distinguishes an invalid signature, a missing snapshot and a disabled layer, and passes whether a token was presented.",
+      "magento": "Port note for magento: distinguishes an invalid signature, a missing snapshot and a disabled layer, and passes whether a token was presented.",
+      "prestashop": "Port note for prestashop: distinguishes an invalid signature, a missing snapshot and a disabled layer, and passes whether a token was presented.",
+      "woocommerce_agentictools": "Port note for woocommerce_agentictools: distinguishes an invalid signature, a missing snapshot and a disabled layer, and passes whether a token was presented.",
+      "odoo": "Port note for odoo: distinguishes an invalid signature, a missing snapshot and a disabled layer, and passes whether a token was presented."
+    },
+    "vectors": [
+      {
+        "id": "woocommerce.invalid_signature.agent-token.enforce",
+        "port": "woocommerce",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.invalid_signature.agent-token.observe",
+        "port": "woocommerce",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.invalid_signature.agent-no-token.observe",
+        "port": "woocommerce",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.invalid_signature.human-offline-block-ignored.observe",
+        "port": "woocommerce",
+        "kind": "invalid_signature",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": true,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce.missing_snapshot.agent-token.enforce",
+        "port": "woocommerce",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.missing_snapshot.agent-token.observe",
+        "port": "woocommerce",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.missing_snapshot.agent-no-token.enforce",
+        "port": "woocommerce",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.missing_snapshot.agent-no-token.observe",
+        "port": "woocommerce",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce.missing_snapshot.agent-no-token.unresolved-empty",
+        "port": "woocommerce",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.missing_snapshot.human.enforce",
+        "port": "woocommerce",
+        "kind": "missing_snapshot",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce.evaluator_unavailable.cached-snapshot.agent-token.enforce",
+        "port": "woocommerce",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.evaluator_unavailable.cached-snapshot.agent-token.observe",
+        "port": "woocommerce",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce.evaluator_unavailable.cached-snapshot.agent-offline-block.observe",
+        "port": "woocommerce",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.evaluator_unavailable.cached-snapshot.human.enforce",
+        "port": "woocommerce",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce.evaluator_unavailable.cached-snapshot.human-own-cap.observe",
+        "port": "woocommerce",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce.layer_disabled.agent-token.enforce",
+        "port": "woocommerce",
+        "kind": "layer_disabled",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce.layer_disabled.human.enforce",
+        "port": "woocommerce",
+        "kind": "layer_disabled",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "magento.invalid_signature.agent-token.enforce",
+        "port": "magento",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.invalid_signature.agent-token.observe",
+        "port": "magento",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.invalid_signature.agent-no-token.observe",
+        "port": "magento",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.invalid_signature.human-offline-block-ignored.observe",
+        "port": "magento",
+        "kind": "invalid_signature",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": true,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "magento.missing_snapshot.agent-token.enforce",
+        "port": "magento",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.missing_snapshot.agent-token.observe",
+        "port": "magento",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.missing_snapshot.agent-no-token.enforce",
+        "port": "magento",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.missing_snapshot.agent-no-token.observe",
+        "port": "magento",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "magento.missing_snapshot.agent-no-token.unresolved-empty",
+        "port": "magento",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.missing_snapshot.human.enforce",
+        "port": "magento",
+        "kind": "missing_snapshot",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "magento.evaluator_unavailable.cached-snapshot.agent-token.enforce",
+        "port": "magento",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.evaluator_unavailable.cached-snapshot.agent-token.observe",
+        "port": "magento",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "observe",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "magento.evaluator_unavailable.cached-snapshot.agent-offline-block.observe",
+        "port": "magento",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.evaluator_unavailable.cached-snapshot.human.enforce",
+        "port": "magento",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "magento.evaluator_unavailable.cached-snapshot.human-own-cap.observe",
+        "port": "magento",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "observe",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "magento.layer_disabled.agent-token.enforce",
+        "port": "magento",
+        "kind": "layer_disabled",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "magento.layer_disabled.human.enforce",
+        "port": "magento",
+        "kind": "layer_disabled",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "enforce",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.invalid_signature.agent-token.strict",
+        "port": "prestashop",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.invalid_signature.agent-token.balanced",
+        "port": "prestashop",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.invalid_signature.agent-token.permissive",
+        "port": "prestashop",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.invalid_signature.agent-no-token.balanced",
+        "port": "prestashop",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.invalid_signature.agent-no-token.permissive",
+        "port": "prestashop",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.invalid_signature.human-offline-block-ignored.permissive",
+        "port": "prestashop",
+        "kind": "invalid_signature",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.missing_snapshot.agent-token.strict",
+        "port": "prestashop",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.missing_snapshot.agent-token.balanced",
+        "port": "prestashop",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.missing_snapshot.agent-token.permissive",
+        "port": "prestashop",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.missing_snapshot.agent-no-token.strict",
+        "port": "prestashop",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.missing_snapshot.agent-no-token.balanced",
+        "port": "prestashop",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.missing_snapshot.agent-no-token.permissive",
+        "port": "prestashop",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.missing_snapshot.agent-no-token.unresolved-empty",
+        "port": "prestashop",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.missing_snapshot.human.strict",
+        "port": "prestashop",
+        "kind": "missing_snapshot",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.evaluator_unavailable.cached-snapshot.agent-token.strict",
+        "port": "prestashop",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK",
+        "note": "Evaluator down with a cached snapshot the valve does not use to block; in strict mode the agent does not pass."
+      },
+      {
+        "id": "prestashop.evaluator_unavailable.cached-snapshot.agent-token.balanced",
+        "port": "prestashop",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.evaluator_unavailable.cached-snapshot.agent-token.permissive",
+        "port": "prestashop",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.evaluator_unavailable.cached-snapshot.agent-offline-block.permissive",
+        "port": "prestashop",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.evaluator_unavailable.cached-snapshot.human.strict",
+        "port": "prestashop",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.evaluator_unavailable.cached-snapshot.human-own-cap.permissive",
+        "port": "prestashop",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "prestashop.layer_disabled.agent-token.strict",
+        "port": "prestashop",
+        "kind": "layer_disabled",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "prestashop.layer_disabled.human.strict",
+        "port": "prestashop",
+        "kind": "layer_disabled",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.invalid_signature.agent-token.strict",
+        "port": "woocommerce_agentictools",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.invalid_signature.agent-token.balanced",
+        "port": "woocommerce_agentictools",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.invalid_signature.agent-token.permissive",
+        "port": "woocommerce_agentictools",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.invalid_signature.agent-no-token.balanced",
+        "port": "woocommerce_agentictools",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.invalid_signature.agent-no-token.permissive",
+        "port": "woocommerce_agentictools",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.invalid_signature.human-offline-block-ignored.permissive",
+        "port": "woocommerce_agentictools",
+        "kind": "invalid_signature",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.missing_snapshot.agent-token.strict",
+        "port": "woocommerce_agentictools",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.missing_snapshot.agent-token.balanced",
+        "port": "woocommerce_agentictools",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.missing_snapshot.agent-token.permissive",
+        "port": "woocommerce_agentictools",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.missing_snapshot.agent-no-token.strict",
+        "port": "woocommerce_agentictools",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.missing_snapshot.agent-no-token.balanced",
+        "port": "woocommerce_agentictools",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.missing_snapshot.agent-no-token.permissive",
+        "port": "woocommerce_agentictools",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.missing_snapshot.agent-no-token.unresolved-empty",
+        "port": "woocommerce_agentictools",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.missing_snapshot.human.strict",
+        "port": "woocommerce_agentictools",
+        "kind": "missing_snapshot",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.evaluator_unavailable.cached-snapshot.agent-token.strict",
+        "port": "woocommerce_agentictools",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.evaluator_unavailable.cached-snapshot.agent-token.balanced",
+        "port": "woocommerce_agentictools",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.evaluator_unavailable.cached-snapshot.agent-token.permissive",
+        "port": "woocommerce_agentictools",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.evaluator_unavailable.cached-snapshot.agent-offline-block.permissive",
+        "port": "woocommerce_agentictools",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.evaluator_unavailable.cached-snapshot.human.strict",
+        "port": "woocommerce_agentictools",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.evaluator_unavailable.cached-snapshot.human-own-cap.permissive",
+        "port": "woocommerce_agentictools",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "woocommerce_agentictools.layer_disabled.agent-token.strict",
+        "port": "woocommerce_agentictools",
+        "kind": "layer_disabled",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "woocommerce_agentictools.layer_disabled.human.strict",
+        "port": "woocommerce_agentictools",
+        "kind": "layer_disabled",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.invalid_signature.agent-token.strict",
+        "port": "odoo",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.invalid_signature.agent-token.balanced",
+        "port": "odoo",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.invalid_signature.agent-token.permissive",
+        "port": "odoo",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK",
+        "note": "Invalid snapshot signature; closes even in permissive mode."
+      },
+      {
+        "id": "odoo.invalid_signature.agent-no-token.balanced",
+        "port": "odoo",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.invalid_signature.agent-no-token.permissive",
+        "port": "odoo",
+        "kind": "invalid_signature",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.invalid_signature.human-offline-block-ignored.permissive",
+        "port": "odoo",
+        "kind": "invalid_signature",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.missing_snapshot.agent-token.strict",
+        "port": "odoo",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.missing_snapshot.agent-token.balanced",
+        "port": "odoo",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "BLOCK",
+        "note": "No snapshot: with a token present the agent is closed."
+      },
+      {
+        "id": "odoo.missing_snapshot.agent-token.permissive",
+        "port": "odoo",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.missing_snapshot.agent-no-token.strict",
+        "port": "odoo",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.missing_snapshot.agent-no-token.balanced",
+        "port": "odoo",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.missing_snapshot.agent-no-token.permissive",
+        "port": "odoo",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.missing_snapshot.agent-no-token.unresolved-empty",
+        "port": "odoo",
+        "kind": "missing_snapshot",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.missing_snapshot.human.strict",
+        "port": "odoo",
+        "kind": "missing_snapshot",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.evaluator_unavailable.cached-snapshot.agent-token.strict",
+        "port": "odoo",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.evaluator_unavailable.cached-snapshot.agent-token.balanced",
+        "port": "odoo",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "balanced",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.evaluator_unavailable.cached-snapshot.agent-token.permissive",
+        "port": "odoo",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "permissive",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.evaluator_unavailable.cached-snapshot.agent-offline-block.permissive",
+        "port": "odoo",
+        "kind": "evaluator_unavailable",
+        "isAgentic": true,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.evaluator_unavailable.cached-snapshot.human.strict",
+        "port": "odoo",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.evaluator_unavailable.cached-snapshot.human-own-cap.permissive",
+        "port": "odoo",
+        "kind": "evaluator_unavailable",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "permissive",
+        "offlineBlock": true,
+        "expected": "BLOCK"
+      },
+      {
+        "id": "odoo.layer_disabled.agent-token.strict",
+        "port": "odoo",
+        "kind": "layer_disabled",
+        "isAgentic": true,
+        "tokenPresent": true,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      },
+      {
+        "id": "odoo.layer_disabled.human.strict",
+        "port": "odoo",
+        "kind": "layer_disabled",
+        "isAgentic": false,
+        "tokenPresent": false,
+        "failureMode": "strict",
+        "offlineBlock": false,
+        "expected": "ALLOW"
+      }
+    ]
+  },
+  "snapshotResolverShape": {
+    "_comment": "Shape of the agent DID resolver the server emits: a LIST of {did, publicKeyJwk:{kty,crv,x,kid?}}. The older map {did: jwk} is also accepted. With a list, the last well-formed entry for the DID wins; a malformed entry is ignored without throwing; a map only yields its own keys. 'expected' is the resolved key or null. The x values are public example keys. The snapshot payload does not expire (dates in 2099) so no port sees it as stale.",
+    "snapshotPayload": {
+      "schemaVersion": 1,
+      "merchantId": "11111111-2222-3333-4444-555555555555",
+      "ruleSetVersion": 3,
+      "generatedAt": "2099-12-31T23:00:00.000Z",
+      "validUntil": "2099-12-31T23:01:00.000Z",
+      "issuedAt": 4102441200,
+      "expiresAt": 4102441260,
+      "fallbackMode": "balanced",
+      "killSwitch": false,
+      "rules": [
+        {
+          "ruleCode": "R001.verified-agent-required",
+          "enabled": true,
+          "mode": "enforce",
+          "appliesTo": "AGENT",
+          "tier": 1,
+          "params": {}
+        }
+      ],
+      "agentDidResolver": [
+        {
+          "did": "did:web:agent-a.example.com",
+          "publicKeyJwk": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+          }
+        },
+        {
+          "did": "did:key:z6MkExampleAgentB",
+          "publicKeyJwk": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+            "kid": "did:key:z6MkExampleAgentB#key-1"
+          }
+        }
+      ],
+      "providerJwks": [],
+      "endpointClassifier": [],
+      "snapshotKeyAnchors": {
+        "currentKid": "trusteed-snapshot-example-kid"
+      },
+      "evaluatorVersion": "1.0.0"
+    },
+    "vectors": [
+      {
+        "id": "list.did-present",
+        "form": "list",
+        "fromSnapshotPayload": true,
+        "resolver": [
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+            }
+          },
+          {
+            "did": "did:key:z6MkExampleAgentB",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+              "kid": "did:key:z6MkExampleAgentB#key-1"
+            }
+          }
+        ],
+        "did": "did:web:agent-a.example.com",
+        "expected": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+        }
+      },
+      {
+        "id": "list.did-present-with-kid",
+        "form": "list",
+        "fromSnapshotPayload": true,
+        "resolver": [
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+            }
+          },
+          {
+            "did": "did:key:z6MkExampleAgentB",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+              "kid": "did:key:z6MkExampleAgentB#key-1"
+            }
+          }
+        ],
+        "did": "did:key:z6MkExampleAgentB",
+        "expected": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+          "kid": "did:key:z6MkExampleAgentB#key-1"
+        }
+      },
+      {
+        "id": "list.did-absent",
+        "form": "list",
+        "fromSnapshotPayload": true,
+        "resolver": [
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+            }
+          },
+          {
+            "did": "did:key:z6MkExampleAgentB",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+              "kid": "did:key:z6MkExampleAgentB#key-1"
+            }
+          }
+        ],
+        "did": "did:web:not-listed.example.com",
+        "expected": null
+      },
+      {
+        "id": "list.did-is-case-sensitive",
+        "form": "list",
+        "fromSnapshotPayload": true,
+        "resolver": [
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+            }
+          },
+          {
+            "did": "did:key:z6MkExampleAgentB",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+              "kid": "did:key:z6MkExampleAgentB#key-1"
+            }
+          }
+        ],
+        "did": "DID:WEB:AGENT-A.EXAMPLE.COM",
+        "expected": null
+      },
+      {
+        "id": "list.empty",
+        "form": "list",
+        "resolver": [],
+        "did": "did:web:agent-a.example.com",
+        "expected": null
+      },
+      {
+        "id": "list.last-valid-entry-wins",
+        "form": "list",
+        "resolver": [
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+            }
+          },
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "iaNERNHteABw7N0it6onqAmXVIH4qbj_uNPqB3sCkck"
+            }
+          }
+        ],
+        "did": "did:web:agent-a.example.com",
+        "expected": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "iaNERNHteABw7N0it6onqAmXVIH4qbj_uNPqB3sCkck"
+        }
+      },
+      {
+        "id": "list.malformed-entries-ignored",
+        "form": "list_malformed",
+        "resolver": [
+          "did:web:agent-a.example.com",
+          null,
+          42,
+          [],
+          {
+            "did": 123,
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+            }
+          },
+          {
+            "did": "did:web:agent-a.example.com"
+          },
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": "not-an-object"
+          },
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": []
+          },
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519"
+            }
+          },
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": ""
+            }
+          },
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+            }
+          }
+        ],
+        "did": "did:web:agent-a.example.com",
+        "expected": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+        }
+      },
+      {
+        "id": "list.later-malformed-does-not-override",
+        "form": "list_malformed",
+        "resolver": [
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+            }
+          },
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": 7
+            }
+          }
+        ],
+        "did": "did:web:agent-a.example.com",
+        "expected": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+        }
+      },
+      {
+        "id": "list.only-malformed-for-did",
+        "form": "list_malformed",
+        "resolver": [
+          {
+            "did": "did:web:agent-a.example.com",
+            "publicKeyJwk": null
+          },
+          {
+            "did": "did:key:z6MkExampleAgentB",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+              "kid": "did:key:z6MkExampleAgentB#key-1"
+            }
+          }
+        ],
+        "did": "did:web:agent-a.example.com",
+        "expected": null
+      },
+      {
+        "id": "map.did-present",
+        "form": "map",
+        "resolver": {
+          "did:web:agent-a.example.com": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+          },
+          "did:key:z6MkExampleAgentB": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+            "kid": "did:key:z6MkExampleAgentB#key-1"
+          }
+        },
+        "did": "did:web:agent-a.example.com",
+        "expected": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+        }
+      },
+      {
+        "id": "map.did-present-with-kid",
+        "form": "map",
+        "resolver": {
+          "did:web:agent-a.example.com": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+          },
+          "did:key:z6MkExampleAgentB": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+            "kid": "did:key:z6MkExampleAgentB#key-1"
+          }
+        },
+        "did": "did:key:z6MkExampleAgentB",
+        "expected": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+          "kid": "did:key:z6MkExampleAgentB#key-1"
+        }
+      },
+      {
+        "id": "map.did-absent",
+        "form": "map",
+        "resolver": {
+          "did:web:agent-a.example.com": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+          },
+          "did:key:z6MkExampleAgentB": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "x": "MGwWx8DIcnt23Er-h_QW3Kx_i-m97vZPeWrTYtuUcII",
+            "kid": "did:key:z6MkExampleAgentB#key-1"
+          }
+        },
+        "did": "did:web:not-listed.example.com",
+        "expected": null
+      },
+      {
+        "id": "map.x-only",
+        "form": "map",
+        "resolver": {
+          "did:web:agent-a.example.com": {
+            "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+          }
+        },
+        "did": "did:web:agent-a.example.com",
+        "expected": {
+          "x": "yBkzJba5S5Fo8INuKmasEBw5-TWJmSlltRWrGBLqxQM"
+        }
+      },
+      {
+        "id": "map.empty",
+        "form": "map",
+        "resolver": {},
+        "did": "did:web:agent-a.example.com",
+        "expected": null
+      },
+      {
+        "id": "map.malformed-value-ignored",
+        "form": "map_malformed",
+        "resolver": {
+          "did:web:agent-a.example.com": "not-an-object",
+          "did:key:z6MkExampleAgentB": {
+            "x": 5
+          }
+        },
+        "did": "did:web:agent-a.example.com",
+        "expected": null
+      },
+      {
+        "id": "map.prototype-key-not-resolved",
+        "form": "map",
+        "resolver": {},
+        "did": "constructor",
+        "expected": null
+      },
+      {
+        "id": "other.null",
+        "form": "other",
+        "resolver": null,
+        "did": "did:web:agent-a.example.com",
+        "expected": null
+      },
+      {
+        "id": "other.string",
+        "form": "other",
+        "resolver": "did:web:agent-a.example.com",
+        "did": "did:web:agent-a.example.com",
+        "expected": null
+      },
+      {
+        "id": "other.number",
+        "form": "other",
+        "resolver": 0,
+        "did": "did:web:agent-a.example.com",
+        "expected": null
+      }
+    ]
+  },
+  "compressedSnapshot": {
+    "_comment": "Compressed snapshot vectors (zip header \"DEF\", raw DEFLATE per RFC 1951). Contract for every port: (1) verify the signature over the received bytes; (2) only then decode: no zip header means plain JSON; zip exactly 'DEF' means inflate raw DEFLATE with a cap of maxInflatedBytes (exactly the cap is accepted, one more is not); any other zip value, corrupt or truncated stream, empty output, or output that is not a JSON object is unusable. Unusable is not tampering (the signature verified): it is classified as unavailable (missing_snapshot), never tampered. Tampered only when the signature does not verify. Keys derive from public labels: Ed25519 seed = SHA-256(UTF-8(label)).",
+    "maxInflatedBytes": 2097152,
+    "signerDeflateThresholdBytes": 51200,
+    "jwks": {
+      "keys": [
+        {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "SvYpWBkYmnnC4YaPre_-II9jv3t0jPFFMi6TIyLS58k",
+          "kid": "trusteed-conformance-compressed-snapshot-kid",
+          "alg": "EdDSA",
+          "use": "sig"
+        }
+      ]
+    },
+    "signingKeySeedLabel": "trusteed-conformance/compressed-snapshot/signing-key/v1",
+    "agent": {
+      "did": "did:web:conformance-agent.example.com",
+      "kid": "did:web:conformance-agent.example.com#key-1",
+      "seedLabel": "trusteed-conformance/compressed-snapshot/agent-key/v1",
+      "publicKeyX": "EbvSnKbDGLZ5OF-iwx5sfd16b8LrdaT7GVTWeMEXtGk"
+    },
+    "vectors": [
+      {
+        "id": "valid.deflated-by-real-signer",
+        "note": "builder + firmador reales, 300 DIDs: payload > 50 KB ⇒ zip DEF. Debe verificar y leerse entero.",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.rb1Zj7PqlqD5X6JvNyeZhy31BWAzgwGDwZRSCDObeR5S-d9be-ep6tNVTXQjKq6--BSGBax3Pe_E4__4GcIsroJX3A95U__8Cf3xU8V9mAX1KEY_f_5A__wBYBiGAQRBEABFURTA_uXn54-ffirjZzz-j8Og8B8_aVzHfTDGET3-_PkDgxQFQDCAQBaM_AmCf4LgP0AQ9H7--JmDMo_seszL__XvoH_5uyQoy08QFmoTxT9__nyCMqjDOPr546fIy_K55GOY_fyZBOUQ_1dEw8-f_-0__v4X-18fMUEQ-scc93mSxxEQpHE9An3cTXn_92HiOviUcfTz59hP8R8_1X99KK6Tpg_jnz9-grYt83iwmp8_f2j-rlk_f_yMedz_fdvaoA-q4efP__jP__zjfz4p_I8hT-tgnPoYGNqmSYBP2YTFv57yn2H_85zNZ4j7-fdzwr-eE6L-ETZTPfYb8J36fIjycPzr0Zy8SkX5fz3fz9_xxxH79ynyv-_0j6z__PEjmj9__DzfP3_8sPbPv_-vcSHgP4a8assYCJt67Jty-N8VUhWsdPVXPGxcj8PPnxj4189__ue___Hz95O-5ZEZD005__XJ__YfP1H-V4JHefTnEn_-TPKyjHsABMF_xGvwV4D_CJvq54-fdvqUeSjHm7QUf52mGLefP38ef19s2M8_f_7cIxjDIOrnj5_1588fwaVBdRMezwkybUniE6n_srxYxkzkYAIZAY_WUFjbDvPh78z9_w7i_yjiDYB-_r6XB0FDF4OWDQS2tLaYSFmM8l5HvgSrFS_KlYcdlruBUYVuWe0RCH4JGjoZNHwxaPihqz0OtmA8D1ihIgv8yusRAh8f1toRJxah21yaMOLcfgkaPhk0cjHodcRgG1mhhQkKSvx4Npua1p0YvpSfaL7DjjnQgiTK8G_wOGjkZNDoxaBJTty2FO4hZyd1C4knDhsVynfgxyanoOY4j1zjs33hUPU4aPRk0NjFoONXhCHePCFtszVkZzayKn0UuzWSVlr6FZT053dxX1b_-SU9sJNB4xeDnjujbiSC5QqbY16TSzAIRhmpI7PKrWqixycub1qHPuvNOA4aPxk0cTHo1vyiuqVJ7izDX_ceqt-IaBrX__pwh3P7sCSRofXAc_J-yWniZNDkxaC5JRAtNYdhvhIcPQ2ykJlTBwJ7lC4l-vVA79uY3MpAWn4JmjwZNHUx6KGBMGAzClpYoIKi-7oQ5krc3pyrYehzdcPMHL4t5WPGLzlNnQsaukpEeKJQa4nBDSXk6ZFSdz_c43mujXbtXnbNSx-VGn2tnZHwMGjoJBGhq0QcyB6wB7AZfZwtvhhTu7a3V7AmMdh7fwmDTHdP3q2kAVyOgz5JROgqER96rXV-5SzbBpbB00h8mf9SWTI-yFutYNO9TO83dEX7qDkO-iQRoatEzFIRNeeaROaN4FnDk0hgK0cwMZ68CjrcID1rKE7bdQfR46BPEhG6SkThvU4YBYrDszTKZHXslCqoRIyhXe_rpnPp5i5Fal-_afI46JNEhK4SUZPgx7v7pghPxqlqrc54b8iv5OTJAHlKZlr5Y8-BSlcD-zjok0SErhLR2FmzDqNv2sV9LMlhaQElfTfgFrFNrXFM-qNUSm37DnZMROgkEaGrRExsIMRW19gC7-HLMiPFKl8_7zLrvbO2MvHncAseTfrNkl-qx0kiQleJaCSt6IwRlj8MjWN8apjF8G2RDZ_C201MuXrveVtXw_X9S50-SUToKhHNjKadrOSCJFPKDEj9J2vG_StLFc-JtihBsEwZQyXU4_dx0CeJCF8lolPfWOiBjktfxwjSIj3wzoNbhadA3hdmLe2sUYm4LqsofRg0fJKI8FUiJsHrA-3L3Va5pz0GRCjrA1cH6U1_z1XE2_KC2t2UifD3uHrAJ4kIXyVivrUtFCihw9fOE7bxYPWDu-varzcgIchdXV3j23RclhT346BPEhG-SsRv0IKgs31yn0nbpGcKG-rLNz9TFERPpOhjcVGsigRKxDER4ZNEhK8S0RNUjlbHeyPlpQzbVpeaHueysfBx8VfgSbEeadyWdH74S06fJCJ8lYj4q39mUlcIpVkP_JeQwYEJQ8yMxyDkuiDZcwAKnl8DAX4J-iQR4atEFHp9bDSBUIs-D7DPpOhil-BEw2Q0lWZkNJjlMLxFo_v8ktMniQhfJeIK3F-DHkdexXxIUVqTF0tvIVTRlHYHnCnXhudr4aAkSo-7pvBJIsJXiZiW9BDWpaqGeyVEshh88c6UV3i4kS_JmxgTMmnHnrZI_qUhniQifJWIaxFlRe1upvUtq-z2tr03mEDfm5CIWdSwD5pBBEbnCcM8HiPCJ4mIXCVirpQKSZM1kxO8-pTDkdKTbrPA5R6AH9lyUrrQ7c-z1OzjhoicJCJylYhLxwk4Djx2GOqGQYfcvEPuha6IzZKbtELZeBPRoUEQxPG0GHKSiMhVIvov-VHH4VC_dUYZ0qR_u35xa9jGMjLvbjJ6tUZuQfeIe5zTyEkiIleJOAxYPDNxBdNDOAFw9FkIQlhXYDLm-U4qOzAXmUtidLenx0GfJCJylYiouWury9jiXOqMk3nrY78LU6VHfq_oGmBtxXNeLVYOkuOuKXKSiMhVIjqwUoWFn8sjYbF9BzLj_AJ9dNXvEtvbSm6NxXcAvyDgHw8CkJNERK4SEdihlBHrDF-4OXZ9jRkx8Y3ZM_0qUtCN2p30n3f6OaDzcclDThIRuUpEseC0EsbWG1_MiPJK8ycDr944uWwGlRM9saMq0jfqIWm_lLyTRESuEnF8YW7D-WvjS9K3ryIayUAqtNr4OdShYcEiROepg7OK8kvJO0lE5CoRgToZv7yBF1b0pd_S3jxuMJGSntJWZWxRrPN4dbSk3nzul4Z4kojoVSJaygd8MPMSLExyd6ZNmcDYowAGDRStsbSby3zuLmgGK3k874GeJCJ6lYiq1t0dmJNUWKunIMOi-PvdVHjSXD8ioBbXUDBErKovwuNpMfQkEdGrRLyRS29oJKqNtCgYRR2ADtsavFC68fP1rJf-W8D6qwX94HglAD1JRPQqEcUn8HQqDMKWuDHyMgcdfKl4-TuNSitP2-BIvv7MHkGDHJc89CQR0atEFPsqHsaXL8yoC8CvMN-UL8Bk36YgTM11E_LbThSrPrL5l_Q4SUT0KhEpT2uqJ_F8vPmkgR-PJnoSBcHwMlcWpkC4Ed2bDN2XZXzcYUJPEhG9SkQGdVsGVlRUViPB-0o7gO2c--3MJvsULxLBSHZ6yynzgX7J6ZNERK8SkZpFwuSyOTJd-0nhmhUqdlKVvp9yiS-zcq_b_uP9RlXqeNYUPUlE9PIY0WsTZFD7FnQkDwcpaAP1qKJZ08hXv8moj2RN95kb2_iXOn2SiOhVIn5yhHqzHze83Uvjs7dUBb8_WkchbxvtESP02IjLvl3qqMcYR08SEbtKRN7h8MfD-351N33VBIErD7cCvdcXtfMEh2_8m8_H-5jm63HJw04SEbtKxL33YdQOndTSJWnvmzwNOUjI4SAJP_CHtICc_0gDx7-M4_TAThIRu0pEdrrn37vBkxgVwNu7bH2WwBc5DXiPkRS1gwLReMXgUM3HJQ87SUTsKhEFkse-4sArZWAn8cZNdicP90Hyn1PKEbhfQzcxaz0fH35Jj5NExK4S8SFmckUJLh_GabkBJdf7lgkTmegSCIHEldC8_aWPirT8JT1OEhG7SkRwUyT0pjVk5-BGBe2ouSy6_376n4cQWw0kSV2IAvYC5-Jx0CeJiF0lYreaROU535s5viLlYe3UuOUaxgUZy_JiZFSP9FOlq9b_sgsBO0lE7CoRHw9JrF0NUWbVesFho4IveUWG0mTN_FWFStj07xt7byKjOA76JBGxq0T0THgcVSVXUphuodYJa7gxFE1E7eW-96XFCRRMZ8xd3X-pHieJiF0lIkS-QJ0qBXrCRM-HueYhz9xnZl_M_vluoiQxr15buFi2jmeYsJNExC-PEdkbUfpf9i0xEJnKcns3AnAUuLdNls57fVBO_ASykkq34w4TfpKI-FUicti0y9D7DWoZUxIau-clu8fuR3TYh9MQ1Yu5F-tktdP9eB0RP0lE_CoRZ4HEb1re5N1S1vTsmGEQuaramgaGKck7ANVSjTt1c5rjhoifJCJ-lYhhMT99HAeSiDYxcdJ7aMrRrE7uJIzjzG6obJV--cXepV_u9Eki4leJCH9CL3xlFS9VHKMagRoTbL91BvKW4iUCXSFq9M5AiFY9nhbDTxIRv0rEyH7NUL1pnP3OKq0ytS9D6epb90GC4SnW6_Ze_ZYhrCLHq1v4SSLiV4nYeJTq4hg7jHDHOdosvwl7YNLZtl4ro-YvnDALlBgDwzoejeMniYhfJeIO52HARHXD1-irekh1bvc4_WDhUk2-U5QFkbD78NK26S85fZKI-FUiyjr3JV_00HxWdMOHdOsQfsoEydDbMP8oDe1FL5eOI2D_JadPEhG_SsQaswPIr0i6jTNlpzVDTEbBCJy6mwcwRa3H9uIhaky4zy93-iQRiatERD1ApCk6taewl4h1QGjCkVFTF7IvrmBmAmItRFrdzNPHXVPiJBGJq0QUHSk2Vx-l-EIOI_EjZtUbYfxbR2yOzhdJ6Gm9QVShIh7DhThJROIqEWWLam9QXaV-jHles0FftNCq4CYQdTt_7UV6ViENtDrTHu9CIE4SkbhKRAdMkjlJ8TfPQoz3rCnderAFhXZLSiYw274D00NSiHt_jnt5xEkiEpd31nzWV8NFRr6s4ZOgcUen-hsNUgVFhtkkmtujLN7165Yox3WaOElE4ioR4YD17adepAZmym8zMFwjhlFUTP2EXpKpV4E5ZkcJ08jjCUjiJBGJy2NEvDIsKOYElwgFUwMVuGXRmJvG5anJtz7nQatebqOXSb9Uj5NEJK4S8ZaFbrcw1kOeexzILMjRF_JmvEjhq08ciej9yMlQRaz78RQCcZKIxFUiotyaguZOKxbCdH2yF7aic1VLZ_3clPf7EyO1EUhuNRYfd5iIk0QkrhKR5CaxoI2p2KN60zHYeBEcWbPlF3QFT5Q30OtM8Uuwc3-8jkicJCJ5eYxI0Qhd1rC0IRA-8OJm3qUKiBJwx5WhupHEghLjnqeEeFynyZNEJK8SUelIHHVZ7xEQ7-ptzvNYzpVkTTui6xokqqnwQZ2s7O_ecU6TJ4lIXiXioL-YeoujQH_mYCnuGY2Cz-6OWfes6Ig7SVfhQ8s9XeR-udMniUheJWJ9YwaOHGQsV_ExbTeonAWKgW2TvZHuY2RRjUAwJEJe8XEvjzxJRPIqES0SRMXXEoSvp4iBULpnyTbxxFO3CE1asGTk5kLwXkiLH88wkSeJSF4los0uvbVN1RNZDD57m5pOvCfW9IbbXAq1H0kN_nmRioUFxxOQ5EkikleJyKXVK5IoJ-MojNx5ylRtuk0bMJUmZzStYXp-gS0PV_71S06fJCJ5lYjTEnqAtVGrBHmIMsoC0SBEoAk3mK9To_O_77Vw0qf1Zo77HuRJIpJXiWh3bs3Y8O6K4Fvs65vuEu_pYd3eTAJT6wrZOqwOZFvi3i85fZKI5FUiTmaamrhM3IA33MTzQ2sVSssSU03t1WHGWUV8bvNeZsf8ktMniUhdJeJXFD1C8UuKYEWnpQGb2xm-t5OPUDygrlkmRn0gWDpq4XF6UCeJSF0lYk3KIzAO_NwpCIa8CaalVNMe3f55i_MCwBHISMVHVCjUMRGpk0SkrhIxBIORqyYZGPN5wCcRuTWC5sXNM6sTNALg8CZbruvKj19eZKBOEpG6SsQXQnGjNOzTQCvIy3waQQ3z1fetGUQQfGevAUzbs5WI4Y9LHnWSiNRVIuLxZnJSx-v31mzXQK-5h4mNiqDvixC_YQKszFJBWmOyjwe21EkiUpf3mo4hssusU2g-rdSTRSLgA31REdxyLgsTrGhb0Pxph1I-rh7USSJSV4nYwto0t6-1jx4mOQgpIIK3XAxbECNbdau6u4BzIrrksnY8RqROEpG6SkRdVhQmePAmHynvAV7v74K1EQcDKGIFxRyliYjaX1qdKr-UvJNEpK4SsZTNLy5opL8t8KeSMpi5k5DEaV-RTD7ig6ul6QNtE6NZx2NE6iQRqctjxNJEsObT1iXZf0w2AZlPBBqGig_LPfnWRSLI0_Bggmk_XpKjzhERuuys6VkXdhwFLHA1JpIaBglo-PAhXczvUNIKJELwjCUmc0sPSx500lkDXXbW6JD2SDtTsRAgs_TnmgWODNpBg-lC9lYcOcgkjVRl7IEe3mnopLMGuuysURoGo1GsE2wHy_cQszHa5L4B2LQREONFq70gxbXeMnM81QuddNZAl501HJCFes5u9GOeBBDlzKcbEVpxm-iWdbS-uyWgzxfVvMmHJQ866ayBLjtrQrG6CWUc85ZU9B1H2WyXsH7wNbO3BgLR18R6J5NRfvv8EvQ5IkKXnTUlYWrwPfCaOMSMu4d63UfTvuBmQWsM3r0vm40-uIohfDxGhE46a6DLzhorjLfYGFXc1iAFibNgDJ7CB7J8BZKbbAXJgqE_wZ4w2OH8NHTSWQNddtaQU9eMHRG35jKKzznzpUER62l4DbXsPoHAA60H-mj7HjjsmkInnTXQZWfNahWWRo0vMRITgan6BA3u6G4W5vrk63wBpE-VPMO2KvNf7vQ5IkKXnTVi-yL8aHsXqIy1pKizIK3cyEmMDdwUwkmxFgpQSeDVH78YDJ101kCXnTXxPOYj87zlYoqGdNWOlK80O8w8XPjWE6zNkPEL5N1xDI6rx0lnDXTZWfMag7k1dn5rHelJLJ9J4dIcAfP7e-RXeSrku2cWDUsO6GGHCTrprIEuO2tC8EZpYD_VXMFsdyVXGMwberkPEaKDqIwLqxu3LFQgN4cjF-ikswa67KyB185tOA1yQln21xmumJJvfMEg7K_-NfpcaW1z4MhltQ73T0MnnTXQZWfN-IJlsnrYJAazm8HYJofauv6a35M9PT67NI-Sv8bvW0D8kh4niXjZWfNwgBy1Y6vqbi39XDJBaf0d18i1F14w6S2OeXumYgEj1OGuXuikswa67KwRPi_mPmO7orgc2tzfy4PQxSCu1clLDMjO-Zu3Fl_CrcvjknfSWQNddta8JcgibF14k3aRkB-xfOFxk1WoQflPLU390A6HsQIMdzweBJx01kCXnTXd8NntbcDQgohVNuLKObsnRukHSC187m0mJb667xCdCYfLF9BJZw102Vnj6dvrJg6yzHJfgCJGoZ4smIh6nJRqYJX0aYW1N9ktyPH2euikswa67KzhOhVTPZGy0rm250dnF8LLLFL6i_khrDy2tttfBILFEXKc0yedNdBlZ42RTJ6QgGG7hGo_0OqzXCYJcxr-FkGBBdrMQ12ir9Yjx-JK6KSzBrrsrLEQ13SkvFPbQmjtr8fSt49ZMdxjBdoxGSAW22AvpKLk2EwInXTWQJedNWlFp0w0le2WR_C9Em_9vYC1jpxlfgzUppe-fKU6lDSYxzl90lkDXXbWkDM5QiyI3CGISsy5Gv1sBj4t0Fkf8dbdp6iubVGXYfD4ZXfopLMGuuysIbC4rKz7vQRiQMZQsR9aqt19x7QY4_sxl1u9MBnzwVnucCUAOumsgS47a5r-hdfAa9jylBMcxHXkjRufgBJ5cb-9wM9nGb0m4bd7_kt6nCTiZWdNahXyi-AgEdbQeedocP3okR_Rjp6RST2-4O6TRWirO_df0uMkES87a3LU-4DmzvQtqEjBZ3lpeG8PRLmJQhpXTJLuffn1Hrx4_I4tdNJZA1121pDB2BLDq2Hl-5CwLWOQmhGB1qRiQdEVKMCECkbsr3V-_QKXk0S87KxJAX3qs9jNPk-88xYlG-6PrB5vn2y6jaLhVDE0GionoPZxf_qkswa67Kx5dRbsxKBSDBADPdVsFG4s60rP4bWDokJbLHqv7Ngi2OP3EaGTzhrosrPmTcWjr0t36B04LpnKpMG16_pw9Eq73fOBXFdcH9C6Qtlfgj5JxMvOGgO_317f7w4xAskHOFdjj28-uBjQBVyIUd1DuWOpXveLeFw9TjproMvOmoIH3o-CfVCIUEN-uobo6vKU3CjY2_6mMri8CAlBROklH_enTzproMvOmjly4iHHClIUCqdV3pg4iuy8qF-bDCPaygB6CQ0oi-ljRSh00lkDXXbW7DVTy8IufYPvDKN6IzMJTetolvQSRZli572-0ZxRg7wfrwScdNZAl501gkPfe07XM9LwurpE_IbOOWND7S9YYSBpal3Ata8dVqnjMeJJZw102Vkz98xn4HBHbAHyxb9XoUZmLSoQh_Z0pqGblfgae-DMTns8l3fSWQNddtYwzsjTi_n5PB9c4IWkbLEY9ZG5r98uSjTI62PaUdR2-PB43uOkswa67KwZ3haOk4JswW1uf4h6StZuYHnvbk2-srFQIGjxGzACnjvG-ElnDXTZWdPdHTQSuRmsrHaaVLwlk4VBvPxbGdB21wYveNoJD6_2LyXvpLMGuuyswVTEe5c5BEOI7Af5GHK3LTV8ukrYOUO9AXs-gXWLEIg5bognnTXQZWcNC1k85Hn-XS-b5BnMROVBgNrjXsXotVkvVM58nuiSa_Avd_okES87a2zCHMpKJh65-3yAxKK8IwOYtA9UpoxA6mO2-MhgZFV9bNuETjproMvOGih2k48JUpiQeJ-gleMlzZbvHk1KRw9UNW_xrYbV0seOX3aHTjproMvOmpaHKhqGPhUGaYQvZAIfCLo8Pi2-fFZAQwy7J5HwtvjF8UrASWcNdNlZU4cR9N1pQtIzHIEKzYlxJiY9g2_LvA83Rh7y0qXvM1gdDwJOOmugy84aFRvr25A32t67WCR-p2daZtOHtFl8HuUSmGu_1mv0e38fT4uddNZAl501drPXMm_p8HLrhqjnUJiocwNg-ObRSj4KkHICuVkF5OrxwPakswa67KzxwXhEc1hTNSwvAwL0NsSQuWf2mI21dIyW6ZpSZebNpo83qZx01kCXnTV0JzIbKOjfN7fwFIqS7FCywyMp_OS9FmDgq42XW_cWYn8J-iQRLztrHl9trt8J4yLN9Nnvb6-XNLzSVhh4mon3yIJmwZY-rzrgl6BPEvGysybV1zgkn2guqdMd60h5w4t123LBgSy6fHbqvb1VMmUAz-NBwElnDXTZWUOvYFUiWffSOJi5a8KaMze85IxPqyI17K9TCVPvZqPi_LiXd9JZA1121niq9m6fssE_rFdiLCZ_A9Bdd7ZpYltVEBI7QcwUyustPCbiSWcNdNlZ4z6UcL0rOcLUeMcm0GNTmFRAAbAYyzwnAP9OFfCt2jDxuE6fdNZAl501z7sMPIYZyes7KupzGTo3BkB10XNDkFpKn3Mdpasfu__LvMdJZw102VmDsvdc5ogaX4iOtqXtZfAIiRrgtH7FwgwaoTR5EXGCzDsebp101kCXnTU3Dl4ojHvAmvIukf2Vfe2gdL6Ty1fmWnrv-7RhaoknC3TcNT3prIEuO2uoPEUiJvEDcJqNcbxlHOmhvo4ghR-TJJKvOyB2lsC52XEv76SzBrrsrAkGWAw_bSXyT2KwEdK0sUE0hqjoMJN0S2fFPwuR8d7zcVzyTjproMvOmsb2Xzcqb4W0ugkx8lHEtIINWp9gkvG-fdoy7liImQe9j-c9TjproMvOmqf9VnvRqmUrdDnENVIMbJ4UY3kOAvsKjbo-oBATkMDmL0GfJOJlZ02tfJOv-8wFtpIKnt6yfjaYRwuU7mPm_IK7vV93ixelqD0eBJx01kCXnTVaZHe3heU7SaW0ap8DkXF2DkZh-g0YWDnUe_Dc6BvJJ8dLciedNdBlZ01B253WZ2vqd5jY99V7hIBN5xvVMajdxJhJ2M0Cf5NOeNzLO-msga47a0TvoTEKBJuY-fFsyA2D2UssABxu7prob8PhEFhDJ9o_rtMnnTXQZWeNhgNIm0ZPVeqUR7w-hY_SVbZVmo2o7jdR0WRSGN0ptdZfgj5JxMvOmkka51SWY3GuZHGcZ6UFgBs7f3ab--4b1ss2EIfGhyWGX3L6JBEvO2u-UouRTbEKrdvut32xKsDkWudVC07IzkiYY_eX2boPtDsm4klnDXTZWQNCcFJ_rBLbuNF1do3t9HFzuJycJGn48Ihgtjx_J16meFynTzproMvOGofxHZQwwwrZseUxk2UFxwZhDmOWNoKlTl-5XWao1l3nOKdPOmugy84aajPmvtjWuBscpEjde9lu8Mgg1NoYtzHiAdJ-yu9uFx_HY8STzhrosrOmgzZnQlSaZ5IH-8hTPCoJz2CAHLE3ovGLF9VBpj2tqfJLepwk4mVnjWm0AHEzAEJ1PnjD1howSkM5WaLhyJLV2k_OY7d7t4b7od8DOumsgS47awDXW-KF1azbCEK9CmRyrhTRNIVvmV2C9411eWTS5iKZfwn6JBEvO2vGZsdpOYspibirtCE999kZ0rVTZ71M6nCdMdEH9BUQftkOdNJZA1121mjvGLMzskH1bBdIYNl9AUZw_Y0zmoIhm-l7yWwh26czjpcvTjproMvOmvsYR7cOr7z5te-G59I9bApwAyo32jWKsKJ5gE05jqrN45HLSWcNdNlZg74JX260tfDhrpM1I-55yYOdgROd2Up0YwARXRrZvI-Pp3pPOmugy84aV7aZjzaYJerWoKIwOdXt2N6FZtMIuQu8tjeoBMF3XNrjyZqTzhrosrOGs9wu-1Am7r29AEc6-jbvLC6IeTyukz8MAzUNYLjM9uO4Tp901kCXnTVjPcVcLhtvXPO_qkG5T8YLcR8vmdz9Dtyb03pPAIJQ1Y8b4klnDXTZWWMWoOhbd7wDEPrrwQDwEJKBu_FKZltfgsyUCXvUFQzw6vGu3pPOGuiys-aeExaix-VNntiv2YEahKTeEuCm-_Y2d0g1zd4UzdK_zC93-iQRLztrcovUI8aKQLGPX5qTiWzgVuZMw70QyqMjhenbAm49COG_VI-TRLzsrHnLoYg8wioc7-EHAFEzksfIjV9x-zTkyXjnZVb4fuBSv_Q9TjproMvOmg-zvoNXLg0Em6bKGDtALS0USLjfN1zJPYjrEvT8yJ3RH2P8pLMGuu6s0ajZyVjVLGAUCTSQ8kEVz7_DIEKdsambsJCMNXQxKv1yp08S8bKz5uHRdbH4d4sDvrAs-BrEpGNReN8OX59qCAuD9kSxLoSXY4yfdNZAl501GejhqeTcoQ7y6UxsCWVJCr-IuMWdgS2Ac92EWjnk6uWYiCedNdBlZw0hfYYhDdJI_DrTTulF9GGaoTHvyESXDNB1g7LWEA2Kr-PR-ElnDXTZWYPKrKqpO1_6vde_ZWQBlWCKsx5_gjPkGo9Hjr6KZbjfouMdkCedNdBlZw2w3D7Se_XMF31XXsanY5fiNnCDs2TIHbZVp6-9PQVDPPzlTp8k4mVnjaG94qKyZq7PZVB7c19jojGCTTJArhmSN3O57Dm1CPPtl6BPEvGys2YUAZJ5T3dqCUgpFvGAmLUds15lhmnVYk8b6Scxwjw265f0OEnEy84aLoVl5TP6ysyW7lqLuv_h78l-JxjBV4QdT-rCLIaVN7Zfgj5JxMvOGr1YYEm4gS3lBQaIYqyz2kP9BNqCEOmhirV43IuuWN76L3X6JBEvO2vua4hA8SsMjHIqAvPr7jjQ3q1pQvdU5x7Jk6uq9qPtb_B4humkswa-7KwZQGEbohjhVf6BEN4tWJq-ESE8IjlHWAu9Wnq83StoZw8xDp901sCXnTX00y4bCZW0nKrj1pnQAevpL9Ugvec2D7nwLXT15WrVy8MOE3zSWQNfdtY8ORR2SxF4kS3KeSb4QoBBilVoWR_LbAWma9QwmbAFCh82RPikswa-7KwRSt58BxseNYwekpmU7O8C8wU7eL86ox8HHfRM8E0uPXM4sIVPOmvgy86ayMxMy0Rjc-LjG3GDmSQKbTBgFQnlOsdcyepNZfEMY8EvOX2OiPBlZ40uqE06kO8blAwCDZjA7V33tvR51w_2E8gZKgPAEyVsMD7s5cEnnTXwZWcN-uqWoXlp_Yjg4xbL45yvmbCWdCSK5c02w2hYJRMgMviXoM8REb7srDE9CCLuCBXI86ZkxhKY1uNuKa-d15tXApaRLDcGRCqqdNj3gE86a-DLzhruzuL8C94h-FsM-SRh2F35WJhkREndPEqTd1E0zMDue_-lIZ4jInzZWSPdVKzc6o0glRB1p1UKn0owrMsmrWIzJiTM37dSIhLgWAQPn3TWwJedNX7NKcvdWpAYFrX6kVedQixyZudtAnGGNeeBEfqf_Av1h2vj8ElnDXzZWROKJjoNjy5XgJS9TUESPpz6BtkFEfTSzR2TtQFVAVdz_bjknXTWwJedNdVecf6LK95UY7Cj7BBYhbZql8zqbKKMeKfZjYfvwv48_kJp-KSzBr7srHmDRhUYil09ynvZPDnl44spLL7CT-VQtJ5ji7Fh_tDDj8NNKvBJZw182VkDsKsUMMoIi77VIBThTIaUVtUWdAZDRnPkajCscCAU6McN8aSzBr7srPlo6N1Eu9suLv2z2lZt9LfP2nHK_IpZg2legCAaNlFyxWF_Gj7prIEvO2smbrzddnHlNE2M_XAcCnxRikcmA4LIfpQcuyXbthOmPR13TU86a-DLzprXDD2JyuP4Km4cG_LImdzrVLurD-GFkXqQd0as7cIXJ4-JeNJZA1921jw923JLdpjHwI1CMnrEuhuvUwhuCNTYjQHck1RCVpJsDjfIwiedNfBlZ02VfuNMnzyFCDpWa0sILQMv_ihg-kagPHu4vUH2vZK50XGH6aSzBr7srJFynXvW97n4LtkNfL58mNHDZzYTjn7fEje5I_Z-n-yWr48b4klnDXzZWRNoplD1-uwsQtW-9iHsOO5xdxa5X97tzi9-bKIN_zRuyeGaC3zSWQNfdtb0JmNxRDFj715Ns761nq9N7wx7klN-V2KDmnCsyKFE646rx0lnDXzZWRM-fNkbx1YJI1azKYDExC98l6278DVgSE8WNvLCgtdW6XDTN3zSWQNfdtZAIigzmm1Z6DYa4Yjd33f5m3eG6OuSGD-4m_eKjbXBDOq4IZ501sCXnTXFDakoSG6crnWimsYbaMmTAQXW7TbhegbEsuxUetptx9-cA5901sCXnTUsHCKvESzYhxgsFmMp9ad8siOjjYsPi64z9m3u5Q2pL8d1-qSzBr7urJmw90uyupWBEQIgdM_0snfPUbtX4_2dueEtcFeQz7QRhxOQ8ElnDXzZWcPiNL9tz57Q-zql36-K5dkNnlleAtg7xA2ogNaMfI-R453q8ElnDXzZWSPltfRweggqJN7MEmzgZsQQu-8q9ZPApQ9DXG7-XKnp_EtDPEnEy86aKH2selGYiM1EFfJgcGreEH5d7O8XQSyMznPaQ7_vT0IeB33SWQNfdta8RSh6vyFq4Bj-26fbPgZQ-kqDb1yEffS8Cx9iw7kaGqfjCciTzhr4srNGd7McRxZnbFT43sIfJW6ZsvZvvAIHpfDQ8KTm_IYQxmP_NHzSWQNfdtYw89iVO2S8n3HWNNWQbxa_0K-3vUyBzPFgWjWEgsl-wR1uUoFPOmvgy86afGxpdehb1d3VRnqgWItvDovD3GuPgefIGGZlluoLmOXjknfSWQNfdtZ8PF76fHwnuH_M9v1OcTaAZDvrnhwBhn3KefLe9ILycH-By0lnDXzZWcM4fldI00P-Ci7hVWWqx--t9oqvWCJv_M3ET7QJ1-j2tX5Jj5NEvOysedu3rhxwYIspushFgugDR4-rWnYLt3Fo49n74ugkhawe9z1OOmvgy86asAsflcv5d_NRUKWDJM9k6gtWZ-onXkYLpMNBnCpe9nV-KXkniXjZWeN_TNwz1btkYaietkqissaGCCGuwPH8vb12V-vTYop84XgQcNJZA1921lAaFrDUxG2Z9zIEaVzE8G1o9vYdZpUqTf6boFDzrL7Achz0SWcNfNlZk9EFn5sGy-SsQZMu8E7iusqldeSHQf4YHjDCm0NhLFcdj1xOOmvgy84aeKXxZwxbUaNUiSZ49mix9NQCAPXuWJ7FldwpkXzn3O2473HSWQNfdtbMUo8oGyi7GwV1rqBorGu8fGzEJ-ZlYFR9A8R9k_3mixxj_KSzBr7srGEHaHmKk3jvsu1eo1Uq7pI2CXztYf4EvI34EWQV9Kij6Xgl4KSzBr7srMHx-pV_oARQuMxItI2-zQKv5boL3TNDuH1xTnPiRxJ9iOM6fdJZA1921thoBd4WFMeBZxWJrGQXrCcxAYGSVCniTsyCq23jMIT5xzNMJ5018GVnjW8OmTW6rPbZxHXVB7phfV0ptcH57PlM-ZyXA0TZkxp0DJeTzhr4srPGY-6b7_MQQH6b2dXw-JnVPvTRTVDTyJD6zJ_msY-bBh1_HT180lkDX3bW8PZOYR0mEmrfaHjKFAl8T6sKr2qVoMUpDgXfx6ys-myHL5zBJ5018GVnTS8xUCdoyaLffPZOiXsGGCkwRyaTvGnZtWJepqcQZ5_q8ULRSWcNfNlZo8Rx3MVNAE-Y5hj4O8j7EBzyLDdYUwJNNGaAsUh7tMiPVwJOOmvgy86ae_INdzJ4D9Re4Qb2ecVDY4ij2ytSI5uBGpvoamuQux_Lo-CTzhr4srNG-_ANTNMtlLC4ZI7dBM388_6ZzELd17omhbdwW-TxjhbHDfGkswa-7KypWpZ4WxGXkGXx3qKaEvV6An0oUdBim2GQkhaahHXHEY5HLiedNfBlZw1pUUPY860sYFbbhwnrEKqGzQ0DYftIeV1X9DHI0CR6_F1y8ElnDXzZWcP2tx6eGB4uBQ9FU-LTj18qGFsGckqdXYNwtSzM378SfEzEk84a-LKz5uYJZgJI0SfWe1iv7pqEx2D4CgavyNSRZvb3jBOtQofoMRFPOmvgy86apz5gI7dSy2o_FxvPdjiXd4d6jW9NTTxxZHproeasxZVfSt5JIl521sDKHGHQ9LLvUDNP_iup8QjLaoptVe77hKbYr5CEHypM-iU9ThLxsrPmDWCfisqpd7_wxgfdTRCrtxut3oSgJkxqWx8rTQY6Iu7H6XHSWQNfdta44A12bgPjfmZk7hUJs3le4p7ayt4_alUgfbYTLRmDZHVcp086a-DLzhrfntcnir8RTcVffbgFEvoEMqNe8LFd7Jiuw08YZDE-uccD25POGviys-b7eTPow7hNt7fQrU86-QLOy6KDXO33cGh4Ho1vWqgN6PGLwfBJZw182VlDW7m2TZn2uFuFbXEylSpcIUn3uuf9Gl1w2uEAUAsY2DquHiedNfBlZ01a3_YRSkH-ATDfnbxBWuFFIQqPz2c-tYvgrEZk6gVEZsf96ZPOGviys2Zi06BgMAQYrYyZYhTHwIpFUdtajSejCENMQp5vtM5XOx7YnnTWwJedNepmfEtKhXqBo8dpHbNiUgQm_lYkeC-fK26BlUQCCoF7x3X6pLMGvuyssWmVsV_3Lxxilitu-7Z_yNAFC6V1n7HRyQ8OjVACRzH_eIbppLMGvuysabaKxsfye1PD-dlF6EASPtf5Y33v0ooeCElE__r6xFRdfil5J4l42VlTDX7mR8QKd9r7jlvq3f42tRbCNx7--Oq0BHoiZN6afm_H6XHSWQNfdtaw_G1DUvfpCG2tzK7JRut3KBbOuw_YZhX8ruxA2BZSuh0Pt046a-DLzpqwC0QW_s7QHKEl9RosTw7K9aYyMUZKXSLJjf9Q5CCl9OP56ZPOGviys2afBtrGlbYDw9kd6mRTgdl9uLArSJLD7Z_YTRJ1qnXhdby6ddJZA1921pSiFgs4ifdPk-wQSOsoMr0x_tDyI69Tm1R_QjQnvcC3j4dbJ5018GVnTW1KOb1N_TtPv-Dj_gK8797SJWuASUPzduZKUWMvnroHx9XjpLMGvuysYUqycG6GyyyBHUud0hNc4CZgNm2VkHltOKoRn9kzE1HH_emTzhr4srOGSRO6Vm8YU0TZ9uIJcwSAO1gIbrmB-v58mR3IdLgDIfAvOX2SiJedNZ2l5mLd4yufdq7QIY-pktNwEhOksXY7AM3B8m9ymme_LBSddNbAl501APOmzZ0hUzl5VVgFU0X6KFgf2VFHWHwmS8xicHK_gm_Hay4nnTXwZWeNJmauSQ04rxoLLgDFm-ge9KJ9QAsUsaCYXqWTybngYsf2evikswa-7qwxJ_3JQ-Egu9MHSSjVgGrvrluAnEL-NHVspUaO5FQP7BguJ5018GVnzRQw4Uq0KkJAKi22_rrsLzuuOgwUVlvG_T23cOPjUlZznNMnnTXwZWfNR-oMlJ8xiu0-c6OzCCdFWot4zYcohkcJW9CqrvJ3VbZDKQl80lkDX3bW3D42mO8WMb-IeWZtDpwNj9hfTIEQSO_td6B5a0z78m35uD990lkDX3bW4BiJ8pTmgCOpWshMD0LoRO7wgYiQ89QQsMvESkghsn55Oeekswa-7Kzhnt99rndE-Bim5xAxluFG0BSCTQYk5iJFY35V88MW2Pt4CuGkswa-7KxpHLgYgG0k7h7F6tmDKTNLM98gjL2rzCCBB64bzyx-juwvJe8kES87a-rn6_NcEVUYi3v2sWe5QLM3XJJvCrIeg_NwQMN-KPc-An5piCeJeNlZ88XnYWUYvA1sqdsRt5BoY3rcmYI0veWGcW1NMSGsNit53GE66ayBLztrGFJNhnHEM2etdR927zgjbsybHfnBNDE0koF4fRKs-0iP4XLSWQNfdtYoKH6bQNfX649NTc-uSYjvy5RdOm2DCIzvKc4qD34LifQ4p086a-DLzpp-6c0boQAiUfA4oNHv11alAfwsTfHV9IikclWkbZoT0Mcl76SzBr7srAk5EVvMbggErn-91IaOgDtXSGlXSoPysgRjAT-4cMdC-5c7fZKIl501jdX5hHpXnsIG-7ji8Rp61178o1swQZBd9eE8Fu-bbHfkeALypLMGvuyswTpMcfT3hjyG0iCKxBJe1eeOkg7UdhSdvRirdUGFD2D1GC4nnTXwZWdNn06WWPX5t395g-j36WD4SiLM-lLOxZf1kQrbh6-JPPHjXb0nnTXwZWeN96Rg7mNg0-1tG1JQ3ZhnlxcppWPgI4PqCXn5xeRTyfNzPC120lkDX3bWDImVp76XvnFm__bw2y5Rb1M8_QZ2I1l_Nlzap2-bh734S9D_P4kYNnXS9FVQhzEQpHE9Xt1B8Zmftfy58YqHPTggX1ZsSCII_5BKHwUWwb8sJ1bv7sj_r7H_Gsv_uIR__-On7Zs5j-JeWorh58__9v-M6r-O2ZZBGGdNGcU9kE1VUP_XEfNw7Kdh_Mt_gv_88ROU6d9XcHvSB9fzL8f5-eNnGuK_ns_fW1ZW_-9DxXHkF3kd_RXIT7EFQBnPcQlAf0XyP36D_x-_IT___tdVxHXUNnk9smUwDHmSx_3f19IG4xj39d_3ZQibOe63nz9-qmAMs7_mecMW-ExhEY9_Bfxfn_zr2v95df5_P-hfj67Pmz7_685AIPjXk_-_jxxOw9hUf1_S_-YDZ3FYNNP4v_3AeT3-lRD54P_zc__n2E_xv5wmDPoRCMaxB-JuCsrhxMmo_-lcLmD988kC9F-fA8Tor0-P__ocsjj4K7VOn4v8n871b0Gb_9sM_Vs_lfHwb_EclFMw_ut1TX0JtH2c5OuJsxDgXwk21EE7ZM0oxxtdh1nTD3-14HDq-7ge5b-byX9PYeBf217YVG0fD0McAf_9EMBfreo___j5Z4BN_4r7IW_-ugLoH-A__tqjE69t3scDPf78iUIgjKIQjIN__OTDMMXRv_4vCP7n_wU.dHilj-R42n8AnDo9UyUV3RZuiLAQGjZoypBBHAfsheWWkxOzaqmfx6b7zg078aM_GfTW37ldDYCk0eTvNpDUAw",
+        "expected": {
+          "status": "ok",
+          "ruleSetVersion": 42,
+          "merchantId": "11111111-2222-3333-4444-555555555555",
+          "agentDidResolverCount": 300,
+          "lastResolverDid": "did:web:conformance-agent.example.com"
+        }
+      },
+      {
+        "id": "cap.exactly-max",
+        "note": "se infla a EXACTAMENTE maxInflatedBytes: se acepta.",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.7c_NatVQFAXgV5E9Tkp-binNTHDiwImtDhQHp8lpb-hpbkliHYjvLtIiBR_AyfcNF4vNXj9jG4_5IX3O6zaflhjaKh7yOh7Tsr-fYoj2Rd11XVf3fd_Xh8PhUJ-_ElWs30u-yvvfMxdV3OUlr2nP09s9huiay8u67eq-ve76oWmGpjlrmuZLVPGUyjx9Wva5_NtrX_VuUyk3abz_cJpyDHGTSlrGPEUV93MpVz_mfTzGcJvKlp8f2mL4-q2KdJeX_d08fczbqTzl9Tl9TH_mvQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD-s_j1Gw.oP0B__AVQXDGAmYBh7-Wyc0Cc1cwJhnJOgPSDaqaSUNx5QPeGwD3WOwuIblsv6NFe7LKYKQmWpx-rFmzAIViDw",
+        "expected": {
+          "status": "ok",
+          "ruleSetVersion": 7,
+          "merchantId": "11111111-2222-3333-4444-555555555555",
+          "agentDidResolverCount": 0,
+          "inflatedBytes": 2097152
+        }
+      },
+      {
+        "id": "cap.max-plus-one",
+        "note": "one byte over the cap: unusable (even if valid JSON).",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.7c_NatVQFAXgV5E9Tkp-bqHNTHDiwImtDhQHp8lpb-hpbkliHYjvLtIiBR_AyfcNF4vNXj9jG4_5IX3O6zaflhjaKh7yOh7Tsr-fYoj2Rd11XVf3fd_Xh8PhUJ-_ElWs30u-yvvfMxdV3OUlr2nP09s9huiay8u67eq-ve76oWmGpjlrmuZLVPGUyjx9Wva5_NtrX_VuUyk3abz_cJpyDHGTSlrGPEUV93MpVz_mfTzGcJvKlp8f2mL4-q2KdJeX_d08fczbqTzl9Tl9TH_mvQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD-t_j1Gw.C1pPU3tV9K2ReelTIwqcSLBFL9eoDZurzc_OPDaoy3FWg9zUC5gpEsrgKRBgBavICq24xzFGbkpTwtmvm2KVBQ",
+        "expected": {
+          "status": "unavailable",
+          "reason": "inflate_over_cap"
+        }
+      },
+      {
+        "id": "bomb.over-cap",
+        "note": "decompression bomb: 8388608 bytes of spaces in a few KB, really signed. Unusable without allocating more than the cap.",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.7MGBAAAAAIAglf0pF6kKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA24MDAgAAAAAh_183JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACcBQ.bj2hQC1TLgWZV_9mX0E04PSSHB6CWOFP6gpZlkkh9j3nakY1s4m54Z5QG20Z0eRWvqWCZPIYz2cW7NFP3fNcBQ",
+        "expected": {
+          "status": "unavailable",
+          "reason": "inflate_over_cap"
+        }
+      },
+      {
+        "id": "bomb.bad-signature",
+        "note": "la misma bomba con la firma alterada: se rechaza por la FIRMA, antes de inflar (orden verificar→inflar).",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.7MGBAAAAAIAglf0pF6kKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA24MDAgAAAAAh_183JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACcBQ.kT2hQC1TLgWZV_9mX0E04PSSHB6CWOFP6gpZlkkh9j3nakY1s4m54Z5QG20Z0eRWvqWCZPIYz2cW7NFP3fNcBQ",
+        "expected": {
+          "status": "tampered",
+          "reason": "signature_invalid"
+        }
+      },
+      {
+        "id": "zip.unknown",
+        "note": "zip distinto de DEF (payload JSON en claro): la firma verifica pero no se entiende ⇒ no utilizable, no manipulado.",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkdaSVAifQ.eyJzY2hlbWFWZXJzaW9uIjoxLCJtZXJjaGFudElkIjoiMTExMTExMTEtMjIyMi0zMzMzLTQ0NDQtNTU1NTU1NTU1NTU1IiwicnVsZVNldFZlcnNpb24iOjUsImdlbmVyYXRlZEF0IjoiMjA5OS0xMi0zMVQyMzowMDowMC4wMDBaIiwidmFsaWRVbnRpbCI6IjIwOTktMTItMzFUMjM6MDE6MDAuMDAwWiIsImZhbGxiYWNrTW9kZSI6ImJhbGFuY2VkIiwia2lsbFN3aXRjaCI6ZmFsc2UsInJ1bGVzIjpbeyJydWxlQ29kZSI6IlIwMDEudmVyaWZpZWQtYWdlbnQtcmVxdWlyZWQiLCJlbmFibGVkIjp0cnVlLCJtb2RlIjoiZW5mb3JjZSIsImFwcGxpZXNUbyI6IkFHRU5UIiwidGllciI6MSwicGFyYW1zIjp7fX0seyJydWxlQ29kZSI6IlIwMDIuc2lnbmF0dXJlLXNwb29mLWJsb2NrIiwiZW5hYmxlZCI6ZmFsc2UsIm1vZGUiOiJvYnNlcnZlIiwiYXBwbGllc1RvIjoiQUdFTlQiLCJ0aWVyIjoyLCJwYXJhbXMiOnt9fSx7InJ1bGVDb2RlIjoiUjAxOS5jb3VudHJ5LWp1cmlzZGljdGlvbiIsImVuYWJsZWQiOnRydWUsIm1vZGUiOiJlbmZvcmNlIiwiYXBwbGllc1RvIjoiQUxMIiwidGllciI6MiwicGFyYW1zIjp7ImJsb2NrZWRDb3VudHJpZXMiOlsiS1AiLCJJUiIsIlNZIiwiQ1UiXX19LHsicnVsZUNvZGUiOiJSMDMwLnNpbXBsZS1jb250cm9scyIsImVuYWJsZWQiOnRydWUsIm1vZGUiOiJlbmZvcmNlIiwiYXBwbGllc1RvIjoiQUxMIiwidGllciI6MiwicGFyYW1zIjp7Im1heEFtb3VudENlbnRzIjo1MDAwMDB9fV0sImFnZW50RGlkUmVzb2x2ZXIiOlt7ImRpZCI6ImRpZDp3ZWI6Y29uZm9ybWFuY2UtYWdlbnQuZXhhbXBsZS5jb20iLCJwdWJsaWNLZXlKd2siOnsia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsIngiOiJFYnZTbktiREdMWjVPRi1pd3g1c2ZkMTZiOExyZGFUN0dWVFdlTUVYdEdrIiwia2lkIjoiZGlkOndlYjpjb25mb3JtYW5jZS1hZ2VudC5leGFtcGxlLmNvbSNrZXktMSJ9fV0sInByb3ZpZGVySndrcyI6W3sia3R5IjoiT0tQIiwia2lkIjoicGxhY2Vob2xkZXItaHVtYW4tYWdlbnRpY3RydXN0LTIwMjYiLCJhbGciOiJFZERTQSIsImNydiI6IkVkMjU1MTkiLCJ4IjoicGxhY2Vob2xkZXIiLCJ1c2UiOiJzaWciLCJ4X3RydXN0ZWVkX2tpbmRzIjpbImt5YS1sZXZlbC0xIiwia3lhLWxldmVsLTIiLCJreWEtbGV2ZWwtMyJdfV0sImVuZHBvaW50Q2xhc3NpZmllciI6W3sicGF0dGVybiI6ImRpc2NvdmVyeSIsIm1hdGNoIjoibWNwLWJ1Y2tldCIsImNsYXNzaWZ5IjoiYWdlbnRpY19lbmRwb2ludCIsInByaW9yaXR5IjoxMDB9LHsicGF0dGVybiI6ImN1c3RvbWVyIiwibWF0Y2giOiJtY3AtYnVja2V0IiwiY2xhc3NpZnkiOiJhZ2VudGljX2VuZHBvaW50IiwicHJpb3JpdHkiOjEwMH0seyJwYXR0ZXJuIjoiY2hlY2tvdXQiLCJtYXRjaCI6Im1jcC1idWNrZXQiLCJjbGFzc2lmeSI6ImFnZW50aWNfZW5kcG9pbnQiLCJwcmlvcml0eSI6MTAwfSx7InBhdHRlcm4iOiJpbnRlbnQuaXNfYWdlbnRpYz10cnVlIiwibWF0Y2giOiJjYXJ0LWF0dHItZXF1YWxzIiwiY2xhc3NpZnkiOiJhZ2VudGljX2VuZHBvaW50IiwicHJpb3JpdHkiOjkwfSx7InBhdHRlcm4iOiJYLVRydXN0ZWVkLUFnZW50LUlkZW50aXR5IiwibWF0Y2giOiJoZWFkZXItZXF1YWxzIiwiY2xhc3NpZnkiOiJhZ2VudGljX2VuZHBvaW50IiwicHJpb3JpdHkiOjgwfSx7InBhdHRlcm4iOiIvYXBpL3YxL3J1bGVzL2V2YWx1YXRlIiwibWF0Y2giOiJ1cmwtcHJlZml4IiwiY2xhc3NpZnkiOiJhZ2VudGljX2VuZHBvaW50IiwicHJpb3JpdHkiOjcwfV0sInNuYXBzaG90S2V5QW5jaG9ycyI6eyJjdXJyZW50S2lkIjoidHJ1c3RlZWQtY29uZm9ybWFuY2UtY29tcHJlc3NlZC1zbmFwc2hvdC1raWQifSwiZXZhbHVhdG9yVmVyc2lvbiI6IjEuMC4wIn0.srY9qyIPRoVdOlREuPIl4xUM82qBhJAfF-omNtMRjqYkXuWOqJUolQd6YJ4RQe9OwGF1ItqH9DEKqdlzj8W9Cg",
+        "expected": {
+          "status": "unavailable",
+          "reason": "zip_unsupported"
+        }
+      },
+      {
+        "id": "zip.lowercase-def",
+        "note": "lowercase 'def' is not DEF (JOSE is case sensitive).",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6ImRlZiJ9.rVXbbts4EP2X2VdSkeS4rQXsg-Fkg9TpBbHb7bYIAoocW6woUiUp2Ubgf1-QcrLe9IIGCJ9ESHMunDPUHTheYcM-onXSaCgyAg1aXjHtLwUUkB0WzfM8p6PRaERPT09P6fhoAQHbKVygf4AZE1ijRss8iqmHAvJ0MqFZTkfZMh8VaVqkaZKm6Wcg0DMlxQftpfr-u-zouxVTqmS8fmMEQgElU0xzFECglkotNtLzCooVUw4HQQ6KL3fxaTaUXKdplvRo5UqioGyN2lOL3zppIwxqVioUUHjbIYFmKEK9MpYjEGBtqyS6pYECphfnb5dAwEu08dRaZlnjoLjb78lj0jxxcq2Z7yxS1xqzoqUyvD6mPMg-cJrSoe1_zZn_kjObJNx02tsd_dpZ6YTkPnTmiS6vrn7IB1E_ilmkkPGkYf4eCFxeA4HFP0Bg9gFuvtc1ShMnm1Yh5UZ7a5R7LkkN206boGeG2jsoxmlY-_0NgdjpMymu0RnVh8ovdyBkyLeQothgWXAT2JqQqCEYCW5Z0Jlw0wCBtiuV5HPcvd7Uga32OyjgXfTMbQ8FnIt8PM4mQGAbdmW_0PPy7OLq8_jdX1RutmO3EtmL8tWVFWz58uLj8m98c_7JX9QxwL-t5Y8adzSD6Ku1ppcC7etNPWT9WNWA2SrGsTJKoKVV1zA9IErubec8zdP8RThgtY4OzhbTn_g5wgECnQsNcnId3t5GKERxW0stYhTqHaMKe1Q0C0oedvn_diO4CS5Qi9ZI7WeKORdGc-hPy7xHq-O5OG56tDsg0LA45dDwlpYdr9EHwUNl8H5wd3sPGlpnpbEynEyWpiGQ_yHzznnTREvPDFwhr03nnx1Yah8CId3toe7PMDNHNJxZT5n3luK3jsXx-l2yySOuT3R56CydxrvyUoRqf9yHClmI1pO5Xj3iOmGtPOmzk3hvn2DPVMf8sa_OKtpaXMntE1hepiFgTrPWVcbPcTfVvDI23he8sxa1n8cxuY8wPZ49bprWonMo6D0EDVO1J3AQaOzDHw-yJE1S2P8L.KfVrc7mJW9SZWYI2qLJXCinZb4Q8CUQDh7dcp8PZKIzI-gCR_eNtxOGGiKT_fIWgp3MK7gNgJPkKevmye8pYBQ",
+        "expected": {
+          "status": "unavailable",
+          "reason": "zip_unsupported"
+        }
+      },
+      {
+        "id": "deflate.corrupt",
+        "note": "zip DEF sobre bytes que no son DEFLATE.",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.dGhpcyBpcyBub3QgYSBkZWZsYXRlIHN0cmVhbQ.HDGa648rmMCkrTiZHKY872oN0UnHO3V-jpvATy_Mc6iPRYVcB4NhD-pHB26k3OJlNnAK9rNvesdPJV8fNB4kDA",
+        "expected": {
+          "status": "unavailable",
+          "reason": "inflate_failed"
+        }
+      },
+      {
+        "id": "deflate.truncated",
+        "note": "flujo DEFLATE cortado antes del bloque final.",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.rVXbbts4EP2X2VdSkeS4rQXsg-Fkg9TpBbHb7bYIAoocW6woUiUp2Ubgf1-QcrLe9IIGCJ9ESHMunDPUHTheYcM-onXSaCgyAg1aXjHtLwUUkB0WzfM8p6PRaERPT09P6fhoAQHbKVygf4AZE1ijRss8iqmHAvJ0MqFZTkfZMh8VaVqkaZKm6Wcg0DMlxQftpfr-u-zouxVTqmS8fmMEQgElU0xzFECglkotNtLzCooVUw4HQQ6KL3fxaTaUXKdplvRo5UqioGyN2lOL3zppIwxqVioUUHjbIYFmKEK9MpYjEGBtqyS6pYECphfnb5dAwEu08dRaZlnjoLjb78lj0jxxcq2Z7yxS1xqzoqUyvD6mPMg-cJrSoe1_zZn_kjObJNx02tsd_dpZ6YTkPnTmiS6vrn7IB1E_ilmkkPGkYf4eCFxeA4HFP0Bg9gFuvtc1ShMnm1Yh5UZ7a5R7LkkN206boGeG2jsoxmlY-_0NgdjpMymu0RnVh8ovdyBkyLeQothgWXAT2JqQqCEYCW5Z0Jlw0wCBtiuV5HPcvd7Uga32OyjgXfTMbQ8FnIt8PM4mQGAbdmW_0PPy7OLq8_jdX1RutmO3EtmL8tWVFWz58uLj8m98c_7JX9QxwL-t5Y8adzSD6Ku1ppcC7etNPWT9WNWA2SrGsTJKoKVV1zA9IErubec8zdP8RThgtY4OzhbTn_g5wgECnQsNcnId3t5GKERxW0stYhTqHaMKe1Q0C0oedvn_diO4CS5Qi9ZI7WeKORdGc-hPy7xHq-O5OG56tDsg0LA45dDwlpYdr9EHwUNl8H5wd3sPGlpnpbEynEyWpiGQ_yHzznnTREvPDFwhr03nnx1Yah8CId3toe7PMDNHNJxZT5n3luK3jsXx-l2yySOuT3R56CydxrvyUoRqf9yHClmI1pO5Xj3iOmGtPOmzk3hvn2DPVMf8sa_OKtpaXMntE1hepiFgTrPWVcbPcTfVvDI23he8sxa1n8cxuY8wPZ49bprWonMo6D0EDVO1J3AQaOzDHw-yJE0.zvosPdoPO6gXttSgLl0uOvb52HbRP2nUIi0TbX1f4QC2xWSquGDMJqIbprEvhatWhsbgjC7UHQ81s2Jd3ZanDg",
+        "expected": {
+          "status": "unavailable",
+          "reason": "inflate_failed"
+        }
+      },
+      {
+        "id": "deflate.zero-bytes",
+        "note": "zip DEF con el segmento payload VACÍO (0 bytes).",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9..MPKW9PhpY8vuYkKUE1BnTvToSuQ0ucj2UFOWu9hZb9E0-iPDqOZQaEwv5Hn_YIaFfY5--MZWeKgJOb8M32yYBg",
+        "expected": {
+          "status": "unavailable",
+          "reason": "inflate_failed"
+        }
+      },
+      {
+        "id": "deflate.inflates-to-empty",
+        "note": "valid DEFLATE with 0 bytes of output: not a JSON object.",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.AwA.178Ze5JLs0s8POLpPTgD30WjsRvKOvWxOYXqUpgD38kkt4OZa049Zrm3VD6MaSUerbCEUtLyT711rWJracg3Bg",
+        "expected": {
+          "status": "unavailable",
+          "reason": "payload_not_json"
+        }
+      },
+      {
+        "id": "deflate.not-json",
+        "note": "se infla bien pero no es JSON.",
+        "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6InRydXN0ZWVkLWNvbmZvcm1hbmNlLWNvbXByZXNzZWQtc25hcHNob3Qta2lkIiwidHlwIjoiY2VsLXNuYXBzaG90K2p3dCIsInppcCI6IkRFRiJ9.y8svUcgqzs8DAA.TBNL5oBVMfeW034Q2nkHmj7zgyk2_Fk-0Tc-irxgPfitU284z80-mMaj7lVjYeJgBvoxM-ts_dAQK9N3vWnQCw",
+        "expected": {
+          "status": "unavailable",
+          "reason": "payload_not_json"
+        }
+      }
+    ]
+  }
+}

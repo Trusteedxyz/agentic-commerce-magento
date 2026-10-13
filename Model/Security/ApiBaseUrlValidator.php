@@ -39,7 +39,7 @@ use Magento\Store\Model\ScopeInterface;
  * {@see ScopeConfigInterface}) so it can be exercised by `Test/Unit/**`
  * without the Magento framework.
  *
- * Spec 050 â€” IntrospectToken SSRF hardening (Gap closure 2026-05-26).
+ * €” IntrospectToken SSRF hardening (Gap closure 2026-05-26).
  */
 class ApiBaseUrlValidator
 {

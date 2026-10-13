@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Integration test: trusteed_receipt_uri round-trip persistence.
  *
- * Spec 050 T080a — verifies:
+ *  — verifies:
  *   - set extensionAttribute → save → reload → URI in DB column AND in extensionAttributes
  *   - set-once guard: attempting to overwrite with a new value after save is silently ignored
  */

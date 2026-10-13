@@ -11,10 +11,10 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 
 /**
- * Spec-050 C4 regression — enforcement activation.
+ * Enforcement activation regression.
  *
  * Proves the root cause and the fix for the "silent no-op" bug:
- *   - When `trusteed/enforcement/installation_id` is empty (the pre-fix state,
+ *   - When `trusteed/enforcement/installation_id` is empty (the old state,
  *     because the wizard only ever wrote `trusteed_general/general/*`),
  *     EnforcementClient::evaluate() short-circuits to unconditional ALLOW and
  *     never calls the API.
@@ -82,7 +82,7 @@ class EnforcementActivationTest extends TestCase
     }
 
     /**
-     * C4-01 — PRE-FIX STATE: installation_id missing (wizard never wrote it) →
+     * Old state: installation_id missing (wizard never wrote it) leads to
      * unconditional ALLOW and NO network call. This is exactly the silent no-op.
      */
     public function testUnconfiguredInstallationIdIsSilentNoOp(): void
@@ -92,7 +92,7 @@ class EnforcementActivationTest extends TestCase
 
         $config = [
             'trusteed_general/general/api_base_url' => 'https://api.trusteed.test',
-            // installation_id + hmac_secret intentionally ABSENT (pre-fix).
+            // installation_id + hmac_secret intentionally ABSENT (old state).
         ];
 
         $client = new EnforcementClient(
@@ -108,8 +108,8 @@ class EnforcementActivationTest extends TestCase
     }
 
     /**
-     * C4-02 — POST-FIX STATE: wizard persisted installation_id + hmac_secret to
-     * the enforcement paths → evaluate() calls the API and returns BLOCK.
+     * Fixed state: wizard persisted installation_id + hmac_secret to
+     * the enforcement paths, so evaluate() calls the API and returns BLOCK.
      */
     public function testConfiguredEnforcementReachesBlockDecision(): void
     {
@@ -135,7 +135,7 @@ class EnforcementActivationTest extends TestCase
     }
 
     /**
-     * C4-03 — POST-FIX STATE: configured + API returns ALLOW → real ALLOW
+     * Fixed state: configured and the API returns ALLOW, so a real ALLOW
      * (distinct from the unconditional no-op: the network call DID happen).
      */
     public function testConfiguredEnforcementReachesAllowDecision(): void

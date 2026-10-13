@@ -20,8 +20,7 @@ use Psr\Log\LoggerInterface;
  * The same logic is also applied on every wizard save in
  * Controller/Adminhtml/Setup/Save.php so the guard works across theme changes.
  *
- * Spec 050 T066a.
- */
+ *  */
 class DisableBridgeOnHyva implements DataPatchInterface
 {
     private const CONFIG_WEBMCP_ENABLED = 'trusteed_general/features/webmcp_enabled';

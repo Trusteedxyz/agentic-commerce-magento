@@ -7,7 +7,7 @@ namespace Trusteed\AgenticCommerce\Test\Integration;
 use Magento\TestFramework\TestCase\AbstractController;
 
 /**
- * Integration test: Phase B seam (T121, US4) — trusteed_dashboard_index layout.
+ * Integration test: Phase B seam — trusteed_dashboard_index layout.
  *
  * Verifies ST-5: toggling trusteed_general/general/phase_b_enabled renders or hides
  * the SPA placeholder div so the future Phase B embed-shell SPA can mount

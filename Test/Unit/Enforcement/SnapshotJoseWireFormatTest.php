@@ -11,16 +11,16 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 
 /**
- * Spec-048 FR-008 — snapshot wire-format contract test.
+ * Snapshot wire-format contract test.
  *
  * The /v1/rules/snapshot/:merchantId endpoint returns a BARE JWS Compact body
  * with Content-Type application/jose when the caller negotiates
  * `Accept: application/jose`. This test proves the Magento EnforcementClient:
  *   1. Sends `Accept: application/jose` (matching WP-plugin/PrestaShop/Odoo).
  *   2. Parses the raw body as a JWS string (NOT a JSON envelope).
- *   3. (fable audit 2026-07-02, PL-F5) VERIFIES the Ed25519 signature against
- *      the platform JWKS before trusting the payload — a snapshot signed
- *      with an unknown/wrong key must fail-open to an empty rules array.
+ *   3. VERIFIES the Ed25519 signature against the platform JWKS before
+ *      trusting the payload: a snapshot signed with an unknown or wrong key
+ *      must fail open to an empty rules array.
  *
  * Closes the cross-component wire-format drift where the client previously
  * json_decode()'d the body and read $body['jwsCompact'].
@@ -111,7 +111,8 @@ class SnapshotJoseWireFormatTest extends TestCase
         $public  = sodium_crypto_sign_publickey($keypair);
 
         $header = self::b64url((string)json_encode(['alg' => 'EdDSA', 'kid' => 'k1']));
-        $body   = self::b64url((string)json_encode($payload));
+        // The server always signs `validUntil`; the fixture carries what production emits.
+        $body   = self::b64url((string)json_encode(array_merge(['validUntil' => gmdate('Y-m-d\\TH:i:s\\Z', time() + 300)], $payload)));
         $sig    = self::b64url(sodium_crypto_sign_detached("{$header}.{$body}", $secret));
         $jws    = "{$header}.{$body}.{$sig}";
 
@@ -185,7 +186,7 @@ class SnapshotJoseWireFormatTest extends TestCase
     }
 
     /**
-     * PL-F5 regression guard — a JWS with a valid shape but a BOGUS signature
+     * Regression guard: a JWS with a valid shape but a BOGUS signature
      * (e.g. tampered payload, or signed by an unrecognized key) MUST fail
      * open to an empty rules array, never trust the payload.
      */
@@ -193,7 +194,7 @@ class SnapshotJoseWireFormatTest extends TestCase
     {
         $captured = [];
         $signed = $this->makeSignedJws(['rules' => [['ruleCode' => 'R999']]]);
-        // Tamper the payload segment after signing — signature no longer matches.
+        // Tamper the payload segment after signing: the signature no longer matches.
         $parts = explode('.', $signed['jws']);
         $parts[1] = self::b64url((string)json_encode(['rules' => [['ruleCode' => 'R999-TAMPERED']]]));
         $tamperedJws = implode('.', $parts);

@@ -7,7 +7,7 @@ namespace Trusteed\AgenticCommerce\Test\Unit\Setup\Patch\Data;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Spec-050 FR-A-013 â€” unit test for the AddAgenticVisibleAttribute data patch.
+ * €” unit test for the AddAgenticVisibleAttribute data patch.
  *
  * Validates that the patch declares the expected EAV attribute on both
  * `catalog_product` and `catalog_category` with the correct flags (boolean,

@@ -232,6 +232,17 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.5
+
+- New: `/.well-known/ucp` now answers on the storefront. It redirects to the UCP profile generated for your store, so agents that look for it on your domain find it. If the store isn't connected yet it returns 404 instead of a broken redirect.
+- New: the module reports its capabilities to the platform every hour, not only on install and upgrade. A healthy store with little traffic no longer drifts into looking inactive.
+- Changed: signed rule snapshots and the keys that verify them are checked more strictly (size cap, expiry, header checks, cached key lookups). For an agent checkout, a snapshot with an invalid signature now blocks in every failure mode, and a missing or unreadable one follows the failure mode you configured.
+- Changed: a human checkout is never blocked by an outage on our side (network error, timeout, unreadable answer). Only your own rules that apply to everyone can block it. Your failure mode applies to agent checkouts only.
+- Changed: when an agent's history can't be read, the configured policy for that case applies, rather than the missing value being read as zero.
+- Changed: the admin menu now has seven entries in the same order as the other platforms. Security and Agent Readiness are no longer in the menu but are still reachable by URL and from links inside the panel.
+- Changed: uninstalling the module with `bin/magento module:uninstall` now tells the platform, so the store stops being listed in the public directory. Deleting the files by hand can't send that notice.
+- Fixed: the admin controller directory for Agent Readiness is now named `Agentreadiness`, matching its route and layout handle.
+
 ### 1.3.4
 
 - Fixed: the connection guide sent merchants to a settings screen that doesn't exist (Dashboard → Settings → Integrations → Magento) to copy the Merchant ID, Integration Token, and Webhook Secret by hand. The real flow is a one-time popup token exchanged for the final credentials automatically; the guide now describes it, with a note not to hand-edit the webhook secret afterward, since that breaks the signature without saying so.

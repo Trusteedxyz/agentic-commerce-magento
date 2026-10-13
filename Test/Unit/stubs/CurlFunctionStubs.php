@@ -9,7 +9,7 @@ declare(strict_types=1);
  * cURL extension through unqualified function names. PHP resolves unqualified
  * function calls against the current namespace *before* falling back to the
  * global scope, so declaring `curl_*` inside that namespace lets the unit suite
- * drive the command with canned HTTP responses — no network, no webserver.
+ * drive the command with canned HTTP responses, with no network and no webserver.
  *
  * State is held in {@see CurlStubState}; each test sets the response it wants
  * and resets afterwards.

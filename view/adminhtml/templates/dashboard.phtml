@@ -7,7 +7,7 @@ $storeCount = $block->getStoreCount();
 <div style="max-width:900px;margin:24px auto;font-family:sans-serif;">
 
 <?php if (!$connected): ?>
-    <!-- No conectado -->
+    <!-- Not connected -->
     <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:24px 28px;margin-bottom:24px;">
         <h2 style="margin:0 0 8px;font-size:1.2rem;color:#856404;">
             ⚠️ <?= $block->escapeHtml(__('Your store is not yet connected to Trusteed')) ?>
@@ -21,7 +21,7 @@ $storeCount = $block->getStoreCount();
         </a>
     </div>
 <?php else: ?>
-    <!-- Conectado -->
+    <!-- Connected -->
     <div style="background:#d4edda;border:1px solid #28a745;border-radius:8px;padding:20px 28px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">
         <span style="font-size:2rem;">✅</span>
         <div>
@@ -39,7 +39,7 @@ $storeCount = $block->getStoreCount();
     </div>
 <?php endif; ?>
 
-    <!-- Accesos rápidos -->
+    <!-- Quick links -->
     <h3 style="font-size:1rem;color:#333;margin:0 0 16px;"><?= $block->escapeHtml(__('What do you want to do?')) ?></h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:32px;">
 
@@ -81,7 +81,7 @@ $storeCount = $block->getStoreCount();
 
     </div>
 
-    <!-- Ayuda -->
+    <!-- Help -->
     <div style="background:#f8f9fa;border-radius:8px;padding:18px 24px;font-size:.9rem;color:#555;">
         <?= $block->escapeHtml(__('Have a question? Write to us at')) ?>
         <a href="mailto:hola@trusteed.xyz" style="color:#1a73e8;">hola@trusteed.xyz</a>

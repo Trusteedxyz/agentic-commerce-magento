@@ -14,7 +14,7 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 use Magento\Framework\Setup\Patch\PatchRevertableInterface;
 
 /**
- * Spec-050 FR-A-013 â€” Agentic visibility flag for products and categories.
+ * €” Agentic visibility flag for products and categories.
  *
  * Adds a boolean EAV attribute `is_agentic_visible` (default 1) to:
  *   - catalog_product (all sellable types)

@@ -568,12 +568,95 @@ namespace Magento\Framework\Notification {
     }
 }
 
-// ── Traducción global ────────────────────────────────────────────────────────
+// ── CheckoutSubmitBefore surface ─────────────────────────────────────────────
 //
-// El `__()` real de Magento interpola `%1`, `%2`… y devuelve un `Phrase`. Aquí
-// sólo hace falta lo segundo: los tests comprueban el TEXTO, no el mecanismo de
-// traducción, y una interpolación de mentira que se comiera un argumento haría
-// pasar en verde un mensaje al que le falta un dato.
+// Just enough to instantiate the checkout observer locally and exercise it for
+// real (Test/Unit/Observer/CheckoutSubmitBeforeIdentityChannelTest.php). With
+// the real framework loaded this file is not included and that test is skipped:
+// its harness depends on these minimal shapes, not on the real classes.
+
+namespace Magento\Checkout\Model {
+    if (!\class_exists(Session::class)) {
+        class Session
+        {
+            /** @var array<string,mixed> */
+            private array $data = [];
+
+            public function getData($key = '', $index = null)
+            {
+                return $this->data[$key] ?? null;
+            }
+
+            public function setData($key, $value = null)
+            {
+                $this->data[$key] = $value;
+                return $this;
+            }
+
+            public function unsetData($key = null)
+            {
+                unset($this->data[$key]);
+                return $this;
+            }
+
+            public function setQuoteId($quoteId): void
+            {
+            }
+        }
+    }
+}
+
+namespace Magento\Catalog\Api {
+    if (!\interface_exists(CategoryRepositoryInterface::class)) {
+        interface CategoryRepositoryInterface
+        {
+            public function get($categoryId, $storeId = null);
+        }
+    }
+}
+
+namespace Magento\Framework\Exception {
+    if (!\class_exists(LocalizedException::class)) {
+        class LocalizedException extends \Exception
+        {
+            public function __construct($phrase, ?\Exception $cause = null, $code = 0)
+            {
+                parent::__construct((string) $phrase, (int) $code, $cause);
+            }
+        }
+    }
+
+    if (!\class_exists(NoSuchEntityException::class)) {
+        class NoSuchEntityException extends LocalizedException
+        {
+        }
+    }
+}
+
+namespace Magento\Framework\App {
+    // The real `RequestInterface` does not declare `getHeader()` either: only
+    // the HTTP/REST implementations have it. That is why the observer uses
+    // `method_exists`.
+    if (!\interface_exists(RequestInterface::class)) {
+        interface RequestInterface
+        {
+            public function getParam($key, $defaultValue = null);
+        }
+    }
+}
+
+namespace {
+    if (!\defined('TRUSTEED_MAGENTO_UNIT_STUBS')) {
+        \define('TRUSTEED_MAGENTO_UNIT_STUBS', true);
+    }
+}
+
+// ── Global translation ────────────────────────────────────────────────────────
+//
+// The real Magento `__()` interpolates `%1`, `%2`... and returns a `Phrase`.
+// Only the second part is needed here: the tests check the TEXT, not the
+// translation mechanism, and a fake interpolation that swallowed an argument
+// would let a message with missing data pass.
 
 namespace {
     if (!\function_exists('__')) {

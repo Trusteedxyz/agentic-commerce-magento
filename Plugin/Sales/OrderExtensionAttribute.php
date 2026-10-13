@@ -19,11 +19,10 @@ use Psr\Log\LoggerInterface;
  *   the session/checkout context. NEVER clears an existing URI (immutability,
  *   FR-A-015 clarification Q4).
  *
- * The durable DB persistence is handled by OrderRepositoryPlugin (T079a).
+ * The durable DB persistence is handled by OrderRepositoryPlugin.
  * This plugin only manages the runtime extension attribute on the Order object.
  *
- * Spec 050 T079.
- */
+ *  */
 class OrderExtensionAttribute
 {
     public function __construct(

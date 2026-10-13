@@ -96,7 +96,7 @@ class SalesCreditmemoSaveAfterTest extends TestCase
         $order = $this->makeOrder(Order::STATE_CLOSED);
         $cm    = $this->makeCreditmemo($order);
 
-        // SalesOrderSaveAfter handles STATE_CLOSED — no duplicate enqueue expected.
+        // SalesOrderSaveAfter handles STATE_CLOSED, so no duplicate enqueue is expected.
         $this->outboxRepository->expects($this->never())->method('insert');
 
         $this->observer->execute($this->makeObserver($cm));
@@ -128,7 +128,7 @@ class SalesCreditmemoSaveAfterTest extends TestCase
             ->method('error')
             ->with('Failed to enqueue Trusteed creditmemo webhook', $this->arrayHasKey('error'));
 
-        // Must not propagate — error is logged, checkout is not interrupted.
+        // Must not propagate: the error is logged and checkout is not interrupted.
         $this->observer->execute($this->makeObserver($cm));
     }
 

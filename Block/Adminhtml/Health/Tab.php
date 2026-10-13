@@ -26,8 +26,7 @@ use Trusteed\AgenticCommerce\Model\Webhook\OutboxRepository;
  *   - Dead row count
  *   - Theme compatibility warning for Hyvä/PWA Studio
  *
- * Spec 050 T065, FR-A-019.
- */
+ *  */
 class Tab extends Template
 {
     private const MANIFEST_CACHE_KEY = 'TRUSTEED_MANIFEST_LAST_BUILT_AT';

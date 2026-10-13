@@ -4,8 +4,7 @@
 
     <!--
         Plugin: persist trusteed_receipt_uri extension attribute to sales_order DB column.
-        Set-once guard: column value is never overwritten once written (FR-A-015 immutability).
-        Spec 050 T079a + T079b.
+        Set-once guard: column value is never overwritten once written (immutability).
     -->
     <type name="Magento\Sales\Api\OrderRepositoryInterface">
         <plugin name="trusteed_order_receipt_uri"
@@ -16,8 +15,7 @@
     <!--
         Plugin: manage trusteed_receipt_uri on Order at checkout place-order time.
         Ensures extension attribute container exists before and after order placement.
-        Spec 050 T079.
-    -->
+            -->
     <type name="Magento\Sales\Model\Order\Payment">
         <plugin name="trusteed_order_ext_attr"
                 type="Trusteed\AgenticCommerce\Plugin\Sales\OrderExtensionAttribute"
@@ -25,16 +23,19 @@
     </type>
 
     <!--
-        SSRF hardening (spec-050 Stream B H1): explicitly wire the
+        SSRF hardening: explicitly wire the
         ApiBaseUrlValidator into the outbound enforcement HTTP clients so the
         admin-configurable api_base_url is allowlist/hash-checked before any
         HMAC-signed payload leaves the store. The constructor argument is
-        nullable (legacy unit tests construct positionally) — these bindings
+        nullable (legacy unit tests construct positionally), these bindings
         guarantee production always receives the guard.
     -->
     <type name="Trusteed\AgenticCommerce\Service\EnforcementClient">
         <arguments>
             <argument name="urlValidator" xsi:type="object">Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator</argument>
+            <!-- Negative cache for the forced JWKS retry. Optional constructor
+                 argument: without this binding it would always be null (no cache). -->
+            <argument name="cache" xsi:type="object">Magento\Framework\App\CacheInterface</argument>
         </arguments>
     </type>
     <type name="Trusteed\AgenticCommerce\Service\AgentHistoryFetcher">
@@ -43,11 +44,25 @@
         </arguments>
     </type>
 
+    <!-- Optional constructor arguments are not injected on their own; without
+         this `request` would always be null and the X-Trusteed-Agent-* header
+         channel would be a read with no producer. -->
+    <type name="Trusteed\AgenticCommerce\Observer\CheckoutSubmitBefore">
+        <arguments>
+            <argument name="request" xsi:type="object">Magento\Framework\App\RequestInterface</argument>
+            <!-- `historyFetcher` is an optional constructor argument and Magento does not
+                 inject optionals; without this binding it would always be null and no history
+                 signal would travel (CheckoutSubmitBeforeHistoryWiringTest reads this file). It
+                 is only queried for an agent with a valid token. -->
+            <argument name="historyFetcher" xsi:type="object">Trusteed\AgenticCommerce\Service\AgentHistoryFetcher</argument>
+        </arguments>
+    </type>
+
     <!--
-        SSRF hardening (spec-050 Gap #3): outbound HMAC/token-bearing callouts
+        SSRF hardening: outbound HMAC/token-bearing callouts
         must allowlist/hash-check the admin-configurable api_base_url before any
         credential leaves the store. The constructor argument is nullable (legacy
-        positional unit tests) and fails closed when null — these bindings
+        positional unit tests) and fails closed when null, these bindings
         guarantee production always receives the guard.
     -->
     <type name="Trusteed\AgenticCommerce\Model\Webhook\SignaturePublisher">
@@ -91,18 +106,16 @@
     </type>
 
     <!--
-        Aviso de administración cuando la tienda está conectada pero el
-        enforcement de checkout no puede evaluar nada — auditoría de onboarding
-        2026-09-09, hueco A2.
+        Admin notice shown when the store is connected but checkout enforcement
+        cannot evaluate anything.
 
-        `EnforcementClient::evaluate()` devuelve ALLOW incondicional sin
-        `installation_id`, y hasta ahora nada se lo decía al comerciante: veía
-        «configuration saved successfully» y se quedaba creyendo que estaba
-        protegido.
+        `EnforcementClient::evaluate()` returns an unconditional ALLOW without an
+        `installation_id`, and until now nothing told the merchant: they saw
+        "configuration saved successfully" and believed they were protected.
 
-        Enganchado SÓLO aquí, sin añadir `magento/module-admin-notification` a
-        composer.json: si esa lista no existe porque el comerciante desactivó
-        AdminNotification, la entrada queda inerte y no rompe el arranque.
+        Hooked in here only, without adding `magento/module-admin-notification` to
+        composer.json: if that list does not exist because the merchant disabled
+        AdminNotification, the entry stays inert and does not break startup.
     -->
     <type name="Magento\AdminNotification\Model\System\MessageList">
         <arguments>

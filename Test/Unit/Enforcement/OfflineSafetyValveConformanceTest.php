@@ -8,9 +8,8 @@ use Trusteed\AgenticCommerce\Enforcement\OfflineSafetyValveEvaluator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * App Store remediation follow-up (2026-07-11/12) — cross-language
- * conformance test. Loads the SAME fixture consumed by
- * packages/shared/src/enforcement/__tests__/offline-safety-valve-conformance.test.ts
+ * Cross-language conformance test. Loads the SAME fixture consumed by the
+ * TypeScript reference tests
  * and the WooCommerce/PrestaShop plugins' equivalents, and asserts
  * OfflineSafetyValveEvaluator matches the canonical TS evaluators for every
  * vector.
@@ -20,7 +19,7 @@ final class OfflineSafetyValveConformanceTest extends TestCase
     private function loadFixture(): array
     {
         $path = __DIR__ . '/../../fixtures/offline-safety-valve-conformance.json';
-        $this->assertFileExists($path, 'conformance fixture must be reachable from the monorepo layout');
+        $this->assertFileExists($path, 'conformance fixture must be reachable');
         $json = json_decode((string) file_get_contents($path), true);
         $this->assertIsArray($json);
         return $json['vectors'];
