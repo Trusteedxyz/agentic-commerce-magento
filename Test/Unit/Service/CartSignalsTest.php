@@ -15,7 +15,7 @@ if (!interface_exists(\Magento\Framework\Event\ObserverInterface::class)) {
 }
 
 /**
- * Magento cart-signal detection for R015/R016/R025/R027/R028.
+ * B7 — Magento cart-signal detection for R015/R016/R025/R027/R028.
  *
  * Pure-function layer mirrors the WooCommerce `AgenticMCP_Cart_Signals` and
  * PrestaShop `PriceSnapVerifier` so cross-platform behavior stays aligned.
@@ -33,7 +33,7 @@ final class CartSignalsTest extends TestCase
         $this->assertTrue(CartSignals::detectPoBox('Casella Postale 5'));
     }
 
-    /** Local PO-box formats. */
+    /** Audit `docs/analysis/rules.md` L228 — local PO-box formats. */
     public function test_po_box_local_audit_expansion(): void
     {
         // Spanish regional
@@ -51,7 +51,7 @@ final class CartSignalsTest extends TestCase
         // CJK
         $this->assertTrue(CartSignals::detectPoBox('私書箱 7'));
         $this->assertTrue(CartSignals::detectPoBox('邮政信箱 100'));
-        // Freight forwarders
+        // Freight forwarder audit expansion
         $this->assertTrue(CartSignals::detectFreightForwarder('1 Main', 'Forward2Me Ltd'));
         $this->assertTrue(CartSignals::detectFreightForwarder('99 Logistics', 'Aramex Shop & Ship'));
     }
@@ -184,7 +184,7 @@ final class CartSignalsTest extends TestCase
         $this->assertSame('a=1,b=2,c=3', CartSignals::canonicalPriceMessage(['b' => 2, 'a' => 1, 'c' => 3]));
     }
 
-    // ── resolveR015HmacKey from snapshot rules ───────────────────────────────
+    // ── B7b — resolveR015HmacKey from snapshot rules ─────────────────────────
 
     public function test_resolveR015HmacKey_returns_key_when_present_short_code(): void
     {
@@ -252,7 +252,7 @@ final class CartSignalsTest extends TestCase
         $this->assertSame(['x', 'y'], CartSignals::normalizeScopes(['x', 'y']));
     }
 
-    // ── R018 cart-composition guard ──────────────────────────────────────────
+    // ── B7c R018 cart-composition guard ──────────────────────────────────────
 
     public function test_max_qty_per_sku_aggregates_duplicates(): void
     {
@@ -344,7 +344,7 @@ final class CartSignalsTest extends TestCase
         $this->assertNull(CartSignals::extractPaymentMethod($orderEmptyMethod));
     }
 
-    // ── R023 refund ratio ────────────────────────────────────────────────────
+    // ── B7c R023 refund ratio ────────────────────────────────────────────────
 
     public function test_refund_ratio_clamped(): void
     {
@@ -354,7 +354,7 @@ final class CartSignalsTest extends TestCase
         $this->assertSame(1.0, CartSignals::refundRatio(20, 10)); // upper clamp
     }
 
-    // ── R005 revoked-agent ───────────────────────────────────────────────────
+    // ── T17 R005 revoked-agent ───────────────────────────────────────────────
 
     public function test_revoked_agent_backend_flag(): void
     {
@@ -375,7 +375,7 @@ final class CartSignalsTest extends TestCase
         $this->assertFalse(CartSignals::isAgentRevoked(false, ''));
     }
 
-    // ── R006 provider-confidence ─────────────────────────────────────────────
+    // ── T17 R006 provider-confidence ─────────────────────────────────────────
 
     public function test_provider_confidence_float(): void
     {
@@ -407,11 +407,11 @@ final class CartSignalsTest extends TestCase
         $this->assertNull(CartSignals::extractProviderConfidence(['providerConfidence' => ['nested']]));
     }
 
-    // ── R020 merchant-local-hour ─────────────────────────────────────────────
+    // ── T17 R020 merchant-local-hour ─────────────────────────────────────────
 
     public function test_merchant_local_hour_with_timezone(): void
     {
-        // A fixed instant at 12:00:00Z → New York (UTC-4 DST) = 08:00.
+        // 2026-06-15T12:00:00Z → New York (UTC-4 DST) = 08:00.
         $fixed = new \DateTimeImmutable('2026-06-15T12:00:00+00:00');
         $this->assertSame(8, CartSignals::computeMerchantLocalHour('America/New_York', $fixed));
         // Same instant in Tokyo (UTC+9) = 21:00.
@@ -433,7 +433,7 @@ final class CartSignalsTest extends TestCase
         $this->assertNull(CartSignals::computeMerchantLocalHour('Not/A_Real_Zone', $fixed));
     }
 
-    // ── R032 blocked category ────────────────────────────────────────────────
+    // ─── Spec-048 Sprint E (T-E43) ──────────────────────────────────────────
 
     public function test_r032_blocked_category_hit(): void
     {
@@ -530,7 +530,7 @@ final class CartSignalsTest extends TestCase
         $this->assertStringContainsString('downloadable', $out);
     }
 
-    // ── R035 max-order-value ─────────────────────────────────────────────────
+    // ── R035 max-order-value (Sprint E.4) ────────────────────────────────────
 
     public function test_r035_blocks_when_grand_total_exceeds_cap(): void
     {
@@ -560,7 +560,7 @@ final class CartSignalsTest extends TestCase
         $this->assertFalse($signals->evaluateR035($quote, ['maxCents' => null])['hit']);
     }
 
-    // ── R036 max-line-item-value ─────────────────────────────────────────────
+    // ── R036 max-line-item-value (Sprint E.4) ────────────────────────────────
 
     public function test_r036_blocks_first_line_over_cap_with_item_id(): void
     {

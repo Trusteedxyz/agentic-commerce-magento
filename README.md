@@ -232,6 +232,14 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.6
+
+- Added: a browser agent that checks out in your store is now recognised by its Web Bot Auth signature, and the checkout exposes WebMCP tools that mark the order as placed by an agent. The signature mode is a new setting (off by default).
+- Changed: when an agent checkout is blocked, the agent always receives the reason, naming the limit, category or product that caused it and, for order limits, the rule, the cap and the order value.
+- Fixed: rules R034, R022 and R014 now reach every checkout surface, including the offline safety valve.
+- Security: an agent token without a `merchantId` claim is now rejected, as in the PrestaShop and Odoo integrations. Conforming agents always send it.
+- Fixed: the Pending approvals panel no longer brings back a purchase that was already decided and shows the products of the cart; approving or rejecting leaves a confirmation message.
+
 ### 1.3.5
 
 - New: `/.well-known/ucp` now answers on the storefront. It redirects to the UCP profile generated for your store, so agents that look for it on your domain find it. If the store isn't connected yet it returns 404 instead of a broken redirect.

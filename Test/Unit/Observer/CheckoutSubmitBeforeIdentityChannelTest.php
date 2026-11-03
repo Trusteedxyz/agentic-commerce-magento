@@ -21,51 +21,52 @@ use Trusteed\AgenticCommerce\Service\AgentTokenVerifier;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 
 /**
- * Exercises the REAL observer `CheckoutSubmitBefore::execute()`, with a real
- * `EnforcementClient` and `AgentTokenVerifier` and a test transport that
- * captures what is sent to `/v1/rules/evaluate`.
+ * C2 + A8 (auditoría spec-048 2026-09-27) ejercidos sobre el observer REAL
+ * `CheckoutSubmitBefore::execute()`, con `EnforcementClient` y
+ * `AgentTokenVerifier` reales y un transporte de prueba que captura lo que se
+ * envía a `/v1/rules/evaluate`.
  *
- * - The agent identity arrives in `X-Trusteed-Agent-*` headers on the request
- *   that places the order (it used to come only from two session keys that
- *   nothing wrote, so every checkout looked organic).
- * - The payload of an organic checkout stays BYTE FOR BYTE as before: the
- *   literal below is written by hand and was checked against the previous
- *   observer output with this same harness before the change.
- * - A human is not blocked by a failure on our side: neither by an evaluator
- *   503 nor by an exception while building the payload.
+ * - La identidad del agente llega por cabeceras `X-Trusteed-Agent-*` de la
+ *   petición que coloca el pedido (antes sólo de dos claves de sesión que nada
+ *   escribía: todo checkout salía orgánico).
+ * - El payload de un checkout orgánico queda BYTE A BYTE como en HEAD
+ *   (`eff8b06b9`): el literal de abajo está escrito a mano y se comprobó contra
+ *   la salida del observer de HEAD con este mismo arnés antes de tocarlo.
+ * - Un humano no se bloquea por una avería nuestra: ni por el 503 del
+ *   evaluador ni por una excepción al construir el payload.
  *
- * Local harness: depends on the stubs in `Test/Unit/stubs/MagentoFrameworkStubs.php`
- * (minimal session, Quote and Observer). Skipped when the real framework is loaded.
+ * Arnés local: depende de los stubs de `Test/Unit/stubs/MagentoFrameworkStubs.php`
+ * (sesión, Quote, Observer mínimos). Con el framework real cargado se salta.
  */
 final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
 {
     /** @var list<string> */
     private array $posted = [];
 
-    /** @var list<string> Bodies sent to /v1/agent-events/nonce-consume. */
+    /** @var list<string> Cuerpos enviados a /v1/agent-events/nonce-consume. */
     private array $noncePosts = [];
 
-    /** @var array{jws:string,jwks:string}|null Signed snapshot served on GET (null means 503). */
+    /** @var array{jws:string,jwks:string}|null Snapshot firmado servido por GET (null ⇒ 503). */
     private ?array $snapshot = null;
 
-    /** Exception the transport throws when POSTing the evaluation (timeout, network...). */
+    /** Excepción que lanza el transporte al POSTear la evaluación (timeout, red…). */
     private ?\Throwable $postThrows = null;
 
-    /** Quote currency (a non-UTF-8 value makes `json_encode` fail). */
+    /** Moneda del quote (un valor no UTF-8 hace fallar `json_encode`). */
     private string $currency = 'eur';
 
-    /** HTTP status of /v1/agent-events/nonce-consume (200 ACCEPTED, 409 REPLAY, 503 INDETERMINATE). */
+    /** Estado HTTP de /v1/agent-events/nonce-consume (200 ACCEPTED, 409 REPLAY, 503 INDETERMINATE). */
     private int $nonceStatus = 200;
 
     private ?Quote $lastQuote = null;
 
-    /** @var list<object> Visible quote lines. */
+    /** @var list<object> Líneas visibles del quote. */
     private array $items = [];
 
     protected function setUp(): void
     {
         if (!\defined('TRUSTEED_MAGENTO_UNIT_STUBS')) {
-            self::markTestSkipped('local stub harness; does not apply with the real framework');
+            self::markTestSkipped('arnés de stubs locales; con el framework real no aplica');
         }
         $this->posted     = [];
         $this->noncePosts = [];
@@ -163,11 +164,11 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
     }
 
     /**
-     * A real agent token signed with Ed25519 by `$did`, plus the platform
-     * snapshot (also signed) that publishes its key in `agentDidResolver`.
+     * Token de agente REAL firmado con Ed25519 por `$did` y el snapshot de
+     * plataforma (también firmado) que publica su clave en `agentDidResolver`.
      *
-     * @param array<string,mixed> $override claims to add or replace
-     * @param list<string>        $drop     claims to remove (`['jti']` gives the canonical shape)
+     * @param array<string,mixed> $override claims que se añaden o sustituyen (B5)
+     * @param list<string>        $drop     claims que se quitan (B5: `['jti']` da la forma canónica)
      * @return array{token:string, snapshot:array{jws:string,jwks:string}}
      */
     private static function agentTokenAndSnapshot(string $did, array $override = [], array $drop = []): array
@@ -176,7 +177,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $now       = time();
         $tHeader   = self::b64url((string) json_encode(['alg' => 'EdDSA', 'typ' => 'trusteed-agent-token+jwt', 'kid' => $did . '#key-1']));
         $claims    = array_merge([
-            'iss' => $did, 'aud' => 'trusteed', 'iat' => $now, 'exp' => $now + 120,
+            'iss' => $did, 'aud' => 'trusteed', 'merchantId' => 'merchant_xyz', 'iat' => $now, 'exp' => $now + 120,
             'nonce' => str_repeat('n', 32), 'jti' => 'jti_' . bin2hex(random_bytes(10)),
         ], $override);
         foreach ($drop as $claim) {
@@ -210,7 +211,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
             {
                 return $defaultValue;
             }
-            /** @return string|false Same as Laminas: false when the header is absent. */
+            /** @return string|false Igual que Laminas: false si la cabecera no viene. */
             public function getHeader($name, $default = false)
             {
                 foreach ($this->headers as $k => $v) {
@@ -321,16 +322,15 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
     /** @return array<string,mixed> */
     private function lastPayload(): array
     {
-        self::assertCount(1, $this->posted, 'a single evaluation sent');
+        self::assertCount(1, $this->posted, 'una sola evaluación enviada');
         $decoded = json_decode($this->posted[0], true);
         self::assertIsArray($decoded);
         return $decoded;
     }
 
     /**
-     * Literal organic body, written by hand. `__TS__` stands in for the
-     * `timestamp` (clock); everything else, key order included, is the
-     * expected shape.
+     * Literal del cuerpo orgánico, escrito a mano. `__TS__` sustituye al
+     * `timestamp` (reloj); todo lo demás, orden de claves incluido, es el de HEAD.
      */
     private const ORGANIC_BODY_LITERAL =
         '{"merchantId":"merchant_xyz","agentId":null,"orderContext":{"cartTotalCents":4999,'
@@ -358,12 +358,12 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
     }
 
     /**
-     * This test used to expect that the DID from the header, WITHOUT a token,
-     * was sent as `agentId`. That was the vulnerable behavior: the server-side
-     * history (R003/R005/R010/R021/R023/R024) and the local projection are
-     * keyed by the hash of `agentId`, so an agent could inherit another DID's
-     * history or burn a victim's. Now: header without token means ANONYMOUS agent,
-     * no history.
+     * Task 16 (revisión de seguridad, PoC): este test fijaba que el DID de la
+     * cabecera, SIN token, viajaba como `agentId`. Era el comportamiento
+     * vulnerable: el historial del servidor (R003/R005/R010/R021/R023/R024) y
+     * la proyección local se indexan por el hash de `agentId`, así que el
+     * agente heredaba el historial de otro DID o quemaba el de una víctima.
+     * Sustituido: cabecera sin token ⇒ agente ANÓNIMO, sin historial.
      */
     public function testDeclaredDidHeaderWithoutTokenIsAnAnonymousAgent(): void
     {
@@ -373,14 +373,14 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
             'X-Trusteed-Agent-Origin' => 'webmcp',
         ]), history: $history);
         $payload = $this->lastPayload();
-        self::assertNull($payload['agentId'], 'a merely declared DID does not travel as identity');
+        self::assertNull($payload['agentId'], 'un DID sólo declarado no viaja como identidad');
         self::assertSame('agentic_endpoint', $payload['endpointClass'], 'sigue siendo agente');
-        self::assertArrayNotHasKey('_agent_token_signature_invalid', $payload['orderContext']['cartAttributes'], 'without a token there is no invalid token');
+        self::assertArrayNotHasKey('_agent_token_signature_invalid', $payload['orderContext']['cartAttributes'], 'sin token no hay token inválido');
         self::assertSame([], $history->hashes, 'ni se consulta el historial del DID declarado');
-        self::assertSame('endpointClass', array_key_last($payload), 'added at the end: the rest does not change');
-        // This used to assert that the DID from a header WITHOUT a token ended
-        // up stored as "verified" and attributed to the order (R023). That was
-        // the vulnerable behavior: it is no longer persisted.
+        self::assertSame('endpointClass', array_key_last($payload), 'se añade al final: el resto no cambia');
+        // Fix ronda 1 (IMPORTANT 1): antes aquí se afirmaba que el DID de una
+        // cabecera SIN token acababa guardado como «verificado» y atribuido al
+        // pedido (R023). Era el comportamiento vulnerable: ya no se persiste.
         self::assertNull(
             $session->getData(CheckoutSubmitBefore::SESSION_VERIFIED_AGENT_DID),
             'un DID de cabecera sin token verificado no se atribuye al pedido'
@@ -393,6 +393,60 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $payload = $this->lastPayload();
         self::assertNull($payload['agentId']);
         self::assertSame('agentic_endpoint', $payload['endpointClass']);
+    }
+
+    /** Task 5: la marca que pone el endpoint WebMCP (servidor) cuenta como agente sin cabeceras. */
+    public function testWebmcpChannelAppliesAgentRules(): void
+    {
+        $session = new CheckoutSession();
+        $session->setData('trusteed_agentic_origin', '1');
+        $session->setData('trusteed_agentic_channel', 'webmcp');
+        $session = $this->checkout(self::request([]), session: $session);
+        $payload = $this->lastPayload();
+        self::assertNull($payload['agentId']);
+        self::assertSame('agentic_endpoint', $payload['endpointClass']);
+        self::assertSame('webmcp', $session->getData(CheckoutSubmitBefore::SESSION_AGENT_CHANNEL_FOR_ORDER), 'el canal pasa al pedido');
+        self::assertNull($session->getData('trusteed_agentic_origin'), 'la marca se consume tras evaluar');
+        self::assertNull($session->getData('trusteed_agentic_channel'));
+    }
+
+    public function testWebmcpMarkIsFailClosedLikeAnyAgent(): void
+    {
+        $session = new CheckoutSession();
+        $session->setData('trusteed_agentic_origin', '1');
+        $session->setData('trusteed_agentic_channel', 'webmcp');
+        try {
+            $this->checkout(self::request([]), status: 503, body: '', session: $session);
+            self::fail('un agente WebMCP con el evaluador caído no pasa');
+        } catch (LocalizedException) {
+            self::assertNull($session->getData(CheckoutSubmitBefore::SESSION_AGENT_CHANNEL_FOR_ORDER));
+        }
+    }
+
+    /** Un agente retenido que reenvía sin llamar a ninguna tool sigue evaluándose como agente. */
+    public function testAgenticMarkSurvivesABlockAndTheResubmitIsStillAnAgent(): void
+    {
+        $session = new CheckoutSession();
+        $session->setData('trusteed_agentic_origin', '1');
+        $session->setData('trusteed_agentic_channel', 'webmcp');
+        try {
+            $this->checkout(self::request([]), status: 503, body: '', session: $session);
+            self::fail('retenido');
+        } catch (LocalizedException) {
+            self::assertSame('1', $session->getData('trusteed_agentic_origin'));
+            self::assertSame('webmcp', $session->getData('trusteed_agentic_channel'));
+        }
+        $this->checkout(self::request([]), session: $session);
+        self::assertCount(2, $this->posted, 'dos evaluaciones: la retenida y el reenvío');
+        self::assertSame('agentic_endpoint', json_decode($this->posted[1], true)['endpointClass'], 'el reenvío sigue siendo agente');
+        self::assertNull($session->getData('trusteed_agentic_origin'), 'ALLOW consume la marca');
+    }
+
+    public function testUnmarkedHumanCheckoutIsUnchangedAndCarriesNoChannel(): void
+    {
+        $session = $this->checkout(self::request([]));
+        self::assertArrayNotHasKey('endpointClass', $this->lastPayload());
+        self::assertNull($session->getData(CheckoutSubmitBefore::SESSION_AGENT_CHANNEL_FOR_ORDER));
     }
 
     public function testMalformedTokenHeaderIsTreatedAsAnInvalidAgentToken(): void
@@ -417,10 +471,10 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $session->setData(CheckoutSubmitBefore::SESSION_AGENT_DID, 'did:web:session.example');
         $this->checkout($request, session: $session);
         $payload = $this->lastPayload();
-        // The session DID is also just a claim.
+        // Task 16: el DID de sesión también es sólo una declaración.
         self::assertNull($payload['agentId']);
         self::assertSame('agentic_endpoint', $payload['endpointClass']);
-        self::assertNull($session->getData(CheckoutSubmitBefore::SESSION_AGENT_DID), 'the session is cleared after evaluating');
+        self::assertNull($session->getData(CheckoutSubmitBefore::SESSION_AGENT_DID), 'la sesión se limpia tras evaluar');
     }
 
     public function testHeaderReadThatThrowsDegradesToTheSession(): void
@@ -465,24 +519,24 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
     public function testHumanPassesWhenBuildingThePayloadThrows(): void
     {
         $this->checkout(self::request([]), failOnAddress: true);
-        self::assertSame([], $this->posted, 'it was never evaluated');
+        self::assertSame([], $this->posted, 'no llegó a evaluarse');
     }
 
     public function testAgentIsBlockedWithAnHonestMessageWhenBuildingThePayloadThrows(): void
     {
         try {
             $this->checkout(self::request(['X-Trusteed-Agent-Origin' => 'webmcp']), failOnAddress: true);
-            self::fail('an agent does not pass through our own outage in enforce');
+            self::fail('un agente no pasa por una avería nuestra en enforce');
         } catch (LocalizedException $e) {
             self::assertStringContainsString('could not be verified', $e->getMessage());
-            self::assertStringNotContainsString('did not pass', $e->getMessage(), 'an outage is not "a rule blocked you"');
+            self::assertStringNotContainsString('did not pass', $e->getMessage(), 'una avería no es «una regla te bloqueó»');
         }
     }
 
     /**
-     * An exception on OUR side holds the agent in ALL modes. Before, `observe`
-     * (and any value that fails open on an outage) let it through, token
-     * included: our own failure is not a permit.
+     * Task 27c (M6): una excepción NUESTRA retiene al agente en TODOS los modos.
+     * Antes `observe` (y cualquier valor que abra ante una caída) lo dejaba
+     * pasar, token incluido: una avería propia no es un permiso.
      */
     public function testAnInternalErrorHoldsAnAgentInEveryFailureMode(): void
     {
@@ -493,13 +547,13 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
                     failOnAddress: true,
                     config: ['trusteed/enforcement/failure_mode' => $mode]
                 );
-                self::fail("an agent does not pass through our own outage (failure_mode='{$mode}')");
+                self::fail("un agente no pasa por una avería propia (failure_mode='{$mode}')");
             } catch (LocalizedException $e) {
                 self::assertStringContainsString('could not be verified', $e->getMessage(), $mode);
                 self::assertStringNotContainsString('did not pass', $e->getMessage(), $mode);
             }
         }
-        self::assertSame([], $this->posted, 'it was never evaluated');
+        self::assertSame([], $this->posted, 'nunca llegó a evaluarse');
     }
 
     public function testAnInternalErrorNeverHoldsAHumanInAnyFailureMode(): void
@@ -516,7 +570,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $this->checkout(self::request([]), 200, '{"decision":"BLOCK"}');
     }
 
-    // ── only a VERIFIED token attributes the agent ──────────────────────────
+    // ── Fix ronda 1 — IMPORTANT 1/2: sólo un token VERIFICADO atribuye ─────────
 
     public function testValidTokenForTheSameDidIsPersistedAsVerified(): void
     {
@@ -529,19 +583,19 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $payload = $this->lastPayload();
         self::assertSame('did:web:agent.example.com', $payload['agentId']);
         self::assertArrayNotHasKey('_agent_token_signature_invalid', $payload['orderContext']['cartAttributes']);
-        self::assertCount(1, $this->noncePosts, 'the jti of the valid token is consumed');
+        self::assertCount(1, $this->noncePosts, 'el jti del token válido se consume');
         self::assertSame('did:web:agent.example.com', $session->getData(CheckoutSubmitBefore::SESSION_VERIFIED_AGENT_DID));
     }
 
-    // ── the single-use identifier is `nonce`, not `jti` ─────────────────────
+    // ── B5 (2026-10-01) — el identificador de un solo uso es `nonce`, no `jti` ──
 
-    /** @return list<string> identifiers sent to nonce-consume */
+    /** @return list<string> identificadores enviados a nonce-consume */
     private function consumedIds(): array
     {
         return array_map(static fn (string $b): string => (string) (json_decode($b, true)['nonce'] ?? ''), $this->noncePosts);
     }
 
-    /** Exact shape of the test token generator (nonce, no jti): VALID and consumes its nonce. */
+    /** Forma EXACTA de generate-test-agent-token.ts (nonce, sin jti): VÁLIDO y consume su nonce. */
     public function testCanonicalTokenWithNonceAndNoJtiIsValidAndConsumesItsNonce(): void
     {
         $nonce  = bin2hex(random_bytes(16));
@@ -637,7 +691,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         ];
     }
 
-    /** Header did:web:A with a VALID token from B: the token is not valid for A. */
+    /** IMPORTANT 2 — cabecera did:web:A con un token VÁLIDO de B: el token no vale para A. */
     public function testValidTokenOfAnotherAgentIsTreatedAsInvalid(): void
     {
         $minted = self::agentTokenAndSnapshot('did:web:b.example.com');
@@ -647,13 +701,13 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
             'X-Trusteed-Agent-Token' => $minted['token'],
         ]));
         $payload = $this->lastPayload();
-        self::assertNull($payload['agentId'], 'neither the declared agent nor the foreign token identity is used');
+        self::assertNull($payload['agentId'], 'Task 16: ni A (declarado) ni B (token ajeno)');
         self::assertSame('true', $payload['orderContext']['cartAttributes']['_agent_token_signature_invalid']);
         self::assertSame([], $this->noncePosts, 'no se quema el jti de otro agente');
         self::assertNull($session->getData(CheckoutSubmitBefore::SESSION_VERIFIED_AGENT_DID));
     }
 
-    /** Without a DID header, a valid token provides its verified DID. */
+    /** Sin cabecera de DID, un token válido aporta su DID verificado. */
     public function testValidTokenWithoutDidHeaderUsesTheTokenDid(): void
     {
         $minted = self::agentTokenAndSnapshot('did:web:b.example.com');
@@ -665,7 +719,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         self::assertSame('did:web:b.example.com', $session->getData(CheckoutSubmitBefore::SESSION_VERIFIED_AGENT_DID));
     }
 
-    /** Attack case: victim's DID plus a self-signed token with an unknown did:key (INDETERMINATE). */
+    /** PoC de la revisión: DID de la víctima + token autofirmado con un did:key desconocido (INDETERMINATE). */
     public function testVictimDidWithASelfSignedUnknownDidKeyTokenIsAnonymousAndInvalid(): void
     {
         $victim   = self::agentTokenAndSnapshot('did:web:victim.example.com');
@@ -677,9 +731,9 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
             'X-Trusteed-Agent-Token' => $attacker['token'],
         ]), history: $history);
         $payload = $this->lastPayload();
-        self::assertNull($payload['agentId'], 'the victim history is untouched');
+        self::assertNull($payload['agentId'], 'el historial de la víctima no se toca');
         self::assertSame('agentic_endpoint', $payload['endpointClass']);
-        self::assertSame('true', $payload['orderContext']['cartAttributes']['_agent_token_signature_invalid'] ?? null, 'INDETERMINATE counts as invalid for the agent');
+        self::assertSame('true', $payload['orderContext']['cartAttributes']['_agent_token_signature_invalid'] ?? null, 'INDETERMINATE = inválido para el agente');
         self::assertSame([], $this->noncePosts);
         self::assertArrayNotHasKey('_agent_key_age_hours', $payload['orderContext']['cartAttributes'], 'R004: la clave de un token sin probar no envejece a nadie');
         self::assertSame([], $history->hashes);
@@ -694,7 +748,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $this->checkout(self::request(['X-Trusteed-Agent-Token' => $minted['token']]), history: $history);
         self::assertNotSame([], $history->hashes);
         self::assertSame([hash('sha256', 'did:web:agent.example.commerchant_xyz')], array_values(array_unique($history->hashes)));
-        // Of the history reads, only R011 has a producer (see CheckoutSubmitBeforeHistoryWiringTest).
+        // Task 38b: de las lecturas de historial sólo R011 tiene productor (ver CheckoutSubmitBeforeHistoryWiringTest).
         self::assertSame('4', $this->lastPayload()['orderContext']['cartAttributes']['_failed_checkout_count'] ?? null);
     }
 
@@ -720,7 +774,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         self::assertArrayNotHasKey('_agent_token_signature_invalid', $payload['orderContext']['cartAttributes']);
     }
 
-    /** A reused token neither identifies the agent nor is attributed (R023), in all modes. */
+    /** Task 29c (L1): un token reutilizado no identifica al agente ni se atribuye (R023), en todos los modos. */
     public function testReplayedTokenIsAnonymousAndNeverStoredForR023InEveryMode(): void
     {
         foreach (['observe', 'enforce'] as $mode) {
@@ -738,15 +792,15 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
             self::assertNull($payload['agentId'], $mode);
             self::assertSame('agentic_endpoint', $payload['endpointClass'], $mode);
             self::assertSame('true', $payload['orderContext']['cartAttributes']['_agent_token_replay'] ?? null, $mode);
-            self::assertStringNotContainsString('did:web:agent.example.com', (string) json_encode($payload), $mode . ': the DID does not travel in any field');
+            self::assertStringNotContainsString('did:web:agent.example.com', (string) json_encode($payload), $mode . ': el DID no viaja en ningún campo');
             self::assertNull($session->getData(CheckoutSubmitBefore::SESSION_VERIFIED_AGENT_DID), $mode);
-            // History is read BEFORE the jti is spent (a failure does not burn the token), so
-            // a reused token does trigger a read for its DID; what it does not do is travel with it.
+            // Task 38b: el historial se lee ANTES de gastar el jti (un fallo no quema el token), de modo que
+            // un token reutilizado sí provoca la lectura de su DID; lo que no hace es viajar con ella.
             self::assertArrayNotHasKey('_failed_checkout_count', $payload['orderContext']['cartAttributes'], $mode . ': un token reutilizado no recibe el historial de su DID');
         }
     }
 
-    /** With the nonce store down (observe) the identity is sent, but R023 does not store it. */
+    /** Task 29c (L1): con el almacén de nonces caído (observe) la identidad viaja, pero R023 no la guarda. */
     public function testNonceStoreDownInObserveSendsTheIdentityButDoesNotStoreItForR023(): void
     {
         $minted = self::agentTokenAndSnapshot('did:web:agent.example.com');
@@ -756,10 +810,10 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $payload = $this->lastPayload();
         self::assertSame('did:web:agent.example.com', $payload['agentId']);
         self::assertSame('true', $payload['orderContext']['cartAttributes']['_agent_token_nonce_unavailable'] ?? null);
-        self::assertNull($session->getData(CheckoutSubmitBefore::SESSION_VERIFIED_AGENT_DID), 'R023 only with an accepted nonce');
+        self::assertNull($session->getData(CheckoutSubmitBefore::SESSION_VERIFIED_AGENT_DID), 'R023 sólo con nonce aceptado');
     }
 
-    /** Nonce store down in enforce is a failure (not "a rule"), held BEFORE asking the server. */
+    /** C1 (28fa96d7a): nonce store caído en enforce ⇒ avería (no «una regla»), retenido ANTES de preguntar al servidor. */
     public function testNonceStoreDownInEnforceIsPublishedAsAnOutageNotARule(): void
     {
         $minted = self::agentTokenAndSnapshot('did:web:agent.example.com');
@@ -775,7 +829,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         self::assertCount(0, $this->posted, 'se retiene antes de preguntar al servidor');
     }
 
-    /** Even if the server said ALLOW, in enforce the agent is held and not attributed. */
+    /** C1: aunque el servidor dijera ALLOW, en enforce el agente se retiene y no se atribuye. */
     public function testNonceStoreDownInEnforceWithAServerAllowIsStillHeld(): void
     {
         $minted = self::agentTokenAndSnapshot('did:web:agent.example.com');
@@ -790,7 +844,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         self::assertCount(0, $this->posted);
     }
 
-    /** The signature DID verify; `_agent_token_signature_invalid` is never set because the nonce store is down. */
+    /** C1: la firma SÍ verificó; nunca se marca `_agent_token_signature_invalid` por la caída del almacén de nonces. */
     public function testNonceStoreDownNeverMarksTheSignatureAsInvalid(): void
     {
         foreach (['observe', 'enforce'] as $mode) {
@@ -811,7 +865,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         self::assertTrue(true);
     }
 
-    /** The verified DID is left on the quote for failure events (coupon, payment). */
+    /** C4 (91c7f88d9): el DID verificado se deja en el quote para los eventos de fallo (cupón, pago). */
     public function testVerifiedDidIsWrittenOnTheQuoteForFailureEvents(): void
     {
         $minted = self::agentTokenAndSnapshot('did:web:agent.example.com');
@@ -826,7 +880,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         self::assertNull($this->lastQuote->getData('trusteed_agent_did'), 'un DID sin probar no se atribuye a nadie');
     }
 
-    /** R034 compares `lineItems[].id` with SKUs; the plugin also sends the SKU as an alias line (qty 0, price 0). */
+    /** C3 (20613d0ee): R034 compara `lineItems[].id` con SKUs; el plugin manda además el SKU como línea alias (qty 0, precio 0). */
     public function testLineItemsCarryTheSkuAsAnAliasLine(): void
     {
         $this->items = [self::quoteItem(42, 'TSHIRT-RED-M', 2, 19.99)];
@@ -834,7 +888,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $items = $this->lastPayload()['orderContext']['lineItems'];
         self::assertSame(['id' => '42', 'qty' => 2, 'priceCents' => 1999], $items[0]);
         self::assertContains(['id' => 'TSHIRT-RED-M', 'qty' => 0, 'priceCents' => 0], $items);
-        self::assertSame('2', $this->lastPayload()['orderContext']['cartAttributes']['_qty_per_sku_max'], 'the alias does not alter quantity signals');
+        self::assertSame('2', $this->lastPayload()['orderContext']['cartAttributes']['_qty_per_sku_max'], 'el alias no altera señales de cantidad');
         self::assertSame(2, $this->lastPayload()['orderContext']['itemCount']);
     }
 
@@ -857,7 +911,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         };
     }
 
-    /** Fake history: records which hash it is queried with. */
+    /** Historial de mentira: registra con qué hash se consulta. */
     private static function historySpy(): AgentHistoryFetcher
     {
         return new class extends AgentHistoryFetcher {
@@ -880,18 +934,18 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $this->checkout(self::request([]), session: $session);
         self::assertNull(
             $session->getData(CheckoutSubmitBefore::SESSION_VERIFIED_AGENT_DID),
-            'a human order does not inherit the DID of an earlier order in the session'
+            'un pedido humano no hereda el DID de un pedido anterior de la sesión'
         );
     }
 
-    // ── a failure is not reported as a rule ─────────────────────────────────
+    // ── Fix ronda 1 — IMPORTANT 3: una avería no se publica como regla ────────
 
     private function assertAgentSeesUnavailableMessage(callable $arrange, int $status = 200, string $body = '{"decision":"ALLOW"}', array $config = []): void
     {
         $arrange();
         try {
             $this->checkout(self::request(['X-Trusteed-Agent-Id' => 'did:web:agent.example.com']), $status, $body, $config);
-            self::fail('an agent does not pass through our own outage in enforce');
+            self::fail('un agente no pasa por una avería nuestra en enforce');
         } catch (LocalizedException $e) {
             self::assertStringContainsString('could not be verified', $e->getMessage());
             self::assertStringNotContainsString('did not pass', $e->getMessage());
@@ -935,7 +989,7 @@ final class CheckoutSubmitBeforeIdentityChannelTest extends TestCase
         $this->assertAgentSeesUnavailableMessage(function (): void {
             $this->currency = "\xB1\xB1";
         });
-        self::assertSame([], $this->posted, 'nothing was sent');
+        self::assertSame([], $this->posted, 'no llegó a enviarse nada');
     }
 
     public function testHumanStillPassesEachOutageCause(): void

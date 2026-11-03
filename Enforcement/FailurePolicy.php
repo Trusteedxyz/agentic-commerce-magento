@@ -5,53 +5,52 @@ declare(strict_types=1);
 namespace Trusteed\AgenticCommerce\Enforcement;
 
 /**
- * Main-flow failure policy. PHP port of
- * the reference platform flow, pinned by
- * Test/fixtures/platform-flow-conformance.json
+ * Política del flujo principal — port PHP de
+ * packages/shared/src/enforcement/platform-flow.ts, fijado por
+ * packages/shared/src/enforcement/__fixtures__/platform-flow-conformance.json
  * (Test/Unit/Enforcement/FailurePolicyConformanceTest.php).
  *
- * Invariant: a human buyer (a checkout with no agentic signal) is never blocked
- * by a failure on our side (network, 5xx, any 4xx including 429, timeout,
- * unreadable response, internal exception). Only a merchant rule with
- * `appliesTo: ALL` or `HUMAN` that the offline valve still evaluates can block
- * them (the R030 cap, countries, schedule, and so on). The merchant's
- * `failure_mode` only governs agentic checkouts.
+ * Invariante (auditoría spec-048 2026-09-27, A8; decisión D1 del plan 04): un
+ * comprador humano —checkout sin ninguna señal agéntica— nunca se bloquea por
+ * una avería nuestra (red, 5xx, 4xx incluido 429, timeout, respuesta ilegible,
+ * excepción interna). Sólo puede bloquearlo una regla `appliesTo: ALL`/`HUMAN`
+ * del propio comerciante que la válvula offline siga evaluando (el tope de
+ * R030, países, horario…). El `failure_mode` del comerciante sólo gobierna a
+ * los checkouts agénticos.
  *
- * Magento evaluates no rule locally before asking the server, so the
- * reference's fourth decision (`needsServerEvaluation`) has no port here. It
- * also ports the per-cause degraded decision (decideDegraded) and the DID
- * resolver (resolveAgentDidPublicKey).
+ * Magento no evalúa ninguna regla localmente antes de preguntar al servidor,
+ * así que la cuarta decisión de la referencia (`needsServerEvaluation`) no
+ * tiene port aquí. Desde la Task 23b porta también la decisión por causa de
+ * avería (decideDegraded) y el resolver de DIDs (resolveAgentDidPublicKey).
  *
- * Pure functions: no Magento, no I/O. They do not mutate their parameters (PHP
- * passes arrays by value and only copies are filtered here).
+ * Funciones puras: sin Magento, sin I/O. No mutan sus parámetros (PHP pasa los
+ * arrays por valor y aquí sólo se filtran copias).
  *
  * @since 1.3.5
  */
 final class FailurePolicy
 {
-    /** Vocabulary of `trusteed/enforcement/failure_mode` in this module (same as the fixture). */
+    /** Vocabulario de `trusteed/enforcement/failure_mode` en este módulo (igual que el fixture). */
     public const FAILURE_MODES = ['enforce', 'observe'];
 
-    /** Value a MISSING `failure_mode` takes (the module's historical default). */
+    /** Valor que toma un `failure_mode` AUSENTE (default histórico del módulo). */
     public const DEFAULT_FAILURE_MODE = 'enforce';
 
     /**
-     * Modes that OPEN for an agent during a failure, compared exactly. This is
-     * the reference's GLOBAL list (`AGENT_OPENING_FAILURE_MODES`), which is why
-     * the module first normalizes against ITS OWN vocabulary
-     * (normalizeFailureMode), so a `balanced` or `permissive` from another
-     * platform does not open here.
+     * Modos que ABREN a un agente ante una avería, comparados exactamente. Es la
+     * lista GLOBAL de la referencia (`AGENT_OPENING_FAILURE_MODES`): por eso el
+     * módulo normaliza contra SU vocabulario antes (normalizeFailureMode), para
+     * que un `balanced`/`permissive` de otra plataforma no abra aquí.
      */
     public const AGENT_OPENING_FAILURE_MODES = ['observe', 'balanced', 'permissive'];
 
     /**
-     * Any signal that only our side or the agent sets means agentic. A
-     * presented token counts even if it does not verify: it is never treated as
-     * human.
+     * Cualquier señal que sólo pone nuestro lado o el agente ⇒ agéntico. Un
+     * token presentado cuenta aunque no verifique: nunca se trata como humano.
      *
-     * @param string|null $agentId      Agent DID; '' counts as missing.
-     * @param bool        $tokenPresent An agent token was presented.
-     * @param bool        $originMarker Origin marker (X-Trusteed-Agent-* header).
+     * @param string|null $agentId      DID del agente; '' equivale a ausente.
+     * @param bool        $tokenPresent Se presentó un token de agente.
+     * @param bool        $originMarker Marca de origen (cabecera X-Trusteed-Agent-*).
      */
     public static function isAgentic(?string $agentId, bool $tokenPresent, bool $originMarker): bool
     {
@@ -59,14 +58,14 @@ final class FailurePolicy
     }
 
     /**
-     * Rules the offline valve may apply, in the order received and reindexed.
-     * `appliesTo` is case-insensitive.
+     * Reglas que la válvula offline puede aplicar, en el orden recibido y
+     * reindexadas. `appliesTo` sin distinguir mayúsculas.
      *
-     * - Agent: all except `HUMAN` (a missing `appliesTo` included).
-     * - Human: only `ALL` and `HUMAN`; missing does not count (when in doubt,
-     *   never block a person).
+     * - Agente: todas salvo las `HUMAN` (con `appliesTo` ausente incluido).
+     * - Humano: sólo `ALL` y `HUMAN`; ausente no cuenta (ante la duda, nunca
+     *   bloquear a una persona).
      *
-     * @param array<int,mixed> $rules `rules[]` of the signed snapshot.
+     * @param array<int,mixed> $rules `rules[]` del snapshot firmado.
      * @return array<int,array<string,mixed>>
      */
     public static function offlineRulesFor(array $rules, bool $isAgentic): array
@@ -86,12 +85,12 @@ final class FailurePolicy
     }
 
     /**
-     * Resolves the configured mode against THIS module's vocabulary: trims and
-     * lowercases. Missing or empty gives DEFAULT_FAILURE_MODE. A value outside
-     * FAILURE_MODES (for example `permissive` from another platform) gives
-     * null, meaning "unresolved", which decideUnavailable() closes for an agent.
+     * Resuelve el modo configurado contra el vocabulario de ESTE módulo: recorta
+     * y pasa a minúsculas; ausente o vacío ⇒ DEFAULT_FAILURE_MODE; fuera de
+     * FAILURE_MODES (p. ej. `permissive` de otra plataforma) ⇒ null, «no
+     * resuelto», que decideUnavailable() cierra para un agente.
      *
-     * @param mixed $raw Configured value (untrusted).
+     * @param mixed $raw Valor configurado (no confiable).
      */
     public static function normalizeFailureMode($raw): ?string
     {
@@ -103,12 +102,12 @@ final class FailurePolicy
     }
 
     /**
-     * The server did not answer (or there is no readable policy). The offline
-     * valve, already filtered with offlineRulesFor(), blocks anyone. Without it
-     * a human ALWAYS passes, and an agent gets the merchant's mode: it opens
-     * only for a mode in AGENT_OPENING_FAILURE_MODES and closes for any other
-     * value, null included. It does not normalize (like the reference): the
-     * caller passes the value from normalizeFailureMode().
+     * El servidor no contestó (o no hay política legible). La válvula offline ya
+     * filtrada con offlineRulesFor() bloquea a cualquiera; sin ella, un humano
+     * pasa SIEMPRE, y a un agente se le aplica el modo del comerciante: abre
+     * sólo con un modo de AGENT_OPENING_FAILURE_MODES y cierra con cualquier
+     * otro valor, null incluido. No normaliza (igual que la referencia): el
+     * llamador pasa el valor de normalizeFailureMode().
      *
      * @return string 'ALLOW' | 'BLOCK'.
      */
@@ -126,13 +125,13 @@ final class FailurePolicy
     }
 
     /**
-     * An exception of OURS during evaluation (not a rule, not the network). A
-     * human is never blocked by it. An agent is never let through in any mode,
-     * because our own failure is not a permission, not even with `observe` or
-     * any mode that opens when the service is down. Same as
-     * `decide_on_internal_error` in Odoo, `InternalErrorGuard` in PrestaShop and
-     * `CEL-INTERNAL-ERROR` in WooCommerce. It does not read the configuration:
-     * the decision does not depend on the mode.
+     * Una excepción NUESTRA durante la evaluación (no una regla, no la red). Un
+     * humano nunca se bloquea por ella; a un agente no se le abre en ningún
+     * modo —una avería propia no es un permiso—, ni siquiera con `observe` o
+     * cualquier modo que abre ante una caída del servicio. Igual que
+     * `decide_on_internal_error` de Odoo, `InternalErrorGuard` de PrestaShop y
+     * el `CEL-INTERNAL-ERROR` de WooCommerce. No lee la configuración: la
+     * decisión no depende del modo.
      *
      * @return string 'ALLOW' | 'BLOCK'.
      */
@@ -142,14 +141,14 @@ final class FailurePolicy
     }
 
     /**
-     * The history of a VERIFIED agent could not be read (network, non-200,
-     * unreadable body). This is "history unavailable", the same class as "the
-     * evaluator did not answer", so the merchant's mode decides exactly as
-     * {@see decideUnavailable()} does for an agent: `enforce` (and any
-     * unresolved value) closes, `observe` opens and continues without the
-     * signal. It never turns into "0 failures" nor silently into "no signal".
-     * It is only called for an agent with a valid token: a human is neither
-     * asked nor blocked for this read.
+     * Task 38b (2) — el historial de un agente VERIFICADO no se pudo leer
+     * (red, no-200, cuerpo ilegible). Es «historial no disponible»: la misma
+     * clase que «el evaluador no contestó», así que decide el modo del
+     * comerciante igual que {@see decideUnavailable()} para un agente —
+     * `enforce` (y cualquier valor no resuelto) cierra, `observe` abre y sigue
+     * sin la señal—; nunca se convierte en «0 fallos» ni se reduce a «sin
+     * señal» en silencio. Sólo se llama para un agente con token válido: a un
+     * humano no se le pregunta (ni se le bloquea) por esta lectura.
      *
      * @return string 'ALLOW' | 'BLOCK'.
      */
@@ -158,21 +157,20 @@ final class FailurePolicy
         return self::decideDegraded(self::KIND_EVALUATOR_UNAVAILABLE, true, true, $failureMode, false);
     }
 
-    /** Causes of a degraded layer (the reference's `PlatformDegradedKind`). */
+    /** Causas de capa degradada (`PlatformDegradedKind` de la referencia). */
     public const KIND_INVALID_SIGNATURE     = 'invalid_signature';
     public const KIND_MISSING_SNAPSHOT      = 'missing_snapshot';
     public const KIND_EVALUATOR_UNAVAILABLE = 'evaluator_unavailable';
     public const KIND_LAYER_DISABLED        = 'layer_disabled';
 
     /**
-     * Literal port of `decideOnDegradedEnforcement`.
-     * For an agent: tampered snapshot gives BLOCK in every mode; no snapshot
-     * with a token gives BLOCK in every mode (without the snapshot's resolver
-     * the token cannot be verified); no snapshot and no token follows the mode;
-     * layer 2 down with a VERIFIED snapshot follows the mode and the valve;
-     * layer disabled or unconfigured gives ALLOW. A human is only closed by the
-     * valve of a verified snapshot. An unknown cause is treated as
-     * `invalid_signature`.
+     * Port literal de `decideOnDegradedEnforcement` (Task 20, puntos 1 y 3).
+     * Sobre un agente: snapshot manipulado ⇒ BLOCK en todo modo; sin snapshot y
+     * con token ⇒ BLOCK en todo modo (sin el resolver del snapshot el token no
+     * se puede verificar); sin snapshot y sin token ⇒ el modo; capa 2 caída
+     * con snapshot VERIFICADO ⇒ el modo y la válvula; capa apagada o sin
+     * configurar ⇒ ALLOW. Un humano sólo se cierra por la válvula de un
+     * snapshot verificado. Causa desconocida ⇒ como `invalid_signature`.
      *
      * @return string 'ALLOW' | 'BLOCK'.
      */
@@ -200,15 +198,15 @@ final class FailurePolicy
     }
 
     /**
-     * Port of `resolveAgentDidPublicKey`: the public key of `$did` in the
-     * snapshot's `agentDidResolver`. The server emits a LIST
-     * `[{did, publicKeyJwk:{kty,crv,x,kid?}}]`: the LAST well-formed entry with
-     * an exact `did` wins, and a later malformed one no longer overrides a good
-     * one. It also accepts the legacy MAP `{did: jwk}` (exact key only). It
-     * never throws. It only resolves: `kty`/`crv` and the signature belong to
-     * the verifier.
+     * Port de `resolveAgentDidPublicKey`: la clave pública de `$did` en el
+     * `agentDidResolver` del snapshot. El servidor emite una LISTA
+     * `[{did, publicKeyJwk:{kty,crv,x,kid?}}]`: vale la ÚLTIMA entrada bien
+     * formada con `did` exacto, y una malformada posterior ya no pisa a la
+     * buena. También acepta el MAPA antiguo `{did: jwk}` (sólo la clave
+     * exacta). Nunca lanza. Sólo resuelve: `kty`/`crv` y la firma son del
+     * verificador.
      *
-     * @param mixed $resolver The snapshot's `agentDidResolver` as is.
+     * @param mixed $resolver `agentDidResolver` del snapshot tal cual.
      * @return array{x:string,kty?:string,crv?:string,kid?:string}|null
      */
     public static function resolveAgentDidPublicKey($resolver, string $did): ?array

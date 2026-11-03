@@ -5,5 +5,8 @@
         <route id="nlweb" frontName="nlweb">
             <module name="Trusteed_AgenticCommerce"/>
         </route>
+        <route id="trusteed" frontName="trusteed">
+            <module name="Trusteed_AgenticCommerce"/>
+        </route>
     </router>
 </config>

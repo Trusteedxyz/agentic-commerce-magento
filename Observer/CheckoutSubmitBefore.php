@@ -15,42 +15,44 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Model\Quote;
 use Psr\Log\LoggerInterface;
+use Trusteed\AgenticCommerce\Enforcement\AgentReason;
 use Trusteed\AgenticCommerce\Enforcement\AgentIdHash;
 use Trusteed\AgenticCommerce\Enforcement\AgentIdentityResolver;
 use Trusteed\AgenticCommerce\Enforcement\FailurePolicy;
 use Trusteed\AgenticCommerce\Enforcement\R043HitlGate;
 use Trusteed\AgenticCommerce\Enforcement\TokenClaimSignals;
 use Trusteed\AgenticCommerce\Service\AgentTokenVerifier;
+use Trusteed\AgenticCommerce\Service\BrowserAgentSignature;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 use Trusteed\AgenticCommerce\Service\NonceOutcome;
 use Trusteed\AgenticCommerce\Service\AgentHistoryFetcher;
 use Trusteed\AgenticCommerce\Service\CartSignals;
 
 /**
- * Pre-order enforcement observer. Fires on sales_model_service_quote_submit_before.
+ * Pre-order enforcement observer — fires on sales_model_service_quote_submit_before.
  *
  * Flow:
  *  1. Resolve the agent identity: `X-Trusteed-Agent-*` headers of the REST
  *     request that places the order, with the checkout session as fallback
- *     ({@see AgentIdentityResolver}, since 1.3.5). No signal means a human.
+ *     ({@see AgentIdentityResolver}, C2 since 1.3.5). No signal ⇒ human.
  *  2. Fetch agentDidResolver from the VERIFIED snapshot (cached in-memory per
  *     request). A token with a tampered/unavailable snapshot is held in every
- *     mode ("could not be verified", no evaluate, jti not spent).
+ *     mode (Task 23b: "could not be verified", no evaluate, jti not spent).
  *  3. Verify agent token Ed25519 signature; its claims count only if VALID.
  *  4. Build orderContext from quote with token verification attributes.
- *  5. POST to /v1/rules/evaluate, block with LocalizedException on BLOCK.
+ *  5. POST to /v1/rules/evaluate — block with LocalizedException on BLOCK.
  *     Agentic checkouts add `endpointClass: agentic_endpoint`; the organic
  *     payload is unchanged.
  *
- * Failures of ours (since 1.3.5): a human checkout is never blocked by an
- * evaluator outage or by an internal error while building the payload, only a
+ * Failures of ours (A8 since 1.3.5): a human checkout is never blocked by an
+ * evaluator outage or by an internal error while building the payload — only a
  * merchant rule (server decision, or an `appliesTo: ALL` rule in the offline
  * safety valve of a VERIFIED snapshot) can block it. An agentic checkout
- * follows the cause and the merchant's `failure_mode` (default 'enforce' :
+ * follows the cause and the merchant's `failure_mode` (default 'enforce' ⇒
  * blocked; see FailurePolicy::decideDegraded). A store that has not finished
  * connecting (no merchant ID / installation) is not evaluated at all.
  *
- * @since 1.0.0
+ * @since 1.0.0 (spec-050 enforcement layer)
  */
 class CheckoutSubmitBefore implements ObserverInterface
 {
@@ -61,12 +63,19 @@ class CheckoutSubmitBefore implements ObserverInterface
     public const SESSION_AGENT_TOKEN = 'trusteed_agent_token';
 
     /**
-     * Session key written after enforcement ALLOW, persists for SalesOrderSaveAfter
-     * to include agentDid in the outbox payload (agentIdHash propagation).
+     * Session key written after enforcement ALLOW — persists for SalesOrderSaveAfter
+     * to include agentDid in the outbox payload (R023 agentIdHash propagation).
      */
     public const SESSION_VERIFIED_AGENT_DID = 'trusteed_verified_agent_did';
 
-    /** @param RequestInterface|null $request `X-Trusteed-Agent-*` headers (etc/di.xml); null: session only. */
+    /** Marca que SOLO escribe el endpoint WebMCP (Controller/Webmcp/Checkout): el cliente no la puede quitar. */
+    public const SESSION_AGENTIC_ORIGIN  = 'trusteed_agentic_origin';
+    public const SESSION_AGENTIC_CHANNEL = 'trusteed_agentic_channel';
+
+    /** Canal de la marca consumida, para que SalesOrderSaveAfter lo anote en el pedido. */
+    public const SESSION_AGENT_CHANNEL_FOR_ORDER = 'trusteed_agent_channel_for_order';
+
+    /** @param RequestInterface|null $request `X-Trusteed-Agent-*` headers (etc/di.xml); null ⇒ session only. */
     public function __construct(
         private readonly CheckoutSession $checkoutSession,
         private readonly AgentTokenVerifier $tokenVerifier,
@@ -77,23 +86,25 @@ class CheckoutSubmitBefore implements ObserverInterface
         private readonly CategoryRepositoryInterface $categoryRepository,
         private readonly ?AgentHistoryFetcher $historyFetcher = null,
         private readonly ?RequestInterface $request = null,
+        private readonly ?BrowserAgentSignature $browserSignature = null,
     ) {}
 
     /**
-     * Cart signals that THIS installation knows how to project.
+     * Spec-048 4.9 — señales de carrito que ESTA instalación sabe proyectar.
      *
-     * This is the "what I provide" half of a contract whose other half is
-     * `RULE_SIGNALS_READ` ("what each rule reads") on the server. Matching the
-     * two turns the silence of `NO_SIGNAL` (a rule enabled in ENFORCE that never
-     * fires because its signal never arrives) into a warning the merchant sees
-     * when enabling it.
+     * Es la mitad "qué aporto" del contrato cuya otra mitad es
+     * `RULE_SIGNALS_READ` ("qué lee cada regla") en el servidor. Cruzarlas
+     * convierte el silencio de `NO_SIGNAL` —una regla activada en ENFORCE que
+     * nunca dispara porque su señal no llega— en un aviso que el comerciante
+     * ve al activarla.
      *
-     * Of the agent history it only projects `_failed_checkout_count` (R011), the
-     * only reading with a producer: the other history rules need server routes
-     * that do not exist or a column this module does not create, so the server
-     * resolves them on its own. The list is not kept by hand: a server-side
-     * check scans the body of this class and requires it to match exactly the
-     * keys it writes.
+     * Del historial del agente sólo proyecta `_failed_checkout_count` (R011): es
+     * la única lectura con productor (Task 38b: R005/R007/R024 piden rutas que el
+     * servidor no tiene y R010/R014/R023 una columna que el módulo no crea; el
+     * servidor las resuelve por su cuenta). La lista NO se mantiene a ojo: el gate
+     * `signals-provided-plugin-declarations.test.ts` (en `packages/shared`)
+     * escanea el cuerpo de esta clase y exige que coincida exactamente con las
+     * claves que escribe.
      *
      * @return string[]
      */
@@ -131,8 +142,8 @@ class CheckoutSubmitBefore implements ObserverInterface
     /**
      * @throws LocalizedException When enforcement decision is BLOCK.
      *
-     * SIGNALS_PROVIDED_BUILDER_START (marker for the consistency check): every
-     * key this class writes into `cartAttributes` below must be listed in
+     * SIGNALS_PROVIDED_BUILDER_START — ancla del gate de 4.9: todo lo que esta
+     * clase escriba en `cartAttributes` de aquí abajo tiene que estar en
      * `signalsProvided()`.
      */
     public function execute(Observer $observer): void
@@ -148,26 +159,31 @@ class CheckoutSubmitBefore implements ObserverInterface
             return;
         }
 
-        // Resolved once; never throws (an unreadable source = no signal).
+        // C2 + A8 — resolved once; never throws (an unreadable source = no signal).
         $identity    = $this->resolveAgentIdentity();
         $verifiedDid = '';
+        $webmcp      = $this->webmcpMarked();
+        if ($webmcp) {
+            $identity['agentic'] = true;
+        }
 
         try {
             $built       = $this->buildEvaluationPayload($quote, $merchantId, $identity);
             $verifiedDid = $built['verifiedDid'];
             $decision    = $built['held'] ? EnforcementClient::DECISION_UNAVAILABLE : $this->enforcementClient->evaluate($built['payload']);
-            // Nonce store down in enforce closed the token; a BLOCK is then our outage.
+            // Task 16: nonce store down in enforce closed the token; a BLOCK is then our outage.
             $decision = $built['nonceClosed'] && $decision === EnforcementClient::DECISION_BLOCK ? EnforcementClient::DECISION_UNAVAILABLE : $decision;
         } catch (\Throwable $e) {
-            // Our own failure: a human passes, an agent gets failure_mode, never propagated.
+            // Our own failure: a human passes, an agent gets failure_mode — never propagated.
             $decision = $this->decideOnInternalFailure($identity['agentic'], $e);
         }
 
-        // Clear session regardless of decision to avoid re-checking on retry.
+        // DID/token se limpian siempre; la marca agéntica (origin/channel) sólo en ALLOW: un agente retenido que reenvía no pasa a ser persona.
         $this->checkoutSession->unsetData(self::SESSION_AGENT_DID);
         $this->checkoutSession->unsetData(self::SESSION_AGENT_TOKEN);
+        $this->checkoutSession->unsetData(self::SESSION_AGENT_CHANNEL_FOR_ORDER);
 
-        // Our own failure blocked an agent: say so, never "a rule blocked you".
+        // A8 — our own failure blocked an agent: say so, never "a rule blocked you".
         if ($decision === EnforcementClient::DECISION_UNAVAILABLE) {
             $this->checkoutSession->unsetData(self::SESSION_VERIFIED_AGENT_DID);
             throw new LocalizedException(
@@ -175,7 +191,7 @@ class CheckoutSubmitBefore implements ObserverInterface
             );
         }
 
-        // R043 HITL: the backend wants a human-in-the-loop approval before
+        // H3 — R043 HITL: the backend wants a human-in-the-loop approval before
         // the order may be created. Instead of a generic hard block we freeze the
         // quote (is_active=0 + trusteed_hitl_* flags) so the intent is recorded as
         // pending merchant approval, then throw a distinct reviewable message.
@@ -189,10 +205,17 @@ class CheckoutSubmitBefore implements ObserverInterface
 
         if ($decision === EnforcementClient::DECISION_BLOCK) {
             $this->checkoutSession->unsetData(self::SESSION_VERIFIED_AGENT_DID);
+            // Con `agent_reason` saneado, la frase de categoría; sin él (servidor antiguo) la fija.
+            $agentReason = $this->enforcementClient->getLastAgentReason();
             throw new LocalizedException(
-                __('Your order could not be completed because it did not pass the store\'s agent verification rules. Please contact the store if you believe this is an error.')
+                $agentReason !== null
+                    ? __('%1', AgentReason::message($agentReason, (string)($quote->getQuoteCurrencyCode() ?? '')))
+                    : __('Your order could not be completed because it did not pass the store\'s agent verification rules. Please contact the store if you believe this is an error.')
             );
         }
+
+        $this->checkoutSession->unsetData(self::SESSION_AGENTIC_ORIGIN);
+        $this->checkoutSession->unsetData(self::SESSION_AGENTIC_CHANNEL);
 
         // ALLOW: SalesOrderSaveAfter sends this as agent_did (R023). Only a DID proven
         // by a VALID token; anything else clears it, so no later order inherits one.
@@ -200,6 +223,9 @@ class CheckoutSubmitBefore implements ObserverInterface
             $this->checkoutSession->setData(self::SESSION_VERIFIED_AGENT_DID, $verifiedDid);
         } else {
             $this->checkoutSession->unsetData(self::SESSION_VERIFIED_AGENT_DID);
+        }
+        if ($webmcp) {
+            $this->checkoutSession->setData(self::SESSION_AGENT_CHANNEL_FOR_ORDER, 'webmcp');
         }
         // Failure emitters (payment failed, coupon) read the DID from the quote; nobody wrote it.
         // Same rule: only a DID proven by a VALID token, never a declared one.
@@ -213,7 +239,7 @@ class CheckoutSubmitBefore implements ObserverInterface
     }
 
     /**
-     * Builds the `/v1/rules/evaluate` body (from the resolved identity).
+     * Builds the `/v1/rules/evaluate` body (C2: from the resolved identity).
      * May throw; the caller turns that into {@see decideOnInternalFailure()}.
      *
      * @param array{did:string, token:string, agentic:bool, tokenRejected:bool} $identity
@@ -224,7 +250,7 @@ class CheckoutSubmitBefore implements ObserverInterface
     private function buildEvaluationPayload(Quote $quote, string $merchantId, array $identity): array
     {
         // A cart with no agent DID is still evaluated (R030 etc. apply to humans too).
-        // `X-Trusteed-Agent-*` headers first, session as fallback (a DECLARED DID).
+        // C2 (1.3.5): `X-Trusteed-Agent-*` headers first, session as fallback — a DECLARED DID.
         $agentDid = $identity['did'];
 
         $orderContext = $this->buildOrderContext($quote);
@@ -232,10 +258,10 @@ class CheckoutSubmitBefore implements ObserverInterface
         $jwtToken    = $identity['token']; // Token verification.
         $tokenState  = '';
         $nonceClosed = false;
-        $failedCount = null; // R011, only from a VALID token
+        $failedCount = null; // R011, sólo de un token VÁLIDO (Task 38b)
         if ($jwtToken !== '') {
             $orderContext['cartAttributes']['_agent_token_present'] = 'true';
-            // Tampered/unavailable snapshot: the token cannot be verified, so it is held
+            // Task 23b — tampered/unavailable snapshot ⇒ the token cannot be verified: held
             // in every mode, before evaluate and before its jti is spent.
             if ($this->enforcementClient->holdsTokenOnDegradedSnapshot($merchantId)) {
                 return ['payload' => [], 'verifiedDid' => '', 'nonceClosed' => false, 'held' => true];
@@ -243,19 +269,19 @@ class CheckoutSubmitBefore implements ObserverInterface
 
             $didResolver = $this->enforcementClient->getDidResolver($merchantId);
             $result      = $this->tokenVerifier->verify($jwtToken, $didResolver, $merchantId);
-            // A valid token of ANOTHER agent: invalid; no declared DID: the token's.
+            // A valid token of ANOTHER agent ⇒ invalid; no declared DID ⇒ the token's.
             $bound      = AgentIdentityResolver::bindToken($agentDid, (string) $result['state'], (string) ($result['agentDid'] ?? ''));
             $tokenState = $bound['state'];
             $agentDid   = $bound['did'];
             $result     = $bound['mismatch'] ? array_merge($result, ['error' => 'token_did_mismatch']) : $result;
 
-            // Not VALID (INVALID, INDETERMINATE, another agent's) counts as invalid for the agent.
+            // Task 16: not VALID (INVALID, INDETERMINATE, another agent's) = invalid for the agent.
             if ($tokenState !== 'valid') {
                 $orderContext['cartAttributes']['_agent_token_signature_invalid'] = 'true';
-                // Surface identifier-specific failures as explicit
+                // Spec-048 P2.8 — surface identifier-specific failures as explicit
                 // attributes so operators can diagnose tokens minted without a
                 // single-use identifier. The names say `jti` for compatibility with
-                // the server; they cover the canonical `nonce` (or the
+                // the server; since B5 they cover the canonical `nonce` (or the
                 // legacy `jti` alias). Parity with WC.
                 if (($result['error'] ?? '') === 'missing_jti') {
                     $orderContext['cartAttributes']['_agent_token_jti_missing'] = 'true';
@@ -269,8 +295,8 @@ class CheckoutSubmitBefore implements ObserverInterface
                 );
             }
 
-            // History of the VERIFIED agent, read BEFORE the jti is spent. A read
-            // failure is not "0 failures": it means "history unavailable" and the mode decides.
+            // Task 38b (2) — historial del agente VERIFICADO, leído ANTES de gastar el jti. Un
+            // fallo de lectura no es «0 fallos»: es «historial no disponible» y decide el modo.
             if ($tokenState === 'valid' && $this->historyFetcher !== null) {
                 $failedCount = $this->historyFetcher->failedCheckoutCount(AgentIdHash::perMerchant($agentDid, $merchantId), 300);
                 if ($this->historyFetcher->takeReadFailures() !== []) {
@@ -282,7 +308,7 @@ class CheckoutSubmitBefore implements ObserverInterface
                 }
             }
 
-            // Single-use replay protection. Only consume nonces
+            // Spec-048 P2.8 — single-use replay protection. Only consume nonces
             // for VALID tokens (INDETERMINATE / INVALID handled above).
             $jti = (string) ($result['jti'] ?? '');
             $exp = (int) ($result['exp'] ?? 0);
@@ -294,7 +320,7 @@ class CheckoutSubmitBefore implements ObserverInterface
                 );
 
                 if ($nonce['outcome'] === NonceOutcome::REPLAY) {
-                    // Token reused, downgrade to INVALID + tag so the rule
+                    // Token reused — downgrade to INVALID + tag so the rule
                     // evaluator can reject (R002 / R005 etc.).
                     $orderContext['cartAttributes']['_agent_token_signature_invalid'] = 'true';
                     $orderContext['cartAttributes']['_agent_token_replay']            = 'true';
@@ -304,8 +330,8 @@ class CheckoutSubmitBefore implements ObserverInterface
                     $failureMode = $this->getFailureMode();
                     $orderContext['cartAttributes']['_agent_token_nonce_unavailable'] = 'true';
                     if ($failureMode !== 'observe') {
-                        // The signature DID verify: the DID is authentic and is not flagged as an invalid signature.
-                        // The agent is held before asking the server (an ALLOW does not open it).
+                        // La firma SÍ verificó: el DID es auténtico y no se marca como firma inválida.
+                        // Se retiene al agente antes de preguntar al servidor (un ALLOW no lo abre).
                         $nonceClosed = true;
                     } else {
                         $this->logger->warning(
@@ -316,7 +342,7 @@ class CheckoutSubmitBefore implements ObserverInterface
                 // ACCEPTED → nothing to do, token remains VALID.
             }
 
-            // R004: first-seen key age tracking via Magento cache. Only a VALID token's key.
+            // R004: first-seen key age tracking via Magento cache. Only a VALID token's key (Task 16).
             $kid = $result['kid'] ?? '';
             if ($kid !== '' && $tokenState === 'valid') {
                 $cacheKey  = 'trusteed_kid_fs_' . hash('sha256', $kid);
@@ -328,8 +354,8 @@ class CheckoutSubmitBefore implements ObserverInterface
                 $orderContext['cartAttributes']['_agent_key_age_hours'] = (string)round((time() - (int)$firstSeen) / 3600, 2);
             }
 
-            // R013 / R008 / R006: claims ONLY of a token still VALID after the
-            // nonce check; any other token counts as one without claims.
+            // R013 / R008 / R006 — claims ONLY of a token still VALID after the
+            // nonce check (Task 23b); any other token counts as one without claims.
             $trusted = $tokenState === 'valid' && !isset($orderContext['cartAttributes']['_agent_token_signature_invalid']);
             $claim   = TokenClaimSignals::project($trusted ? (array) ($result['claims'] ?? []) : [], TokenClaimSignals::hasFinalSaleItem($quote->getAllVisibleItems()));
             if ($claim['mismatch']) {
@@ -343,7 +369,7 @@ class CheckoutSubmitBefore implements ObserverInterface
             }
         }
 
-        // A token was presented but had no JWS shape (or was oversized): it
+        // C2 — a token was presented but had no JWS shape (or was oversized): it
         // was dropped before verification, and it is still an invalid token of
         // an agent, never a reason to treat the checkout as human.
         if ($identity['tokenRejected']) {
@@ -351,10 +377,13 @@ class CheckoutSubmitBefore implements ObserverInterface
             $orderContext['cartAttributes']['_agent_token_signature_invalid'] = 'true';
         }
         $verifiedDid = $tokenState === 'valid' && !isset($orderContext['cartAttributes']['_agent_token_signature_invalid']) ? $agentDid : '';
-        // Only a proven DID travels as agentId and keys the history; else anonymous agent.
+        // Task 16: only a proven DID travels as agentId and keys the history; else anonymous agent.
+        // Firma Web Bot Auth verificada (enforce): `wba:<origen>#<keyId>` es la identidad si ningún token la dio.
+        $signatureIdentity = $verifiedDid === '' ? (string)($identity['signatureIdentity'] ?? '') : '';
+        $verifiedDid       = $verifiedDid !== '' ? $verifiedDid : $signatureIdentity;
         $agentDid = $verifiedDid;
 
-        // R020: merchant local hour projection (business-hours rule).
+        // T17 R020 — merchant local hour projection (business-hours rule).
         // Sourced from the store's IANA timezone (`general/locale/timezone`),
         // computed server-side so client clock skew never opens a window.
         $tz = (string) ($this->scopeConfig->getValue('general/locale/timezone') ?? '');
@@ -363,15 +392,15 @@ class CheckoutSubmitBefore implements ObserverInterface
             $orderContext['cartAttributes']['_merchant_local_hour'] = (string) $hour;
         }
 
-        // Verified agent history (R011), already read above; an unproven DID
-        // (anonymous, reused token) does not receive anyone's.
+        // B7c / Task 38b — historial del agente verificado (R011), ya leído arriba; un DID no
+        // probado (anónimo, token reutilizado) no recibe el de nadie.
         $this->projectAgentHistorySignals($orderContext, $agentDid, $failedCount);
 
         $installationId = (string)($this->scopeConfig->getValue('trusteed/enforcement/installation_id') ?? '');
 
         $payload = [
             'merchantId'     => $merchantId,
-            // JSON null (not '') for an organic checkout, the shared
+            // JSON null (not '') for an organic checkout — the shared
             // evaluator's AgentDidSchema would reject an empty-string DID.
             'agentId'        => $agentDid !== '' ? $agentDid : null,
             'orderContext'   => $orderContext,
@@ -380,10 +409,14 @@ class CheckoutSubmitBefore implements ObserverInterface
             'timestamp'      => gmdate('Y-m-d\TH:i:s\Z'),
         ];
 
-        // Agentic checkouts only: the organic payload stays byte for byte the same.
+        if ($signatureIdentity !== '') {
+            $payload['agentIdentityLevel'] = 'verified_signature';
+        }
+
+        // Sólo en agénticos: el payload orgánico queda byte a byte como antes.
         return [
             'payload'     => $identity['agentic'] ? array_merge($payload, ['endpointClass' => 'agentic_endpoint']) : $payload,
-            // R023 only with an ACCEPTED nonce: with the nonce store down (observe) the identity travels but is not saved.
+            // L1 (29c): R023 sólo con nonce ACEPTADO — con el almacén de nonces caído (observe) la identidad viaja, no se guarda.
             'verifiedDid' => isset($orderContext['cartAttributes']['_agent_token_nonce_unavailable']) ? '' : $verifiedDid,
             'nonceClosed' => $nonceClosed,
             'held'        => $nonceClosed,
@@ -391,7 +424,7 @@ class CheckoutSubmitBefore implements ObserverInterface
     }
 
     /**
-     * Apply the R043 HITL freeze to the quote before aborting the submit.
+     * H3 — Apply the R043 HITL freeze to the quote before aborting the submit.
      *
      * Sets `is_active = 0` and stamps the {@see R043HitlGate} contract flags
      * (`trusteed_hitl_pending`, `trusteed_hitl_rule_code`, …) so the merchant dashboard
@@ -423,11 +456,11 @@ class CheckoutSubmitBefore implements ObserverInterface
         $totalCents   = (int)round($grandTotal * 100);
 
         $lineItems      = [];
-        $skuAliases     = []; // SKU alias lines (qty 0, price 0), keyed by SKU to dedupe.
+        $skuAliases     = []; // R034: SKU alias lines (qty 0, price 0), keyed by SKU to dedupe.
         $itemCount      = 0;
         $allCategoryIds = [];
         $hasSubscription = false;
-        $signalItems     = []; // primitive dicts for CartSignals helpers
+        $signalItems     = []; // B7 — primitive dicts for CartSignals helpers
         foreach ($quote->getAllVisibleItems() as $item) {
             $qty        = (int)$item->getQty();
             $unitCents  = $qty > 0 ? (int)round(((float)$item->getPrice() * 100)) : 0;
@@ -442,7 +475,7 @@ class CheckoutSubmitBefore implements ObserverInterface
                 $skuAliases[$sku] = ['id' => $sku, 'qty' => 0, 'priceCents' => 0];
             }
 
-            // Build primitive signal dict for stock + giftcard detection.
+            // B7 — build primitive signal dict for stock + giftcard detection.
             $product = $item->getProduct();
             $stockQty = null;
             if ($product !== null && method_exists($product, 'getExtensionAttributes')) {
@@ -464,14 +497,14 @@ class CheckoutSubmitBefore implements ObserverInterface
                     : false,
             ];
 
-            // Collect category IDs for server-side category rules (R012).
+            // Collect category IDs for server-side R012 enforcement.
             $product = $item->getProduct();
             if ($product !== null) {
                 foreach ($product->getCategoryIds() as $catId) {
                     $allCategoryIds[(int)$catId] = true;
                 }
 
-                // Subscription detection via product custom attributes.
+                // R026: subscription detection via product custom attributes.
                 // Common Magento subscription extensions set is_subscription=1
                 // or use known subscription product type IDs.
                 if (!$hasSubscription) {
@@ -522,7 +555,7 @@ class CheckoutSubmitBefore implements ObserverInterface
                         $categorySlugs[$slug] = true;
                     }
                 } catch (NoSuchEntityException $e) {
-                    // Category deleted since product was added, skip silently.
+                    // Category deleted since product was added — skip silently.
                 }
             }
             if (!empty($categorySlugs)) {
@@ -536,9 +569,9 @@ class CheckoutSubmitBefore implements ObserverInterface
             $context['cartAttributes']['_autorenew']    = 'true';
         }
 
-        // R018 cart-composition guard: maxQtyPerSku + cart-total deviation
+        // B7c — R018 cart-composition guard: maxQtyPerSku + cart-total deviation
         // vs merchant-configured average order. `merchant_avg_order_cents` falls
-        // back to 5000 cents when the admin hasn't tuned it.
+        // back to 5000¢ (per audit default) when admin hasn't tuned it.
         $maxQty = CartSignals::maxQtyPerSku($lineItems);
         if ($maxQty > 0) {
             $context['cartAttributes']['_qty_per_sku_max'] = (string) $maxQty;
@@ -550,7 +583,7 @@ class CheckoutSubmitBefore implements ObserverInterface
             $context['cartAttributes']['_cart_total_dev_bps'] = (string) $devBps;
         }
 
-        // R016 lowest stock + R027 stored value via pure CartSignals helpers.
+        // B7 — R016 lowest stock + R027 stored value via pure CartSignals helpers.
         $lowest = CartSignals::lowestStock($signalItems);
         if ($lowest !== null) {
             $context['cartAttributes']['_lowest_stock'] = (string) $lowest;
@@ -560,7 +593,7 @@ class CheckoutSubmitBefore implements ObserverInterface
             $context['cartAttributes']['_stored_value_cents'] = (string) $stored;
         }
 
-        // R015 price delta from HMAC-signed cookie set at add-to-cart.
+        // B7b — R015 price delta from HMAC-signed cookie set at add-to-cart.
         // Cookie name: `amcp_price_snap_{quote_id}`. HMAC key comes from the
         // signed snapshot (R015.params.priceSnapHmacKeyHex), so tampered
         // cookies → empty map → R015 PASS (no false positives from client).
@@ -601,7 +634,7 @@ class CheckoutSubmitBefore implements ObserverInterface
             $context['shippingCountry'] = strtoupper((string)$shippingAddress->getCountryId());
         }
 
-        // R025: server-side PO box (multi-language) + freight forwarder
+        // B7 — R025: server-side PO box (multi-language) + freight forwarder
         // via pure CartSignals helpers. Parity with WC + PS detection.
         if ($shippingAddress) {
             $streetParts = $shippingAddress->getStreet();
@@ -617,7 +650,7 @@ class CheckoutSubmitBefore implements ObserverInterface
             }
         }
 
-        // R028: B2B detection via billing company (primary) + Magento
+        // B7 — R028: B2B detection via billing company (primary) + Magento
         // Commerce B2B company_id (extension attribute) when available.
         if ($billingAddress) {
             $billCompany = (string) ($billingAddress->getCompany() ?? '');
@@ -634,14 +667,14 @@ class CheckoutSubmitBefore implements ObserverInterface
                     }
                 }
             } catch (\Throwable $e) {
-                // Magento Commerce B2B module not installed, fall back to company field only.
+                // Magento Commerce B2B module not installed — fall back to company field only.
             }
             if (CartSignals::isB2bOrder($billCompany, $companyId)) {
                 $context['cartAttributes']['_b2b_order'] = 'true';
             }
         }
 
-        // R022, project chosen payment rail. Delegated to pure helper so
+        // R022 — project chosen payment rail. Delegated to pure helper so
         // the lowercase normalisation + null-safety is unit-testable without
         // a Magento kernel. Helper returns null when the quote hasn't reached
         // the payment step yet (NO_SIGNAL → PASS, never HIT).
@@ -654,7 +687,7 @@ class CheckoutSubmitBefore implements ObserverInterface
     }
 
     /**
-     * Extract per-merchant HMAC key for R015 from the signed snapshot.
+     * B7b — extract per-merchant HMAC key for R015 from the signed snapshot.
      * Returns '' on any failure (R015 falls back to PASS rather than minting
      * a delta from an unverifiable cookie). Delegates the rules walk to the
      * pure `CartSignals::resolveR015HmacKey` so the logic is unit-testable
@@ -674,12 +707,13 @@ class CheckoutSubmitBefore implements ObserverInterface
     }
 
     /**
-     * Projects the VERIFIED agent's history onto `orderContext.cartAttributes`.
-     * Today only R011: `_failed_checkout_count` (`/checkout-failures/count`, a
-     * real server route). Absent (`null`) means no signal, never a "0"; a read
-     * failure was already decided when it was read. The other history rules
-     * (missing server routes, or a `sales_order.agent_id_hash` column that does
-     * not exist) are not projected: see {@see AgentHistoryFetcher}.
+     * B7c / Task 38b — proyecta el historial del agente VERIFICADO sobre
+     * `orderContext.cartAttributes`. Hoy sólo R011: `_failed_checkout_count`
+     * (`/checkout-failures/count`, ruta real del servidor). Ausente (`null`) =
+     * sin señal, nunca un «0»; el fallo de lectura ya se decidió al leerla.
+     * R005/R007/R024 (rutas inexistentes) y R010/R014/R023 (columna
+     * `sales_order.agent_id_hash` inexistente) no se proyectan: ver
+     * {@see AgentHistoryFetcher}.
      */
     private function projectAgentHistorySignals(array &$context, string $agentDid, ?int $failedCount): void
     {
@@ -689,8 +723,8 @@ class CheckoutSubmitBefore implements ObserverInterface
     }
 
     /**
-     * Resolve failure_mode for INDETERMINATE nonce-consume outcomes.
-     * Reads `trusteed/enforcement/failure_mode` scope config. Defaults
+     * Resolve failure_mode for INDETERMINATE nonce-consume outcomes (spec-048
+     * P2.8). Reads `trusteed/enforcement/failure_mode` scope config. Defaults
      * to `enforce` (fail-closed) when unset.
      *
      * To override per-merchant add this to admin XML or set via:
@@ -698,15 +732,15 @@ class CheckoutSubmitBefore implements ObserverInterface
      */
     private function getFailureMode(): ?string
     {
-        // Trim + lowercase against enforce|observe; absent: 'enforce'; any
-        // other value: null ("unresolved"), which closes (FailurePolicy).
+        // Trim + lowercase against enforce|observe; absent ⇒ 'enforce'; any
+        // other value ⇒ null ("unresolved"), which closes (FailurePolicy).
         return FailurePolicy::normalizeFailureMode(
             $this->scopeConfig->getValue('trusteed/enforcement/failure_mode')
         );
     }
 
     /**
-     * An internal error of ours before or while evaluating. A human is
+     * A8 — an internal error of ours before or while evaluating. A human is
      * never blocked by it; an agent is, in EVERY failure mode
      * ({@see FailurePolicy::decideOnInternalError()}): an own failure is not a
      * permit. Not published as a rule (`DECISION_UNAVAILABLE`, generic message).
@@ -723,11 +757,23 @@ class CheckoutSubmitBefore implements ObserverInterface
         return $decision === 'BLOCK' ? EnforcementClient::DECISION_UNAVAILABLE : EnforcementClient::DECISION_ALLOW;
     }
 
+    /** Marca de servidor del endpoint WebMCP en la sesión de checkout; nunca lanza (ilegible = sin marca). */
+    private function webmcpMarked(): bool
+    {
+        try {
+            return (string)($this->checkoutSession->getData(self::SESSION_AGENTIC_ORIGIN) ?? '') === '1'
+                && (string)($this->checkoutSession->getData(self::SESSION_AGENTIC_CHANNEL) ?? '') === 'webmcp';
+        } catch (\Throwable $e) {
+            $this->logger->warning('[trusteed] checkout session unreadable: ' . get_class($e));
+            return false;
+        }
+    }
+
     /**
-     * Identity from the `X-Trusteed-Agent-*` headers, session fallback.
+     * C2 — identity from the `X-Trusteed-Agent-*` headers, session fallback.
      * Never throws: a failure reading either source counts as "no signal".
      *
-     * @return array{did:string, token:string, agentic:bool, tokenRejected:bool}
+     * @return array{did:string, token:string, agentic:bool, tokenRejected:bool, signatureIdentity?:string}
      */
     private function resolveAgentIdentity(): array
     {
@@ -744,6 +790,43 @@ class CheckoutSubmitBefore implements ObserverInterface
         } catch (\Throwable $e) {
             $this->logger->warning('[trusteed] request headers unreadable: ' . get_class($e));
         }
-        return AgentIdentityResolver::resolve($headers, $sessionDid, $sessionToken);
+        return $this->applyBrowserSignature(AgentIdentityResolver::resolve($headers, $sessionDid, $sessionToken));
+    }
+
+    /**
+     * Web Bot Auth (RFC 9421) de un agente de navegador. Solo en `enforce` cambia algo, y solo con
+     * verified (identidad `wba:...`, nivel verified_signature) o spoofed (agente anónimo); unverified,
+     * error o timeout dejan la clasificación como estaba. En `observe` solo se registra. Nunca lanza.
+     *
+     * @param array{did:string, token:string, agentic:bool, tokenRejected:bool} $identity
+     * @return array{did:string, token:string, agentic:bool, tokenRejected:bool, signatureIdentity?:string}
+     */
+    private function applyBrowserSignature(array $identity): array
+    {
+        if ($this->browserSignature === null || $this->request === null) {
+            return $identity;
+        }
+        try {
+            if ($this->browserSignature->mode() === 'off') {
+                return $identity;
+            }
+            $result = $this->browserSignature->resolve(
+                BrowserAgentSignature::collectHeaders($this->request),
+                method_exists($this->request, 'getMethod') ? (string)$this->request->getMethod() : 'POST',
+                method_exists($this->request, 'getRequestUri') ? (string)$this->request->getRequestUri() : ''
+            );
+            if ($result === null || $this->browserSignature->mode() !== 'enforce') {
+                return $identity;
+            }
+            if ($result['status'] === 'verified' && $result['identity'] !== '') {
+                return array_merge($identity, ['agentic' => true, 'signatureIdentity' => $result['identity']]);
+            }
+            if ($result['status'] === 'spoofed') {
+                return array_merge($identity, ['agentic' => true]);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning('[trusteed] browser signature unreadable: ' . get_class($e));
+        }
+        return $identity;
     }
 }

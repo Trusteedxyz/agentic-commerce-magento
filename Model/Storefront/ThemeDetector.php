@@ -20,6 +20,7 @@ use Magento\Store\Model\ScopeInterface;
  *   3. Active theme ID config contains 'hyva' (case-insensitive) → true
  *   4. Otherwise → false
  *
+ * Spec 050 T066, clarification T066a.
  */
 class ThemeDetector
 {

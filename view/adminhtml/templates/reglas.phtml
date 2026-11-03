@@ -1,12 +1,12 @@
 <?php
 /**
- * Rules template: admin SPA mount.
+ * Reglas template — Phase B Admin SPA mount (spec 050).
  *
- * Mounts the Trusteed SPA (same bundle as the WordPress, PrestaShop and Odoo
- * modules) in the "mis-reglas" section with source="magento-embed" (a
- * first-class source: the server-side relay issues the opaque token as
- * magento-embed and the embed routes accept it). The token is obtained
- * through a server-side S2S relay; the HMAC never reaches the DOM.
+ * Monta la SPA Trusteed (mismo bundle que WP/PS/Odoo) en la sección
+ * "mis-reglas" con source="magento-embed" (first-class: el relay
+ * /v1/embed/magento/issue-token acuña el token opaco como magento-embed y
+ * las rutas /v1/embed/* lo aceptan vía el union EmbedSource + allowlists).
+ * El token se obtiene mediante relay S2S server-side; el HMAC nunca sale al DOM.
  *
  * @var \Trusteed\AgenticCommerce\Block\Adminhtml\SpaShell $block
  */
@@ -18,7 +18,7 @@ $formKey      = $block->getFormKey();
 $apiBase      = $block->getApiBase();
 $merchantId   = $block->getMerchantId();
 $section      = $block->getInitialSection();
-// Detect section from URL: controllers don't pass section data explicitly
+// Detect section from URL — controllers don't pass section data explicitly
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 if (strpos($requestUri, '/trusteed/pagos/') !== false) {
     $section = 'payment-methods';
@@ -29,8 +29,8 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
 } elseif (strpos($requestUri, '/trusteed/reglas/') !== false) {
     $section = 'mis-reglas';
 } elseif (strpos($requestUri, '/trusteed/ventas/') !== false) {
-    // The Sales route mounts the mis-ventas section (list of Trust Receipts
-    // plus receipt download).
+    // Fase A / Bloque 3 (T8): la ruta Ventas monta la sección mis-ventas
+    // (listado de TrustReceipts + descarga de comprobante).
     $section = 'mis-ventas';
 }
 ?>
@@ -58,13 +58,13 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
                 formKey:    <?= json_encode($formKey, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
                 apiBase:    <?= json_encode($apiBase, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
                 merchantId: <?= json_encode($merchantId, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
-                // The PHP admin screens are fully localized via i18n CSVs
+                // The PHP admin screens are now fully localized via i18n CSVs
                 // (es_ES/en_US), so the embedded SPA follows the Magento backend
-                // interface locale too, keeping PHP screens and the SPA coherent
+                // interface locale too — keeping PHP screens and the SPA coherent
                 // in whichever language the admin user has selected.
                 locale:     <?= json_encode($block->getAdminLocale(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
-                // The connection-failure text, already translated. No sample
-                // data: a failure is rendered as a failure.
+                // A12 — el texto del fallo de conexión, ya traducido. Sin datos
+                // de ejemplo: un fallo se pinta como fallo.
                 messages: {
                     errorTitle: <?= json_encode((string) __("We can't connect to Trusteed right now."), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
                     errorBody:  <?= json_encode((string) __('Your store is still connected and nothing has changed in it. Try again in a few minutes; if it keeps happening, check the Trusteed status page.'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
@@ -75,8 +75,8 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
         </script>
 
         <style>
-            /* Larger text for non-technical merchants: the Magento backend
-               uses a 12px base; Tailwind text-sm = 14px / text-xs = 12px is too small. */
+            /* Aumenta tamaño de texto para vendedores no técnicos (Paco) — Magento backend
+               usa 12px base; SPA Tailwind text-sm = 14px / text-xs = 12px → muy pequeño. */
             #amcp-root { font-size: 16px; line-height: 1.55; }
             #amcp-root h1 { font-size: 26px; line-height: 1.3; }
             #amcp-root h2 { font-size: 21px; line-height: 1.35; }
@@ -101,9 +101,9 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
             #amcp-root .text-2xl,
             #amcp-root [class*="text-2xl"] { font-size: 26px !important; }
 
-            /* The SPA ships with narrow containers (max-w-2xl/3xl/4xl/5xl/md)
-               designed for the Shopify admin. The Magento backend has plenty of
-               width, so we use it to avoid a cramped layout. */
+            /* La SPA viene con contenedores estrechos (max-w-2xl/3xl/4xl/5xl/md)
+               pensados para Shopify Admin. En Magento backend hay mucho ancho
+               disponible: aprovechamos el margen para no ver todo apretado. */
             #trusteed-admin-wrapper { max-width: none; }
             #amcp-root,
             #amcp-root > div,
@@ -129,11 +129,12 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
              data-auto-mount="false"
              style="min-height:400px;font-size:16px;">
             <?php
-            // This used to hold, for "mis-reglas", a FIXED list of 24 rules with
-            // invented toggles and "Active" states, which stayed on screen if the
-            // SPA failed to mount. A merchant with a configured store saw rules
-            // that were not theirs. Now every section starts the same way:
-            // loading, and if the connection fails, an error saying it failed.
+            // A12 (auditoría 2026-09-26) — aquí vivía, para «mis-reglas», una
+            // lista FIJA de 24 reglas con interruptores y estados «Activa»
+            // inventados, que se quedaba en pantalla si la SPA no montaba. Un
+            // comerciante con la tienda configurada veía reglas que no eran las
+            // suyas. Ahora todas las secciones empiezan igual: cargando, y si la
+            // conexión falla, un error que dice que falló.
             ?>
             <noscript><p style="padding:20px"><?= $block->escapeHtml(__('Enable JavaScript to see the Trusteed panel.')) ?></p></noscript>
             <div style="padding:20px;color:#666;font-family:sans-serif;font-size:16px;">
@@ -147,10 +148,10 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
                 'use strict';
 
                 /**
-                 * Requests a token from the S2S relay. It only REQUESTS: caching is
-                 * handled by `TrusteedEmbed.createTokenSource`. The token used to be
-                 * captured ONCE and returned forever; it expires in 900 s or less,
-                 * so after 15 minutes the panel fell into a 401.
+                 * Pide un token al relay S2S. Sólo PIDE: la caché la lleva
+                 * `TrusteedEmbed.createTokenSource` (A11, auditoría 2026-09-26).
+                 * Antes el token se capturaba UNA vez y se devolvía para siempre;
+                 * caduca en ≤900 s, así que a los 15 minutos el panel caía en 401.
                  */
                 async function magentoFetchToken() {
                     var cfg = window.__AMCP_MAGENTO_CONFIG__;
@@ -177,13 +178,13 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
                 }
 
                 /**
-                 * A connection failure is rendered as a connection failure.
+                 * A12 — un fallo de conexión se pinta como fallo de conexión.
                  *
-                 * Replaces `showDemoFallback`, which on the same failure showed
-                 * a "panel not available in local demo, connect store" message to
-                 * an already configured store and, under "agents", a FIXED table of
-                 * Claude, ChatGPT and Gemini sales with EUR amounts. Fake data in
-                 * the merchant's admin.
+                 * Sustituye a `showDemoFallback`, que ante el mismo fallo
+                 * enseñaba «Panel no disponible en demo local… Conectar tienda» a
+                 * una tienda ya configurada y, en «agentes», una tabla FIJA de
+                 * ventas de Claude, ChatGPT y Gemini con importes en EUR. Datos
+                 * falsos en el admin del comerciante.
                  */
                 function showConnectionError(rootEl) {
                     var m = window.__AMCP_MAGENTO_CONFIG__.messages;
@@ -229,8 +230,8 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
                     rootEl.dataset.amcpMounted = '1';
                     var section = rootEl.dataset.section || 'mis-reglas';
                     var tokens = window.TrusteedEmbed.createTokenSource(magentoFetchToken);
-                    // The relay is checked before mounting: if it does not answer, the
-                    // error is reported here instead of as an empty SPA.
+                    // Se comprueba el relay antes de montar: si no responde, el
+                    // error se dice aquí, no como una SPA vacía.
                     tokens.getToken().then(function (tok) {
                         if (!tok) { showConnectionError(rootEl); return; }
                         window.TrusteedEmbed.mount(rootEl, {

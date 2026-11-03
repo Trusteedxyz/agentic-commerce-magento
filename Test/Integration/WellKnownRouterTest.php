@@ -9,11 +9,11 @@ use Magento\TestFramework\TestCase\AbstractController;
 /**
  * Integration test: WellKnownRouter dispatches correctly and returns a valid manifest.
  *
- * Verifies:
- *   - GET /.well-known/mcp.json returns HTTP 200
+ * Spec 050 T059 — verifies:
+ *   - GET /.well-known/mcp.json → HTTP 200
  *   - Content-Type is application/json
  *   - Payload contains required fields: schema_version, store_views, signature
- *   - Payload is identical for different HTTP_HOST values (multi-domain semantics)
+ *   - Payload is identical for different HTTP_HOST values (multi-domain semantics, clarification Q1)
  */
 class WellKnownRouterTest extends AbstractController
 {
@@ -68,8 +68,8 @@ class WellKnownRouterTest extends AbstractController
     }
 
     /**
-     * The manifest payload is identical regardless of which domain
-     * (HTTP_HOST) serves the request: one signing key per merchant connection.
+     * Clarification Q1: manifest payload is identical regardless of which domain
+     * (HTTP_HOST) serves the request — one signing key per merchant connection.
      *
      * @magentoAppIsolation enabled
      * @magentoConfigFixture default_store trusteed_general/general/api_base_url https://api.trusteed.xyz
@@ -107,9 +107,9 @@ class WellKnownRouterTest extends AbstractController
     }
 
     /**
-     * /.well-known/ucp 302-redirects to the centrally generated per-store
-     * profile. The storefront never builds or duplicates the document
-     * body or version (same as the WooCommerce and PrestaShop plugins).
+     * Task 9 (UCP-1 biversion publication) — /.well-known/ucp 302-redirects to
+     * the centrally generated per-store profile. The storefront never builds
+     * or duplicates the document body/version (mirrors WooCommerce/PrestaShop).
      *
      * @magentoAppIsolation enabled
      * @magentoConfigFixture default_store trusteed_general/general/api_base_url https://api.trusteed.xyz
@@ -131,7 +131,7 @@ class WellKnownRouterTest extends AbstractController
     }
 
     /**
-     * Fail-closed: no merchant_id configured gives 404, never a store-less redirect.
+     * Fail-closed: no merchant_id configured → 404, never a store-less redirect.
      *
      * @magentoAppIsolation enabled
      * @magentoConfigFixture default_store trusteed_general/general/api_base_url https://api.trusteed.xyz
@@ -173,6 +173,6 @@ class WellKnownRouterTest extends AbstractController
                 'Non-well-known path must not return manifest payload'
             );
         }
-        // If body is not JSON (e.g. HTML 404), the assertion above passes vacuously, which is correct.
+        // If body is not JSON (e.g. HTML 404), the assertion above passes vacuously — that is correct.
     }
 }

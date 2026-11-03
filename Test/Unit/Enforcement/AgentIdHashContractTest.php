@@ -8,17 +8,17 @@ use PHPUnit\Framework\TestCase;
 use Trusteed\AgenticCommerce\Enforcement\AgentIdHash;
 
 /**
- * Contract of the identity hash with the server.
+ * Task 43b (M2) — contrato del hash de identidad con el servidor.
  *
- * The server stores and looks up checkout failures with
+ * El servidor guarda y busca los fallos de checkout con
  * `hashAgentIdPerMerchant(agentId, merchantId)` = sha256(agentId . merchantId),
- * with no separator. If the module sends a different hash to
- * `GET /checkout-failures/count`, the R011 count is always 0 with HTTP 200:
- * the declared signal lies.
+ * sin separador (`packages/shared/src/enforcement/agent-id-hash.ts`). Si el
+ * módulo envía otro hash a `GET /checkout-failures/count`, el recuento de R011
+ * sale siempre 0 con HTTP 200: la señal declarada miente.
  *
- * The vectors were computed OUTSIDE this code, with the server implementation
- * (node: `createHash("sha256").update(agentId + merchantId)`) and by hand with
- * `printf '%s' '<agentId><merchantId>' | sha256sum`.
+ * Los vectores se calcularon FUERA de este código, con la implementación del
+ * servidor (node: `createHash("sha256").update(agentId + merchantId)`) y a
+ * mano con `printf '%s' '<agentId><merchantId>' | sha256sum`.
  */
 final class AgentIdHashContractTest extends TestCase
 {
@@ -47,7 +47,7 @@ final class AgentIdHashContractTest extends TestCase
 
     public function testIsNotTheBareDidHashTheModuleSentBefore(): void
     {
-        // sha256("did:web:agent.example.com"): what an older release sent, which matches no row.
+        // sha256("did:web:agent.example.com") — lo que enviaba 1.3.5 y no casa con ninguna fila.
         self::assertNotSame(
             '0523505d32d555754483b4729a8e67af4b9eaa5e1b8dd993e47b7fca4c0202df',
             AgentIdHash::perMerchant('did:web:agent.example.com', 'merchant_xyz')
@@ -67,6 +67,25 @@ final class AgentIdHashContractTest extends TestCase
         self::assertSame(hash('sha256', 'ab'), AgentIdHash::perMerchant('a', 'b'));
         self::assertNotSame(AgentIdHash::perMerchant('a', 'b'), AgentIdHash::perMerchant('b', 'a'));
         self::assertNotSame(hash('sha256', 'a|b'), AgentIdHash::perMerchant('a', 'b'));
+    }
+
+    /**
+     * Cuando el módulo vive dentro del monorrepo, lee la implementación del
+     * servidor y falla si deja de ser sha256(agentId . merchantId): el vector
+     * de arriba protege al módulo y esta lectura protege del cambio del lado
+     * del servidor. Fuera del monorrepo (módulo distribuido) se omite.
+     */
+    public function testServerImplementationStillHashesAgentThenMerchant(): void
+    {
+        $src = dirname(__DIR__, 4) . '/shared/src/enforcement/agent-id-hash.ts';
+        if (!is_file($src)) {
+            self::markTestSkipped('fuente del servidor no disponible fuera del monorrepo');
+        }
+        $code = (string) file_get_contents($src);
+        self::assertSame(1, preg_match(
+            '/export function hashAgentIdPerMerchant\([^)]*\)[^{]*\{\s*return createHash\("sha256"\)\s*\.update\(`\$\{agentId\}\$\{merchantId\}`\)\s*\.digest\("hex"\)/s',
+            $code
+        ), 'el servidor cambió la fórmula del hash per-merchant: alinea AgentIdHash::perMerchant');
     }
 
     public function testObserverUsesTheContractHashForR011(): void

@@ -3,28 +3,28 @@
 declare(strict_types=1);
 
 /**
- * Static wiring gate.
+ * Spec 050 — CI gap H6 static wiring gate.
  *
  * The Magento integration tests under Test/Integration/ (PhaseBSeamTest,
  * WellKnownRouterTest, ...) require the full Magento\TestFramework kernel
  * (a complete Magento install + MySQL + OpenSearch + Marketplace composer
  * auth). That is too heavy / credential-gated to run on every push, so the
- * EQP "Run PHPUnit" step has historically run Test/Unit/ ONLY, leaving the
- * controller-namespace 404 routing bug and the enforcement-config
- * read/write path mismatch bug structurally invisible to CI.
+ * EQP "Run PHPUnit" step has historically run Test/Unit/ ONLY — leaving the
+ * controller-namespace 404 routing bug (C1) and the enforcement-config
+ * read/write path mismatch bug (C4) structurally invisible to CI.
  *
  * This script is a PRAGMATIC, zero-dependency static analyser that catches
  * the SAME two bug classes WITHOUT a Magento kernel:
  *
- *   GATE 1 (controller namespace and route resolution)
+ *   GATE 1 (C1 — controller-namespace ↔ route resolution)
  *     For every admin/frontend route action referenced in adminhtml/menu.xml,
  *     adminhtml/system.xml, adminhtml/routes.xml and frontend/routes.xml,
  *     assert the corresponding controller class file exists at the exact path
  *     + namespace + class name that Magento's FrontController would resolve
- *     ("<frontName>/<area>/<action>" maps to Controller/[Adminhtml/]<Area>/<Action>.php).
+ *     ("<frontName>/<area>/<action>" → Controller/[Adminhtml/]<Area>/<Action>.php).
  *     A namespace/path mismatch is the silent-404 defect.
  *
- *   GATE 2 (enforcement config read/write path consistency)
+ *   GATE 2 (C4 — enforcement config read/write path consistency)
  *     Every config path that is READ via scopeConfig (getValue / isSetFlag)
  *     must either (a) be backed by a <field> declared in system.xml, or
  *     (b) be WRITTEN somewhere in the module via the config WriterInterface,
@@ -72,7 +72,7 @@ function pascal(string $segment): string
 }
 
 /* ================================================================== *
- * GATE 1: controller namespace and route resolution
+ * GATE 1 — controller namespace ↔ route resolution (C1 bug class)
  * ================================================================== */
 
 /**
@@ -143,19 +143,19 @@ function assertControllerResolves(
 
     $src = readOrFail($expectedFile, $errors);
     if ($src === null) {
-        $errors[] = "404 risk: action '{$action}' expects controller {$relDir}/{$actionClass}.php NOT FOUND. "
+        $errors[] = "C1 404-RISK: action '{$action}' expects controller {$relDir}/{$actionClass}.php — NOT FOUND. "
             . 'Magento would resolve this URL to a 404.';
         return;
     }
 
     $expectedNs = 'Trusteed\\AgenticCommerce\\' . str_replace('/', '\\', $relDir);
     if (!preg_match('/^\s*namespace\s+' . preg_quote($expectedNs, '/') . '\s*;/m', $src)) {
-        $errors[] = "NS-MISMATCH: {$expectedFile} must declare 'namespace {$expectedNs};' "
+        $errors[] = "C1 NS-MISMATCH: {$expectedFile} must declare 'namespace {$expectedNs};' "
             . "for action '{$action}' to resolve (else silent 404).";
     }
 
     if (!preg_match('/^\s*(?:final\s+|abstract\s+)?class\s+' . preg_quote($actionClass, '/') . '\b/m', $src)) {
-        $errors[] = "CLASS-MISMATCH: {$expectedFile} must declare 'class {$actionClass}' "
+        $errors[] = "C1 CLASS-MISMATCH: {$expectedFile} must declare 'class {$actionClass}' "
             . "for action '{$action}' to resolve (else silent 404).";
     }
 }
@@ -187,14 +187,14 @@ $frontNames = loadFrontNames($moduleRoot, $errors);
 $actions = collectActionRefs($moduleRoot, $errors);
 
 if ($actions === []) {
-    $errors[] = 'No action references found in menu.xml/system.xml, gate would be a no-op (regression in the gate itself?)';
+    $errors[] = 'C1: no action references found in menu.xml/system.xml — gate would be a no-op (regression in the gate itself?)';
 }
 foreach ($actions as $action) {
     assertControllerResolves($action, $frontNames, $moduleRoot, $errors, $checks);
 }
 
 /* ================================================================== *
- * GATE 2: enforcement config read/write path consistency
+ * GATE 2 — enforcement config read/write path consistency (C4)
  * ================================================================== */
 
 /**
@@ -230,7 +230,7 @@ function phpSourceFiles(string $moduleRoot): array
 //
 // Anything NOT on this list that is read but never written/declared is a
 // genuine orphan-read wiring defect and MUST fail the gate. Adding a path
-// here is an explicit, reviewable decision, keep the justification next to it.
+// here is an explicit, reviewable decision — keep the justification next to it.
 $coreConfigAllowList = [
     // --- core Magento, read-only ---
     'general/locale/timezone',
@@ -321,7 +321,7 @@ if (is_file($systemXmlPath)) {
         }
     }
 } else {
-    $errors[] = 'etc/adminhtml/system.xml not found, cannot validate config backing.';
+    $errors[] = 'C4: etc/adminhtml/system.xml not found — cannot validate config backing.';
 }
 
 foreach ($readPaths as $path => $firstFile) {
@@ -332,14 +332,14 @@ foreach ($readPaths as $path => $firstFile) {
 
     if (!$backed) {
         $rel = str_replace($moduleRoot . '/', '', $firstFile);
-        $errors[] = "ORPHAN-READ: config path '{$path}' is READ in {$rel} but is neither "
+        $errors[] = "C4 ORPHAN-READ: config path '{$path}' is READ in {$rel} but is neither "
             . 'declared in system.xml, written via WriterInterface, nor on the core allow-list. '
             . 'It will silently resolve to null/default at runtime (enforcement wiring defect).';
     }
 }
 
 /* ================================================================== *
- * GATE 3: every admin controller is resolvable by URL, menu or no menu
+ * GATE 3 — every admin controller is resolvable by URL, menu or no menu
  * ================================================================== *
  * GATE 1 only looks at actions the menu / system.xml REFERENCE. A controller
  * that is not in the menu (hidden pages kept reachable by URL) escaped it: an
@@ -358,7 +358,7 @@ foreach ($adminDirs as $dirPath) {
     $dir = basename($dirPath);
     ++$checks;
     if ($dir !== pascal(strtolower($dir))) {
-        $errors[] = "UNREACHABLE-DIR: Controller/Adminhtml/{$dir} has an inner capital. Magento maps the "
+        $errors[] = "C1 UNREACHABLE-DIR: Controller/Adminhtml/{$dir} has an inner capital. Magento maps the "
             . "lowercase URL segment to '" . ucfirst(strtolower($dir)) . "', so this controller 404s on a "
             . 'case-sensitive filesystem. Rename it to that exact casing (and its namespace).';
     }
@@ -370,7 +370,7 @@ foreach ($adminDirs as $dirPath) {
         if ($src === false || !preg_match('/^namespace\s+([^;]+);/m', $src, $ns) || trim($ns[1]) !== $expected) {
             $found = ($src !== false && isset($ns[1])) ? trim($ns[1]) : '(none)';
             $rel = str_replace($moduleRoot . '/', '', $file);
-            $errors[] = "NAMESPACE-PATH: {$rel} declares namespace '{$found}' but its path requires '{$expected}'.";
+            $errors[] = "C1 NAMESPACE-PATH: {$rel} declares namespace '{$found}' but its path requires '{$expected}'.";
         }
     }
 }
@@ -384,12 +384,12 @@ if ($errors !== []) {
     foreach ($errors as $e) {
         fwrite(STDERR, "  • {$e}\n");
     }
-    fwrite(STDERR, "\nThese are exactly the route 404 and config wiring defects the\n");
+    fwrite(STDERR, "\nThese are exactly the C1 (route 404) / C4 (config wiring) defects the\n");
     fwrite(STDERR, "integration tests catch but the unit-only suite cannot.\n");
     exit(1);
 }
 
-fwrite(STDOUT, "✓ Magento static wiring gate PASSED: {$checks} route/config consistency checks OK.\n");
+fwrite(STDOUT, "✓ Magento static wiring gate PASSED — {$checks} route/config consistency checks OK.\n");
 fwrite(STDOUT, "  GATE 1: all menu/system actions resolve to a controller (no silent 404).\n");
 fwrite(STDOUT, "  GATE 2: all config reads are system.xml-backed, written, or core-allow-listed.\n");
 fwrite(STDOUT, "  GATE 3: every admin controller dir/namespace is reachable by URL (menu or not).\n");

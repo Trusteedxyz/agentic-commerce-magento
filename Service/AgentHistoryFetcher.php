@@ -15,11 +15,11 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
 
 /**
- * Agent history projection for Magento.
+ * B7c — Agent history projection for Magento.
  *
  * Provides per-agent counters used by R007 (cross-merchant abuse global flag),
  * R010 (new-agent probation via completed-orders count), R023 (refund-abuse via
- * creditmemo / order ratio), and R024 (dispute history, backend canonical).
+ * creditmemo / order ratio), and R024 (dispute history — backend canonical).
  *
  * All backend lookups are HMAC-signed (Stripe-style header) and cached 60s in
  * Magento's cache pool so a single checkout doesn't fan out N requests.
@@ -29,23 +29,22 @@ use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
  * Local lookups (R010 order count, R023 creditmemo count) use the canonical
  * `agent_id_hash` sales-order custom attribute populated by SalesOrderSaveAfter.
  *
- * What is actually called (since 1.3.5): the observer only queries
- * {@see failedCheckoutCount()} (R011), and only for an agent with a VALID
- * token. The other lookups have nothing to read from today.
- * `isCrossMerchantAbuse()` and `disputeCount()` need server routes that do not
- * exist (`/agents/{hash}/cross-merchant-abuse-check`,
- * `/merchants/{id}/disputes/count`: always 404), and `completedOrderCount()`,
- * `cancelCount()`, `refundCount()` and `completedOrderCountInWindow()` filter
- * on `sales_order.agent_id_hash`, a column this module neither creates nor
- * writes. The server resolves those rules on its own. They stay here, with
- * their tests, for when the route or the column exists; do not wire them in
- * without it (a fixed 404 is a permanent outage and `enforce` would close
- * every agent).
- * So the "Fail-open" above applies to them. For the one that is called, a read
- * failure is RECORDED ({@see takeReadFailures()}) and the caller applies the
- * "history unavailable" policy.
+ * Task 38b (1.3.5) — qué se llama de verdad. El observer sólo consulta
+ * {@see failedCheckoutCount()} (R011), y para un agente con token VÁLIDO: las
+ * demás lecturas no tienen hoy de dónde leer. `isCrossMerchantAbuse()` y
+ * `disputeCount()` piden rutas que el servidor no tiene
+ * (`/agents/{hash}/cross-merchant-abuse-check`, `/merchants/{id}/disputes/count`:
+ * 404 siempre), y `completedOrderCount()`, `cancelCount()`, `refundCount()` y
+ * `completedOrderCountInWindow()` filtran `sales_order.agent_id_hash`, columna
+ * que este módulo no crea ni escribe. El servidor resuelve R005/R007/R010/R014/
+ * R023/R024 por su cuenta. Siguen aquí, con su test, para cuando exista la
+ * ruta o la columna; no las enchufes sin ellas (un 404 fijo es una avería
+ * permanente y `enforce` cerraría a todo agente).
+ * Por eso "Fail-open" de arriba vale para ellas; para la que sí se llama,
+ * un fallo de lectura se ANOTA ({@see takeReadFailures()}) y el llamador
+ * aplica la política de «historial no disponible».
  *
- * @since 1.0.0
+ * @since 1.0.0 (audit `rules_claude.md` 2026-05-21 — Magento parity sprint)
  */
 class AgentHistoryFetcher
 {
@@ -58,11 +57,11 @@ class AgentHistoryFetcher
     private const CACHE_TAG = 'TRUSTEED_AGENT_HISTORY';
 
     /**
-     * Network reads that FAILED since the last call to
-     * {@see takeReadFailures()}. The accessors return `null`/`0`/`false` both
-     * for "no data" and for an outage; this separates the latter so the caller
-     * can apply the "history unavailable" policy instead of reading a zero.
-     * No I/O of its own: it only records.
+     * Task 38b (2) — lecturas de red que FALLARON desde la última llamada a
+     * {@see takeReadFailures()}. Los accesores devuelven `null`/`0`/`false`
+     * tanto por «no hay dato» como por avería; esto separa lo segundo para que
+     * el llamador decida con la política de «historial no disponible» en vez de
+     * leer un cero. Sin I/O propia: sólo anota.
      *
      * @var list<string>
      */
@@ -81,9 +80,9 @@ class AgentHistoryFetcher
     ) {}
 
     /**
-     * Returns and CLEARS the failed network reads (signal name) since the
-     * previous call. An unconfigured installation (no `api_base_url`,
-     * `installation_id` or secret) is not an outage: there is nobody to ask.
+     * Devuelve y VACÍA las lecturas de red fallidas (nombre de la señal) desde
+     * la llamada anterior. Una instalación sin configurar (sin `api_base_url`,
+     * `installation_id` o secreto) no es una avería: no hay a quién preguntar.
      *
      * @return list<string>
      */
@@ -100,7 +99,7 @@ class AgentHistoryFetcher
      * when it is safe to send signed lookups to. HTTPS is always required; when
      * a validator is injected (production DI) the host must additionally be
      * allowlisted or match the sealed sha256(host). All callers treat `false`
-     * as "no signal" (fail-open), a rejected URL never blocks a checkout.
+     * as "no signal" (fail-open) — a rejected URL never blocks a checkout.
      *
      * @param string $apiBase Already rtrim()'d base URL.
      */
@@ -138,7 +137,7 @@ class AgentHistoryFetcher
     }
 
     /**
-     * R007, Cross-merchant abuse flag (global, source-of-truth = backend).
+     * R007 — Cross-merchant abuse flag (global, source-of-truth = backend).
      *
      * Returns true if the backend has marked this agent as abuse-flagged across
      * any tenant in the trust network. Cached 60s. Returns false (fail-open) on
@@ -163,7 +162,7 @@ class AgentHistoryFetcher
     }
 
     /**
-     * R010, Completed-order count for this agent at this merchant.
+     * R010 — Completed-order count for this agent at this merchant.
      *
      * Source-of-truth = local `sales_order.agent_id_hash`. Returns 0 when
      * the column is absent or the agent has never transacted here. Never
@@ -190,7 +189,7 @@ class AgentHistoryFetcher
     }
 
     /**
-     * R042 velocity-cap counter.
+     * Spec-048 Sprint E (T-E44) — R042 velocity-cap counter.
      *
      * Returns the number of completed orders for this agent at this merchant
      * inside a sliding time window. Source-of-truth = local `sales_order`
@@ -236,7 +235,7 @@ class AgentHistoryFetcher
     }
 
     /**
-     * R023, Creditmemo count for this agent at this merchant. Used together
+     * R023 — Creditmemo count for this agent at this merchant. Used together
      * with `completedOrderCount` to compute a refund ratio via
      * `CartSignals::refundRatio`. Returns 0 on any error.
      */
@@ -260,7 +259,7 @@ class AgentHistoryFetcher
     }
 
     /**
-     * R024, Dispute count (backend canonical: Magento has no native dispute
+     * R024 — Dispute count (backend canonical: Magento has no native dispute
      * concept). Looks up the `merchant_disputes` table via the backend API.
      * Cached 60s. Returns 0 on any error (fail-open).
      */
@@ -282,15 +281,15 @@ class AgentHistoryFetcher
     }
 
     /**
-     * Failed-checkout attempt count for the agent
+     * Spec-048 Residuales T20 — Failed-checkout attempt count for the agent
      * within a sliding window. Source-of-truth = backend `CheckoutFailureEvent`
-     * table (BLOCK events plus native platform failure rows).
+     * table (BLOCK R001 events + native platform failure rows).
      *
      * Endpoint: `GET /api/v1/checkout-failures/count
      *               ?agentIdHash=<sha256>&windowSeconds=<int>` →
      * `{ "count": int }`. Auth = HMAC headers (installation id + timestamp +
      * sha256 over `GET\n<path>\n<sorted-query>\n<timestamp>`). 2s curl timeout
-     *, never blocks checkout. Cached 60s.
+     * — never blocks checkout. Cached 60s.
      *
      * Returns `null` (not 0) on any failure so the evaluator can distinguish
      * "no signal" from "zero failures".
@@ -303,11 +302,11 @@ class AgentHistoryFetcher
         $cacheKey = 'trusteed_fc_' . hash('sha256', $agentIdHash . '|' . $windowSeconds);
         $cached   = $this->cache->load($cacheKey);
         if ($cached !== false && ctype_digit((string) $cached)) {
-            return (int) $cached; // an unreadable entry is a miss, not a "no signal" served for 60 s
+            return (int) $cached; // una entrada ilegible es un miss, no un «sin señal» servido 60 s
         }
         $body = $this->doFailedCheckoutCountGet($agentIdHash, $windowSeconds);
         if ($body === null) {
-            return null; // the cause (if it was an outage) is already recorded in readFailures
+            return null; // la causa (si fue avería) ya quedó anotada en readFailures
         }
         $val = $body['count'] ?? null;
         $count = null;
@@ -317,7 +316,7 @@ class AgentHistoryFetcher
             $count = (int) $val;
         }
         if ($count === null) {
-            $this->readFailures[] = 'failed_checkout_count'; // 200 with a body that is not `{count:int}`
+            $this->readFailures[] = 'failed_checkout_count'; // 200 con un cuerpo que no es `{count:int}`
             return null;
         }
         $this->cache->save((string) $count, $cacheKey, [self::CACHE_TAG], self::CACHE_TTL_SECONDS);
@@ -340,7 +339,7 @@ class AgentHistoryFetcher
         if ($apiBase === '' || $installationId === '' || $hmacSecret === '') {
             return null;
         }
-        // SSRF + HTTPS guard. Rejection → null ("no signal", fail-open).
+        // H1 — SSRF + HTTPS guard. Rejection → null ("no signal", fail-open).
         if (!$this->isOutboundAuthorized($apiBase)) {
             $this->readFailures[] = 'failed_checkout_count';
             return null;
@@ -391,7 +390,7 @@ class AgentHistoryFetcher
      * Build the canonical sha256 hex HMAC over
      *   GET\n<path>\n<sorted-query-string>\n<timestamp>
      *
-     * `query` values are the raw strings (NOT URL-encoded), encoding is a
+     * `query` values are the raw strings (NOT URL-encoded) — encoding is a
      * transport concern, not part of the signed material. The backend builds
      * the same canonical string before verification.
      *
@@ -410,7 +409,7 @@ class AgentHistoryFetcher
     }
 
     /**
-     * R014 cancellation history for the agent within a sliding window
+     * T17 R014 — Cancellation history for the agent within a sliding window
      * (default 90 days). Source-of-truth = local `sales_order.state = 'canceled'`
      * joined on `agent_id_hash`. Returns null on any error so R014 evaluator
      * degrades to PASS rather than fabricating a phantom history.
@@ -495,7 +494,7 @@ class AgentHistoryFetcher
         if ($apiBase === '' || $installationId === '') {
             return null;
         }
-        // SSRF + HTTPS guard. Rejection → null ("no signal", fail-open).
+        // H1 — SSRF + HTTPS guard. Rejection → null ("no signal", fail-open).
         if (!$this->isOutboundAuthorized($apiBase)) {
             return null;
         }

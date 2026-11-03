@@ -5,29 +5,28 @@ declare(strict_types=1);
 namespace Trusteed\AgenticCommerce\Enforcement;
 
 /**
- * Payload of the signed snapshot, decoded AFTER the signature is verified.
- * Used by {@see SnapshotJwsVerifier}.
+ * Payload del snapshot firmado — decodificación TRAS verificar la firma
+ * (plan 04 de reglas de checkout, Task 24). Lo usa {@see SnapshotJwsVerifier}.
  *
- * The server compresses every snapshot whose JSON exceeds 50 KB with raw
- * DEFLATE (RFC 1951) and marks it with `zip: "DEF"` in the protected header.
- * The signature covers the COMPRESSED bytes, so the order is: verify the
- * signature over what was received and only then call this class. Never inflate
- * before verifying.
+ * El servidor comprime con DEFLATE crudo (RFC 1951) todo snapshot cuyo JSON
+ * pasa de 50 KB y lo marca con `zip: "DEF"` en la cabecera protegida. La firma
+ * cubre los bytes COMPRIMIDOS, así que el orden es: verificar la firma sobre
+ * lo recibido y, sólo si verifica, llamar aquí. Nunca se infla antes.
  *
- * Contract (the `compressedSnapshot` section of
- * `Test/fixtures/platform-flow-conformance.json`):
- * - no `zip`: the payload is the JSON as is;
- * - `zip` exactly 'DEF': inflate with a cap of {@see MAX_INFLATED_BYTES};
- * - any other `zip`, a corrupt, truncated or empty stream, going over the cap,
- *   or an output that is not a JSON object: not usable.
+ * Contrato (sección `compressedSnapshot` de
+ * `packages/shared/src/enforcement/__fixtures__/platform-flow-conformance.json`):
+ * - sin `zip` ⇒ el payload es el JSON tal cual;
+ * - `zip` === 'DEF' exacto ⇒ inflar con tope de {@see MAX_INFLATED_BYTES};
+ * - cualquier otro `zip`, flujo corrupto/truncado/vacío, pasar del tope o una
+ *   salida que no sea un objeto JSON ⇒ no utilizable.
  *
- * Zip-bomb protection: `inflate_init(ZLIB_ENCODING_RAW)` plus `inflate_add`
- * fed {@see INPUT_CHUNK_BYTES} bytes at a time. DEFLATE does not expand more
- * than about 1032:1, so each step produces at most about 66 KB, and the
- * accumulated output is compared with the cap after every step. Memory never
- * goes past the cap plus one step, however large the bomb claims to be.
- * (`gzinflate($d, $max)` does not work: its limit is approximate, it returns
- * one byte over the cap, and it cannot tell a bomb from a corrupt stream.)
+ * Anti-bomba: `inflate_init(ZLIB_ENCODING_RAW)` + `inflate_add` alimentado de
+ * {@see INPUT_CHUNK_BYTES} en {@see INPUT_CHUNK_BYTES} bytes. DEFLATE no
+ * expande más de ~1032:1, así que cada paso produce como mucho ~66 KB y la
+ * salida acumulada se compara con el tope tras cada paso: la memoria nunca
+ * pasa del tope más un paso, por grande que sea lo que la bomba declara.
+ * (`gzinflate($d, $max)` no sirve: su límite es aproximado —devuelve un byte
+ * más del tope— y no distingue bomba de flujo corrupto.)
  */
 final class SnapshotPayloadDecoder
 {
@@ -41,16 +40,16 @@ final class SnapshotPayloadDecoder
     public const INFLATE_OVER_CAP = 'inflate_over_cap';
     public const PAYLOAD_NOT_JSON = 'payload_not_json';
 
-    /** Whether the header declares any `zip` (if it does, every failure means "not usable"). */
+    /** ¿Declara la cabecera algún `zip`? (con él, todo fallo es «no utilizable»). */
     public static function declaresZip(array $header): bool
     {
         return array_key_exists('zip', $header);
     }
 
     /**
-     * @param array  $header       Parsed protected header.
-     * @param string $payloadBytes Payload segment after base64url decoding (the signed bytes).
-     * @return array{0:string,1:?array} [OK or reason, payload or null]
+     * @param array  $header       Cabecera protegida ya parseada.
+     * @param string $payloadBytes Segmento payload tras base64url (lo firmado).
+     * @return array{0:string,1:?array} [OK o motivo, payload o null]
      */
     public static function decode(array $header, string $payloadBytes): array
     {
@@ -66,7 +65,7 @@ final class SnapshotPayloadDecoder
             $json = (string) $inflated;
         }
 
-        // A JSON object (not a list or a scalar): it starts with '{'.
+        // Un objeto JSON (no una lista ni un escalar): empieza por '{'.
         $trimmed = ltrim($json);
         $payload = json_decode($json, true);
         if (!is_array($payload) || $trimmed === '' || $trimmed[0] !== '{') {
@@ -77,11 +76,11 @@ final class SnapshotPayloadDecoder
     }
 
     /**
-     * `validUntil` of the payload in unix seconds, or null if missing or
-     * unreadable. The server always emits it as an ISO-8601 string: any other
-     * type (number, list, object, null, boolean), an empty string, or one that
-     * `strtotime` cannot parse counts as unreadable. Same rule as the
-     * PrestaShop module (`SnapshotPayloadDecoder::validUntil`).
+     * `validUntil` del payload en segundos unix, o null si falta o no se lee.
+     * El servidor lo emite siempre como cadena ISO-8601: cualquier otro tipo
+     * (número, lista, objeto, null, booleano) o una cadena vacía o que
+     * `strtotime` no entiende es «ilegible». Misma regla que el módulo de
+     * PrestaShop (`SnapshotPayloadDecoder::validUntil`).
      */
     public static function validUntil(array $payload): ?int
     {
@@ -95,11 +94,10 @@ final class SnapshotPayloadDecoder
     }
 
     /**
-     * Whether the snapshot can be used at this time. A snapshot signed by our
-     * server ALWAYS carries `validUntil`: missing or unreadable means a
-     * malformed payload and it is classified like an expired one ("unavailable",
-     * NOT tampered, since the signature verified). A `validUntil` in the past is
-     * not usable either.
+     * Task 38b (1) — ¿se puede usar el snapshot a esta hora? Un snapshot firmado
+     * por nuestro servidor SIEMPRE lleva `validUntil`: ausente o ilegible es un
+     * payload malformado y se clasifica como el caducado («no disponible»; NO
+     * manipulado: la firma verificó). Un `validUntil` ya pasado tampoco sirve.
      */
     public static function isUsable(array $payload, int $now): bool
     {

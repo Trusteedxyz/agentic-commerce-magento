@@ -9,19 +9,19 @@ use Trusteed\AgenticCommerce\Enforcement\SnapshotJwsVerifier;
 use Trusteed\AgenticCommerce\Enforcement\SnapshotPayloadDecoder;
 
 /**
- * The `compressedSnapshot` section of the shared fixture against the Magento
- * port: the 12 vectors through `SnapshotJwsVerifier::verify()` (signature
- * first, with the fixture JWKS) and the 11 whose signature verifies through
- * `SnapshotPayloadDecoder::decode()` with their reason. Each block counts what
- * it EXECUTES.
+ * Task 24 — sección `compressedSnapshot` del fixture compartido contra el port
+ * de Magento: los 12 vectores por `SnapshotJwsVerifier::verify()` (firma
+ * primero, con el JWKS del fixture) y los 11 cuya firma verifica por
+ * `SnapshotPayloadDecoder::decode()` con su motivo. Cada bloque cuenta lo que
+ * EJECUTA.
  */
 final class CompressedSnapshotConformanceTest extends TestCase
 {
     private static function section(): array
     {
-        $path = __DIR__ . '/../../fixtures/platform-flow-conformance.json';
+        $path = __DIR__ . '/../../../../shared/src/enforcement/__fixtures__/platform-flow-conformance.json';
         $json = json_decode((string) file_get_contents($path), true);
-        self::assertIsArray($json, 'the fixture must be reachable');
+        self::assertIsArray($json, 'el fixture tiene que ser alcanzable desde el monorepo');
         return $json['compressedSnapshot'];
     }
 

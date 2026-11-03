@@ -42,6 +42,7 @@ class EmitInstallEvent implements DataPatchInterface
     /**
      * Emit magento.module.installed analytics event to AgenticMCPStores API.
      * Non-fatal: analytics loss is acceptable — errors are logged as warnings only.
+     * Spec 050: T021a FR-B-003 instrumentation event #1.
      */
     public function apply(): self
     {

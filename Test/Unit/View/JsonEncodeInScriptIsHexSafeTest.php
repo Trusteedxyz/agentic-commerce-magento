@@ -7,9 +7,9 @@ namespace Trusteed\AgenticCommerce\Test\Unit\View;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Every `json_encode` that dumps a value inside a <script> in the admin templates
- * carries JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT (a `</script>` in a
- * value cannot close the block), and the flag does what it says.
+ * C8: todo `json_encode` que vuelca un valor dentro de un <script> de las plantillas del admin
+ * lleva JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT (un `</script>` en un valor
+ * no puede cerrar el bloque), y la bandera hace lo que dice.
  */
 final class JsonEncodeInScriptIsHexSafeTest extends TestCase
 {

@@ -16,7 +16,7 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Observer\SalesOrderPaymentFailedObserver;
 
 /**
- * SalesOrderPaymentFailedObserver unit tests.
+ * Spec-048 P0b — SalesOrderPaymentFailedObserver unit tests.
  *
  * Mirrors the pattern in {@see SalesCreditmemoSaveAfterTest}: pure mock-based
  * harness, no Magento bootstrapping required beyond the framework class stubs
@@ -116,7 +116,7 @@ final class SalesOrderPaymentFailedObserverTest extends TestCase
         $this->assertSame('did:example:agent-1', $body['agentDid']);
         $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $body['signature']);
 
-        // Verify HMAC = sha256(canonical(body without signature), secret).
+        // Verify HMAC = sha256(canonical(body sin signature), secret).
         $unsigned = $body;
         unset($unsigned['signature']);
         ksort($unsigned, SORT_STRING);
@@ -218,9 +218,9 @@ final class SalesOrderPaymentFailedObserverTest extends TestCase
         $this->logger
             ->expects($this->once())
             ->method('warning')
-            ->with($this->stringContains('[trusteed]'));
+            ->with($this->stringContains('[spec-048 P0b]'));
 
-        // Must not throw: the payment-failure path must keep flowing.
+        // Must not throw — payment-failure path must keep flowing.
         $this->observer->execute(
             $this->makeObserverFromEvent($order, null, 'declined')
         );

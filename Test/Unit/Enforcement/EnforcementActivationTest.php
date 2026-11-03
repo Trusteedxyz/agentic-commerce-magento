@@ -11,10 +11,10 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 
 /**
- * Enforcement activation regression.
+ * Spec-050 C4 regression — enforcement activation.
  *
  * Proves the root cause and the fix for the "silent no-op" bug:
- *   - When `trusteed/enforcement/installation_id` is empty (the old state,
+ *   - When `trusteed/enforcement/installation_id` is empty (the pre-fix state,
  *     because the wizard only ever wrote `trusteed_general/general/*`),
  *     EnforcementClient::evaluate() short-circuits to unconditional ALLOW and
  *     never calls the API.
@@ -82,7 +82,7 @@ class EnforcementActivationTest extends TestCase
     }
 
     /**
-     * Old state: installation_id missing (wizard never wrote it) leads to
+     * C4-01 — PRE-FIX STATE: installation_id missing (wizard never wrote it) →
      * unconditional ALLOW and NO network call. This is exactly the silent no-op.
      */
     public function testUnconfiguredInstallationIdIsSilentNoOp(): void
@@ -92,7 +92,7 @@ class EnforcementActivationTest extends TestCase
 
         $config = [
             'trusteed_general/general/api_base_url' => 'https://api.trusteed.test',
-            // installation_id + hmac_secret intentionally ABSENT (old state).
+            // installation_id + hmac_secret intentionally ABSENT (pre-fix).
         ];
 
         $client = new EnforcementClient(
@@ -108,8 +108,8 @@ class EnforcementActivationTest extends TestCase
     }
 
     /**
-     * Fixed state: wizard persisted installation_id + hmac_secret to
-     * the enforcement paths, so evaluate() calls the API and returns BLOCK.
+     * C4-02 — POST-FIX STATE: wizard persisted installation_id + hmac_secret to
+     * the enforcement paths → evaluate() calls the API and returns BLOCK.
      */
     public function testConfiguredEnforcementReachesBlockDecision(): void
     {
@@ -135,7 +135,7 @@ class EnforcementActivationTest extends TestCase
     }
 
     /**
-     * Fixed state: configured and the API returns ALLOW, so a real ALLOW
+     * C4-03 — POST-FIX STATE: configured + API returns ALLOW → real ALLOW
      * (distinct from the unconditional no-op: the network call DID happen).
      */
     public function testConfiguredEnforcementReachesAllowDecision(): void

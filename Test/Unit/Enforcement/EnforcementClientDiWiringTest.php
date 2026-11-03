@@ -8,19 +8,19 @@ use PHPUnit\Framework\TestCase;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 
 /**
- * Optional constructor arguments are not injected on their own.
+ * Plan 04 Task 29c (L3) — los opcionales de constructor no se inyectan solos.
  *
- * `EnforcementClient::$cache` is nullable (tests build the client without
- * it) and Magento does NOT inject by type an argument that has a default
- * value: without its binding in `etc/di.xml` the negative JWKS cache would
- * always be null and nobody would notice (same failure as `request` in
- * `CheckoutSubmitBefore`, or the `historyFetcher` that is still unwired).
- * The gate reads the REAL di.xml and requires that each declared argument
- * exists in the constructor and that `cache` points to `CacheInterface`.
+ * `EnforcementClient::$cache` es nullable (los tests construyen el cliente sin
+ * ella) y Magento NO inyecta por tipo un argumento con valor por defecto: sin
+ * su binding en `etc/di.xml` la caché negativa del JWKS sería siempre null y
+ * nadie lo vería (mismo fallo que `request` en `CheckoutSubmitBefore`, o el
+ * `historyFetcher` que sigue sin cablear). El gate lee el di.xml REAL y exige
+ * que cada argumento declarado exista en el constructor y que `cache` apunte a
+ * `CacheInterface`.
  */
 final class EnforcementClientDiWiringTest extends TestCase
 {
-    /** @return array<string,string> argument name => injected class */
+    /** @return array<string,string> nombre del argumento => clase inyectada */
     private static function diArguments(string $type): array
     {
         $xml = simplexml_load_file(__DIR__ . '/../../../etc/di.xml');

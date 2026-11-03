@@ -5,32 +5,29 @@ declare(strict_types=1);
 namespace Trusteed\AgenticCommerce\Enforcement;
 
 /**
- * Verifies the JWS of the rules snapshot and says WHY it cannot be used
- * (mirrors the reference `decideOnDegradedEnforcement`).
+ * Verifica el JWS del snapshot de reglas y dice POR QUÉ no se puede usar
+ * (Task 23b, puntos 1 y 3; referencia `decideOnDegradedEnforcement`).
  *
- * Previously `EnforcementClient::verifyAndDecode()` returned null for
- * everything: a tampered snapshot, a JWKS outage and a missing `sodium` all
- * ended up the same, as "no snapshot", and an agent was decided by the mode.
- * Now:
+ * Antes `EnforcementClient::verifyAndDecode()` devolvía null para todo: un
+ * snapshot manipulado, un JWKS caído y la falta de `sodium` acababan igual,
+ * como «sin snapshot», y un agente decidía por el modo. Ahora:
  *
- * - `ok`: the signature verifies against the platform JWKS and the payload is
- *   readable.
- * - `tampered`: the served JWS does not verify even after downloading the JWKS
- *   ONE more time, bypassing the per-request cache (a key rotation is not
- *   tampering). Also a malformed JWS or one whose `alg` is not EdDSA.
- * - `unavailable`: no decision is possible (no `sodium`, empty or unreachable
- *   JWKS, also on the retry, a `sodium` exception), or the signature is
- *   AUTHENTIC but the payload cannot be read, which is not tampering. A
- *   `zip: DEF` payload is inflated with a cap ({@see SnapshotPayloadDecoder});
- *   only an unknown `zip`, a bomb or a broken stream end up unavailable. So
- *   does a missing or unreadable `validUntil` (`valid_until_missing` /
- *   `valid_until_unreadable`).
+ * - `ok`: la firma verifica contra el JWKS de la plataforma y el payload se lee.
+ * - `tampered`: el JWS servido no verifica ni tras volver a descargar el JWKS
+ *   UNA vez saltándose la caché de la petición (una rotación de clave no es
+ *   manipulación); también un JWS malformado o con `alg` distinto de EdDSA.
+ * - `unavailable`: no se puede decidir (sin `sodium`, JWKS vacío o
+ *   inalcanzable, también en el reintento, excepción de `sodium`) o la firma
+ *   es AUTÉNTICA pero el payload no se puede leer: no es manipulación. Desde
+ *   la Task 24 un payload `zip: DEF` se infla con tope
+ *   ({@see SnapshotPayloadDecoder}); sólo un `zip` desconocido, una bomba o un
+ *   flujo roto quedan como no disponibles. Task 38b: también un `validUntil`
+ *   ausente o ilegible (`valid_until_missing` / `valid_until_unreadable`).
  *
- * No I/O of its own: the caller supplies the JWKS through
- * `$fetchJwks(bool $force)`, which returns `kid => raw Ed25519 key` (empty
- * means unavailable). A header with `crit` (RFC 7515) is rejected, and the
- * verdict of the forced retry is remembered for 60 s
- * ({@see JwksRetryVerdictStore}).
+ * Sin I/O propia: el JWKS lo trae el llamante con `$fetchJwks(bool $force)`,
+ * que devuelve `kid => clave Ed25519 en bruto` (vacío = no disponible). Task
+ * 29c: una cabecera con `crit` (RFC 7515) se rechaza, y el veredicto del
+ * reintento forzado se recuerda 60 s ({@see JwksRetryVerdictStore}).
  *
  * @since 1.3.5
  */
@@ -42,7 +39,7 @@ final class SnapshotJwsVerifier
 
     /**
      * @param callable(bool): array<string,string> $fetchJwks
-     * @param JwksRetryVerdictStore|null           $retryVerdicts Negative cache of the forced retry.
+     * @param JwksRetryVerdictStore|null           $retryVerdicts Caché negativa del reintento forzado (L3).
      * @return array{status:string, payload:?array, detail:string}
      */
     public static function verify(string $jwsCompact, callable $fetchJwks, ?JwksRetryVerdictStore $retryVerdicts = null): array
@@ -60,16 +57,16 @@ final class SnapshotJwsVerifier
             || !is_string($header['kid'] ?? null) || $header['kid'] === '') {
             return self::outcome(self::TAMPERED, null, 'bad_header');
         }
-        // RFC 7515 section 4.1.11: `crit` requires understanding extensions
-        // that we do not understand and the signer does not emit.
+        // L6c (RFC 7515 §4.1.11): `crit` exige entender extensiones que no
+        // entendemos ni emite el firmante.
         if (array_key_exists('crit', $header)) {
             return self::outcome(self::TAMPERED, null, 'crit_header');
         }
 
         $check = self::checkSignature($header['kid'], "{$headerB64}.{$payloadB64}", $sigB64, $fetchJwks(false));
         if ($check === 'mismatch') {
-            // A retry for this `kid` already failed less than a minute ago:
-            // classify with what is known, without another download.
+            // L3: ya se reintentó hace menos de un minuto con este `kid` y no
+            // verificó: se clasifica con lo sabido, sin otra descarga.
             $known = $retryVerdicts?->read($header['kid']);
             if ($known !== null) {
                 return self::outcome($known, null, 'jwks_retry_remembered');
@@ -91,15 +88,15 @@ final class SnapshotJwsVerifier
                 : self::outcome(self::UNAVAILABLE, null, $check);
         }
 
-        // Only after the signature verified: inflate (if `zip`) with a cap and read.
+        // Sólo tras verificar la firma: inflar (si `zip`) con tope y leer (Task 24).
         $payloadBytes = self::b64urlDecode($payloadB64);
         [$decoded, $payload] = SnapshotPayloadDecoder::decode($header, $payloadBytes === false ? '' : $payloadBytes);
         if ($decoded !== SnapshotPayloadDecoder::OK) {
             $detail = SnapshotPayloadDecoder::declaresZip($header) ? 'payload_' . $decoded : 'payload_unreadable';
             return self::outcome(self::UNAVAILABLE, null, $detail);
         }
-        // Our server always signs `validUntil`; without it (or unreadable) the
-        // snapshot cannot be treated as current. Not tampering: the signature verified.
+        // Task 38b (1): nuestro servidor siempre firma `validUntil`; sin él (o ilegible) el
+        // snapshot no se puede tratar como vigente. No es manipulación: la firma verificó.
         if (SnapshotPayloadDecoder::validUntil((array) $payload) === null) {
             return self::outcome(
                 self::UNAVAILABLE,

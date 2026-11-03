@@ -9,13 +9,12 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Service\CapabilitiesReporter;
 
 /**
- * Reports capabilities periodically, not only on `setup:upgrade`.
+ * Spec-048 4.9 — reporta capacidades periódicamente, no sólo en `setup:upgrade`.
  *
- * The server refreshes the store's `lastSeenAt` with every signed report and
- * treats a store with no signal for 30 days as dead: with a single report at
- * install time, a healthy store with little traffic ended up degraded. It
- * ALWAYS reports (not only when the version changed): the heartbeat is the
- * point. Never throws.
+ * El servidor renueva `lastSeenAt` de la tienda con cada reporte firmado y da por
+ * muerta a la que lleva 30 días sin señal: con un único reporte en la instalación,
+ * una tienda sana con poco tráfico acababa degradada. Reporta SIEMPRE (no sólo si
+ * cambió la versión): el latido es el propósito. Nunca lanza.
  */
 class ReportCapabilities
 {
@@ -35,7 +34,7 @@ class ReportCapabilities
             $version = (string) ($module['setup_version'] ?? '0.0.0');
             $this->reporter->report($version);
         } catch (\Throwable $e) {
-            $this->logger->warning('[trusteed] periodic capabilities report failed: ' . $e->getMessage());
+            $this->logger->warning('[spec-048 4.9] periodic capabilities report failed: ' . $e->getMessage());
         }
     }
 }

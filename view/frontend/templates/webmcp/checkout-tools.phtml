@@ -1,0 +1,16 @@
+<?php
+/**
+ * Tools WebMCP del checkout (get_checkout / update_checkout / complete_checkout).
+ * Solo en checkout_index_index y con trusteed_general/features/webmcp_checkout_tools activo.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Trusteed\AgenticCommerce\ViewModel\CheckoutToolsConfig $viewModel
+ */
+declare(strict_types=1);
+
+$viewModel = $block->getData('view_model');
+?>
+<script>
+window.__trusteedCheckoutTools = <?= /* @noEscape JSON con JSON_HEX_TAG|AMP|APOS|QUOT */ $viewModel->toJson() ?>;
+</script>
+<script async src="<?= $block->escapeHtmlAttr($block->getViewFileUrl('Trusteed_AgenticCommerce::js/checkout-tools.iife.js')) ?>"></script>

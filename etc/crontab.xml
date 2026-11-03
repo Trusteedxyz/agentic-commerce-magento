@@ -8,7 +8,7 @@
         <job name="trusteed_lag_heartbeat" instance="Trusteed\AgenticCommerce\Cron\EmitLagHeartbeat" method="execute">
             <schedule>* * * * *</schedule>
         </job>
-        <!-- Capabilities heartbeat (refreshes lastSeenAt on the server). -->
+        <!-- Spec-048 4.9: heartbeat de capacidades (renueva lastSeenAt en el servidor). -->
         <job name="trusteed_report_capabilities" instance="Trusteed\AgenticCommerce\Cron\ReportCapabilities" method="execute">
             <schedule>17 * * * *</schedule>
         </job>

@@ -11,17 +11,17 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 
 /**
- * A human buyer is never blocked by an outage on our side. Behavioural test
- * on the real `EnforcementClient::evaluate()`, with a test transport that
- * answers whatever each case says: 503 (the evaluator timeout), 429, a network
- * exception, an internal `\Error`, an unreadable 2xx and a URL rejected by the
- * SSRF guard.
+ * A8 (auditoría spec-048 2026-09-27): un comprador humano nunca se bloquea por
+ * una avería nuestra. Conductual sobre `EnforcementClient::evaluate()` real,
+ * con un transporte de prueba que responde lo que diga cada caso: 503 (el
+ * timeout del evaluador), 429, excepción de red, un `\Error` interno, un 2xx
+ * ilegible y una URL rechazada por el guard SSRF.
  *
- * The merchant's `failure_mode` only governs agentic checkouts (agentId or
- * `endpointClass: agentic_endpoint`), and a mode outside this vocabulary
- * (enforce|observe) fails closed for the agent. That closure on an outage comes
- * out as `DECISION_UNAVAILABLE`, never as `DECISION_BLOCK`, which is reserved
- * for rules (server decision or offline valve).
+ * El `failure_mode` del comerciante sólo gobierna a los agénticos (agentId o
+ * `endpointClass: agentic_endpoint`), y un modo que no es de este vocabulario
+ * (enforce|observe) cierra al agente. Ese cierre por avería sale como
+ * `DECISION_UNAVAILABLE` (fix ronda 1), nunca como `DECISION_BLOCK`, que queda
+ * para las reglas (decisión del servidor o válvula offline).
  */
 final class HumanCheckoutNotBlockedByOutageTest extends TestCase
 {
@@ -34,7 +34,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
             'trusteed_general/general/api_base_url' => 'https://api.trusteed.test',
             'trusteed/enforcement/installation_id'  => 'inst_abc',
             'trusteed/enforcement/hmac_secret'      => 'example-hmac-secret',
-        ], $extra); // failure_mode absent means 'enforce' by default
+        ], $extra); // failure_mode ausente ⇒ 'enforce' por defecto
 
         return new class($values) implements ScopeConfigInterface {
             /** @param array<string,string|null> $values */
@@ -51,8 +51,8 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
     }
 
     /**
-     * Test transport. `post()` answers $status/$body or throws $throw;
-     * `get()` serves the signed snapshot and the JWKS (or 503 if there is no snapshot).
+     * Transporte de prueba. `post()` responde $status/$body o lanza $throw;
+     * `get()` sirve el snapshot firmado y el JWKS (o 503 si no hay snapshot).
      *
      * @param array{jws:string,jwks:string}|null $snapshot
      */
@@ -153,7 +153,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
         self::assertSame(EnforcementClient::DECISION_UNAVAILABLE, $this->client(self::curl(503, self::BLOCK_BODY))->evaluate(self::payload(null, true)));
     }
 
-    /** agentId without endpointClass (older callers) still counts as an agent. */
+    /** agentId sin endpointClass (llamadores antiguos) sigue contando como agente. */
     public function testAgentIdAloneCountsAsAgentic(): void
     {
         self::assertSame(EnforcementClient::DECISION_UNAVAILABLE, $this->client(self::curl(503, ''))->evaluate(self::payload('did:web:a.example', false)));
@@ -171,7 +171,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
         self::assertSame(EnforcementClient::DECISION_UNAVAILABLE, $this->client($curl)->evaluate(self::payload(null, true)));
     }
 
-    /** An internal `\Error` (not `\Exception`) used to escape and abort anyone's checkout. */
+    /** Un `\Error` nuestro (no `\Exception`) antes se escapaba y abortaba el checkout de cualquiera. */
     public function testHumanIsAllowedOnAnInternalError(): void
     {
         $curl = self::curl(0, '', new \TypeError('internal bug'));
@@ -179,7 +179,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
         self::assertSame(EnforcementClient::DECISION_UNAVAILABLE, $this->client($curl)->evaluate(self::payload('did:web:a.example', true)));
     }
 
-    /** An unreadable 2xx means "no readable policy": human passes (as before), agent depends on the mode. */
+    /** Un 2xx ilegible es «no hay política legible»: humano pasa (como antes), agente según el modo. */
     public function testUnreadable2xxBodyAllowsHumanAndClosesAgentInEnforce(): void
     {
         $curl = self::curl(200, '<html>gateway</html>');
@@ -204,7 +204,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
         self::assertSame(EnforcementClient::DECISION_ALLOW, $this->client(self::curl(503, ''), $config)->evaluate(self::payload('did:web:a.example', true)));
     }
 
-    /** A mode from another vocabulary does not open here. */
+    /** CARRY de la Task 1: un modo de otro vocabulario no abre aquí. */
     public function testForeignFailureModeClosesForAnAgentButNeverForAHuman(): void
     {
         foreach (['permissive', 'balanced', 'strict', 'unknown'] as $mode) {
@@ -214,7 +214,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
         }
     }
 
-    /** The merchant's ALL rule (R030 cap) still applies offline for a human. */
+    /** La regla ALL del comerciante (tope de R030) sigue valiendo offline para un humano: caso 2.1.1. */
     public function testMerchantAllRuleStillBlocksAHumanOffline(): void
     {
         $snapshot = self::signedSnapshot([
@@ -227,7 +227,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
         );
     }
 
-    /** An AGENT rule in the valve no longer blocks a human (a strict R029 used to). */
+    /** Una regla AGENT en la válvula ya no bloquea a un humano (antes R029 `estricto` lo hacía). */
     public function testAgentOnlyRuleInTheValveNoLongerBlocksAHuman(): void
     {
         $snapshot = self::signedSnapshot([
@@ -241,7 +241,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
         self::assertSame(
             EnforcementClient::DECISION_BLOCK,
             $this->client(self::curl(503, '', null, $snapshot), $observe)->evaluate(self::payload(null, true)),
-            'the valve does apply the AGENT rule to an agent'
+            'al agente la válvula sí le aplica la regla AGENT'
         );
     }
 
@@ -251,7 +251,7 @@ final class HumanCheckoutNotBlockedByOutageTest extends TestCase
         self::assertSame(EnforcementClient::DECISION_ALLOW, $this->client(self::curl(200, '{"decision":"ALLOW"}'))->evaluate(self::payload(null, true)));
     }
 
-    /** No outage returns DECISION_BLOCK, which belongs to rules. */
+    /** Fix ronda 1 (IMPORTANT 3): ninguna avería devuelve DECISION_BLOCK, que es de las reglas. */
     public function testNoOutageCauseIsReportedAsARuleBlock(): void
     {
         $agent = self::payload('did:web:a.example', true);

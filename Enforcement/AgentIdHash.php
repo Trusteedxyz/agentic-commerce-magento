@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace Trusteed\AgenticCommerce\Enforcement;
 
 /**
- * Per-merchant agent identity hash, identical to the one the server computes.
+ * Hash de identidad del agente por comerciante, idéntico al del servidor.
  *
- * The server stores `checkout_failure_events.agentIdHash` and filters the count
- * of `GET /api/v1/checkout-failures/count` with
- * `hashAgentIdPerMerchant(agentId, merchantId)`, which is
- * `sha256(agentId . merchantId)`: plain concatenation, no separator, in that
- * order, UTF-8, lowercase hex. `merchantId` is the same value this module sends
- * in the body of `/checkout-failures` (`trusteed_general/general/merchant_id`);
- * the server takes it from the body and checks it against the installation's.
+ * El servidor guarda `checkout_failure_events.agentIdHash` y filtra el recuento
+ * de `GET /api/v1/checkout-failures/count` con
+ * `hashAgentIdPerMerchant(agentId, merchantId)` =
+ * `sha256(agentId . merchantId)`: concatenación directa, SIN separador, en ese
+ * orden, UTF-8, hex en minúsculas
+ * (`packages/shared/src/enforcement/agent-id-hash.ts`). `merchantId` es el
+ * mismo que este módulo envía en el cuerpo de `/checkout-failures`
+ * (`trusteed_general/general/merchant_id`); el servidor lo toma del cuerpo y
+ * lo contrasta con el de la instalación.
  *
- * Sending a bare `sha256(agentId)` (what earlier versions did) matches no row,
- * so the R011 count always came back 0 with HTTP 200.
+ * Enviar `sha256(agentId)` a secas (lo que hacía 1.3.5 antes de este arreglo)
+ * no casa con ninguna fila: el recuento de R011 salía siempre 0 con HTTP 200.
  *
  * @since 1.3.5
  */

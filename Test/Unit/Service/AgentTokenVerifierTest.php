@@ -12,7 +12,7 @@ use Trusteed\AgenticCommerce\Service\AgentTokenVerifier;
 /**
  * Unit tests for AgentTokenVerifier.
  *
- * Mirrors the WooCommerce TokenVerifierTest: 22 cases, TV-01 through TV-22.
+ * Mirrors WooCommerce TokenVerifierTest — 22 cases, TV-01 through TV-22.
  * Uses real ext-sodium for Ed25519 key generation and signing.
  *
  * Result shape: array{state: string, agentDid: string, trustScore: float, error: string}
@@ -65,10 +65,10 @@ class AgentTokenVerifierTest extends TestCase
             'iat'            => $now,
             'exp'            => $now + 300,
             'agentTrustScore'=> 0.9,
-            // base64url jti, 16-128 chars (default valid).
+            // Spec-048 P2.8 — base64url jti, 16-128 chars (default valid).
             'jti'            => 'abc123XYZ_test-nonce-0001',
-            // The canonical schema requires a `nonce` of 16..64 characters;
-            // the verifier checks it.
+            // H4 (2026-07-28) — el schema canónico exige `nonce` de 16..64
+            // caracteres; el verificador ya lo comprueba.
             'nonce'          => 'nonce-0123456789abcdef',
         ];
     }
@@ -112,7 +112,7 @@ class AgentTokenVerifierTest extends TestCase
 
     // ------------------------------------------------------------------ tests
 
-    /** TV-01 Happy path: valid token, correct key */
+    /** TV-01 Happy path — valid token, correct key */
     public function testTV01HappyPathValid(): void
     {
         $result = $this->verifier->verify($this->makeToken(), $this->buildResolver(), $this->merchantId);
@@ -156,7 +156,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('wrong_typ', $result['error']);
     }
 
-    /** TV-06 kid missing / empty: no DID extractable */
+    /** TV-06 kid missing / empty — no DID extractable */
     public function testTV06MissingKid(): void
     {
         $header = ['alg' => 'EdDSA', 'typ' => 'trusteed-agent-token+jwt'];
@@ -165,7 +165,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('missing_kid', $result['error']);
     }
 
-    /** TV-07 iss/kid mismatch (key-confusion guard) */
+    /** TV-07 iss/kid mismatch (HIGH-4 key-confusion guard) */
     public function testTV07IssKidMismatch(): void
     {
         $claims = array_merge($this->baseClaims(), ['iss' => 'did:web:other.example.com']);
@@ -191,6 +191,16 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('merchant_id_mismatch', $result['error']);
     }
 
+    /** TV-09b SEC-238: a token without merchantId is rejected (canonical schema requires it). */
+    public function testTV09bMissingMerchantIdRejected(): void
+    {
+        $claims = $this->baseClaims();
+        unset($claims['merchantId']);
+        $result = $this->verifier->verify($this->makeToken(null, $claims), $this->buildResolver(), $this->merchantId);
+        $this->assertSame('invalid', $result['state']);
+        $this->assertSame('merchant_id_mismatch', $result['error']);
+    }
+
     /** TV-10 Token expired (exp in the past, beyond 30s grace) */
     public function testTV10Expired(): void
     {
@@ -209,7 +219,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('too_old', $result['error']);
     }
 
-    /** 301 s old (inside the former 330 s cap) is now too old. */
+    /** Decision 48: 301 s old (inside the former 330 s cap) is now too old. */
     public function testTV11bOneSecondPastMaxAgeIsTooOld(): void
     {
         $claims = array_merge($this->baseClaims(), ['iat' => time() - 301, 'exp' => time() + 29]);
@@ -218,7 +228,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('too_old', $result['error']);
     }
 
-    /** Exactly MAX_AGE_SECONDS (300 s) is the boundary → valid (clock re-read so a tick cannot make it 301). */
+    /** Decision 48: exactly MAX_AGE_SECONDS (300 s) is the boundary → valid (clock re-read so a tick cannot make it 301). */
     public function testTV11cAgeAtMaxAgeIsValid(): void
     {
         do {
@@ -230,7 +240,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('valid', $result['state']);
     }
 
-    /** Ages between the old 120 s (WC/Odoo) limit and 300 s are legitimate. */
+    /** Decision 48: ages between the old 120 s (WC/Odoo) and 300 s are legitimate. */
     public function testTV11dAgesInsideTheContractAreValid(): void
     {
         foreach ([121, 200, 299] as $age) {
@@ -240,7 +250,7 @@ class AgentTokenVerifierTest extends TestCase
         }
     }
 
-    /** A future `iat` with a matching exp would give a sliding window: rejected. */
+    /** C2: `iat` futuro con exp acorde daría una ventana deslizante: se rechaza. */
     public function testTV11eFutureIatIsRejected(): void
     {
         $iat    = time() + 3600;
@@ -250,7 +260,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('iat_in_future', $result['error']);
     }
 
-    /** An `iat` slightly ahead, within the 30 s clock tolerance, is still valid. */
+    /** C2: un `iat` adelantado dentro de los 30 s de tolerancia de reloj sigue siendo válido. */
     public function testTV11fSmallClockSkewIatIsValid(): void
     {
         $claims = array_merge($this->baseClaims(), ['iat' => time() + 10, 'exp' => time() + 200]);
@@ -258,7 +268,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('valid', $result['state']);
     }
 
-    /** Lifetime cap exp - iat (300 s + 30 s grace). */
+    /** C2: tope de vida exp - iat (300 s + 30 s de gracia). */
     public function testTV11gLifetimeAboveCapIsRejected(): void
     {
         $claims = array_merge($this->baseClaims(), ['iat' => time() - 10, 'exp' => time() + 3600]);
@@ -267,7 +277,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('lifetime_too_long', $result['error']);
     }
 
-    /** TV-12 Payload tampered after signing: signature fails */
+    /** TV-12 Payload tampered after signing — signature fails */
     public function testTV12TamperedPayload(): void
     {
         $result = $this->verifier->verify($this->makeTokenTamperedPayload(), $this->buildResolver(), $this->merchantId);
@@ -275,7 +285,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('sig_invalid', $result['error']);
     }
 
-    /** TV-13 DID not in resolver: INDETERMINATE */
+    /** TV-13 DID not in resolver — INDETERMINATE */
     public function testTV13DidNotInResolver(): void
     {
         $resolver = [[
@@ -287,7 +297,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('did_not_in_resolver', $result['error']);
     }
 
-    /** TV-14 Empty resolver: INDETERMINATE */
+    /** TV-14 Empty resolver — INDETERMINATE */
     public function testTV14EmptyResolver(): void
     {
         $result = $this->verifier->verify($this->makeToken(), [], $this->merchantId);
@@ -295,13 +305,13 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('did_not_in_resolver', $result['error']);
     }
 
-    /** TV-15 exp absent: treated as 0 (no expiry check), token still valid */
+    /** TV-15 exp absent — treated as 0 (no expiry check), token still valid */
     public function testTV15ExpAbsent(): void
     {
-        // This test used to assert `valid`: a token WITHOUT `exp` was accepted,
-        // meaning it was valid forever. The canonical schema
-        // (`AgentTokenPayloadSchema`) requires `exp`, and WooCommerce already
-        // rejected it. It now fails closed, like the other ports.
+        // H4 (2026-07-28) — este test afirmaba `valid`: un token SIN `exp` se
+        // aceptaba, es decir, era válido para siempre. El schema canónico
+        // (`AgentTokenPayloadSchema`) exige `exp`, y WooCommerce ya lo
+        // rechazaba. Ahora es fail-closed, igual que en los otros tres ports.
         $claims = $this->baseClaims();
         unset($claims['exp']);
         $result = $this->verifier->verify($this->makeToken(null, $claims), $this->buildResolver(), $this->merchantId);
@@ -310,10 +320,10 @@ class AgentTokenVerifierTest extends TestCase
     }
 
     /**
-     * This test used to require `nonce` with no alias (`missing_nonce`) while
-     * the module also demanded a `jti` that no canonical issuer produces. Now
-     * a token without `nonce` but with `jti` is valid through the legacy
-     * alias; only a token with neither is invalid.
+     * B5 (2026-10-01) — antes este test fijaba «`nonce` obligatorio sin alias»
+     * (`missing_nonce`) mientras el módulo exigía además un `jti` que ningún
+     * emisor canónico produce. Ahora un token sin `nonce` pero con `jti` vale
+     * por el alias heredado; sólo sin ninguno de los dos es inválido.
      */
     public function testB5NonceAbsentFallsBackToJtiAlias(): void
     {
@@ -334,7 +344,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('', $result['jti']);
     }
 
-    /** The exact shape of the test token generator: `nonce`, no `jti`. */
+    /** La forma exacta de generate-test-agent-token.ts: `nonce`, sin `jti`. */
     public function testB5CanonicalTokenWithNonceAndNoJtiIsValid(): void
     {
         $claims = $this->baseClaims();
@@ -399,7 +409,7 @@ class AgentTokenVerifierTest extends TestCase
         }
     }
 
-    /** Token without `iat` → invalid (it would bypass the age cap). */
+    /** H4 (2026-07-28) — token sin `iat` → invalid (rompía el tope de antigüedad). */
     public function testH4IatAbsent(): void
     {
         $claims = $this->baseClaims();
@@ -409,7 +419,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('missing_iat', $result['error']);
     }
 
-    /** TV-16 aud as array instead of string: wrong_aud */
+    /** TV-16 aud as array instead of string — wrong_aud */
     public function testTV16AudAsArray(): void
     {
         $claims = array_merge($this->baseClaims(), ['aud' => ['trusteed']]);
@@ -418,7 +428,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('wrong_aud', $result['error']);
     }
 
-    /** TV-17 Empty payload JSON ({}): iss_kid_mismatch (no iss claim) */
+    /** TV-17 Empty payload JSON ({}) — iss_kid_mismatch (no iss claim) */
     public function testTV17EmptyPayload(): void
     {
         $h = $this->b64url(json_encode($this->defaultHeader()));
@@ -430,7 +440,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('iss_kid_mismatch', $result['error']);
     }
 
-    /** TV-18 Public key x has incorrect base64 length (not 32 bytes): bad_pubkey */
+    /** TV-18 Public key x has incorrect base64 length (not 32 bytes) — bad_pubkey */
     public function testTV18BadPubkeyLength(): void
     {
         $resolver = [[
@@ -442,7 +452,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('bad_pubkey', $result['error']);
     }
 
-    /** TV-19 Wrong key type in JWK (kty=RSA): wrong_key_type */
+    /** TV-19 Wrong key type in JWK (kty=RSA) — wrong_key_type */
     public function testTV19WrongKeyType(): void
     {
         $resolver = [[
@@ -454,7 +464,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('wrong_key_type', $result['error']);
     }
 
-    /** TV-20 Wrong curve (P-256): wrong_key_type */
+    /** TV-20 Wrong curve (P-256) — wrong_key_type */
     public function testTV20WrongCurve(): void
     {
         $resolver = [[
@@ -466,7 +476,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('wrong_key_type', $result['error']);
     }
 
-    /** TV-21 Correct structure but wrong signing key: sig_invalid */
+    /** TV-21 Correct structure but wrong signing key — sig_invalid */
     public function testTV21WrongSigningKey(): void
     {
         $otherKeypair = sodium_crypto_sign_keypair();
@@ -478,7 +488,7 @@ class AgentTokenVerifierTest extends TestCase
         $this->assertSame('sig_invalid', $result['error']);
     }
 
-    /** TV-22 kid without fragment (no #key-1): DID extracted correctly, still valid */
+    /** TV-22 kid without fragment (no #key-1) — DID extracted correctly, still valid */
     public function testTV22KidWithoutFragment(): void
     {
         $header = array_merge($this->defaultHeader(), ['kid' => $this->did]);
@@ -487,11 +497,10 @@ class AgentTokenVerifierTest extends TestCase
     }
 
     /**
-     * RFC 7515 section 4.1.11: `crit` requires understanding extensions that
-     * this verifier does not understand and our signer does not emit. If
-     * present (even `[]`, a string or null) the token is invalid even with a
-     * CORRECT signature; the control is that the same token without `crit`
-     * verifies.
+     * Task 38b (4) — RFC 7515 §4.1.11: `crit` exige entender extensiones que
+     * este verificador no entiende ni emite nuestro firmante. Presente (incluso
+     * `[]`, cadena o null) ⇒ token inválido, con la firma CORRECTA: el control
+     * es que el mismo token sin `crit` verifica.
      */
     public function testTV23CritHeaderMakesTheTokenInvalidEvenWithAValidSignature(): void
     {
@@ -507,13 +516,13 @@ class AgentTokenVerifierTest extends TestCase
         }
     }
 
-    /** `crit` is checked before anything that depends on the payload or the resolver: neither the resolver nor the signature is consulted. */
+    /** `crit` se mira antes que nada que dependa del payload o del resolver: ni el resolver ni la firma se consultan. */
     public function testTV24CritIsRejectedBeforeTheResolverIsConsulted(): void
     {
         $header = array_merge($this->defaultHeader(), ['crit' => ['b64']]);
         $result = $this->verifier->verify($this->makeToken($header), [], $this->merchantId);
 
-        $this->assertSame('invalid', $result['state'], 'with an empty resolver it would be indeterminate if it were not checked first');
+        $this->assertSame('invalid', $result['state'], 'con resolver vacío sería indeterminate si no se mirase antes');
         $this->assertSame('crit_header', $result['error']);
     }
 }

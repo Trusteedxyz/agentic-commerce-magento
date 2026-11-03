@@ -8,15 +8,15 @@ use PHPUnit\Framework\TestCase;
 use Trusteed\AgenticCommerce\Enforcement\AgentIdentityResolver;
 
 /**
- * Agent identity arrives through `X-Trusteed-Agent-*` headers on the REST
- * request that places the order, with the session as a fallback. No signal at
- * all means human. Any `X-Trusteed-Agent-*` header with a value, valid or not,
- * means agent: a client that sets them can only tighten its own treatment,
- * never relax it.
+ * C2 (auditoría spec-048 2026-09-27): la identidad del agente llega por
+ * cabeceras `X-Trusteed-Agent-*` en la petición REST que coloca el pedido, con
+ * la sesión de respaldo. Sin ninguna señal ⇒ humano. Cualquier cabecera
+ * `X-Trusteed-Agent-*` con valor —válida o no— ⇒ agente: un cliente que las
+ * ponga sólo puede endurecer su propio trato, nunca aligerarlo.
  *
- * The result carries a fourth key, `tokenRejected` (a token was presented that
- * is not shaped like a JWS): without it a garbage token was silently dropped
- * and the checkout came out as human.
+ * Respecto al brief de la Task 6, el resultado lleva una cuarta clave
+ * `tokenRejected` (se presentó un token que no tiene forma de JWS): sin ella un
+ * token basura se descartaba en silencio y el checkout salía humano.
  */
 final class AgentIdentityResolverTest extends TestCase
 {
@@ -56,10 +56,10 @@ final class AgentIdentityResolverTest extends TestCase
         self::assertSame('did:key:z6Mk', $id['did']);
         self::assertSame('x.y.z', $id['token']);
         self::assertTrue($id['agentic']);
-        self::assertTrue($id['tokenRejected'], 'the header token had no JWS shape');
+        self::assertTrue($id['tokenRejected'], 'el token de la cabecera no tenía forma de JWS');
     }
 
-    /** Invalid token means agent: with no fallback session it is still an agent. */
+    /** Token inválido = agente (D1/Task 8): sin sesión de respaldo, sigue siendo agente. */
     public function testMalformedTokenHeaderWithoutSessionIsStillAnAgent(): void
     {
         $id = AgentIdentityResolver::resolve(['X-Trusteed-Agent-Token' => 'not-a-jws'], '', '');
@@ -125,11 +125,11 @@ final class AgentIdentityResolverTest extends TestCase
         self::assertFalse($id['agentic']);
     }
 
-    /** The verified token is bound to the declared DID. */
+    /** Fix ronda 1 (IMPORTANT 2): el token verificado se ata al DID declarado. */
     public function testBindTokenTreatsAValidTokenOfAnotherAgentAsInvalid(): void
     {
         self::assertSame(
-            // `did` is ONLY what a VALID token proves; never the declared one without proof.
+            // Task 16: `did` es SÓLO lo que prueba un token VÁLIDO; nunca el declarado sin prueba.
             ['state' => 'invalid', 'did' => '', 'mismatch' => true],
             AgentIdentityResolver::bindToken('did:web:a.example', 'valid', 'did:web:b.example')
         );

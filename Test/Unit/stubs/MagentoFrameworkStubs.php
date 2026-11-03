@@ -325,6 +325,26 @@ namespace Magento\Sales\Model {
             {
                 return null;
             }
+
+            public function dataHasChangedFor($key)
+            {
+                return false;
+            }
+
+            public function setData($key, $value = null)
+            {
+                return $this;
+            }
+
+            public function getOrigData($key = null)
+            {
+                return null;
+            }
+
+            public function getUpdatedAt()
+            {
+                return null;
+            }
         }
     }
 }
@@ -568,12 +588,12 @@ namespace Magento\Framework\Notification {
     }
 }
 
-// ── CheckoutSubmitBefore surface ─────────────────────────────────────────────
+// ── Superficie de CheckoutSubmitBefore (C2, 2026-09-30) ─────────────────────
 //
-// Just enough to instantiate the checkout observer locally and exercise it for
-// real (Test/Unit/Observer/CheckoutSubmitBeforeIdentityChannelTest.php). With
-// the real framework loaded this file is not included and that test is skipped:
-// its harness depends on these minimal shapes, not on the real classes.
+// Lo justo para instanciar el observer de checkout en local y ejercerlo de
+// verdad (Test/Unit/Observer/CheckoutSubmitBeforeIdentityChannelTest.php). Con
+// el framework real cargado este fichero no se incluye y ese test se salta: su
+// arnés depende de estas formas mínimas, no de las clases reales.
 
 namespace Magento\Checkout\Model {
     if (!\class_exists(Session::class)) {
@@ -634,9 +654,8 @@ namespace Magento\Framework\Exception {
 }
 
 namespace Magento\Framework\App {
-    // The real `RequestInterface` does not declare `getHeader()` either: only
-    // the HTTP/REST implementations have it. That is why the observer uses
-    // `method_exists`.
+    // El `RequestInterface` real tampoco declara `getHeader()`: lo tienen las
+    // implementaciones HTTP/REST. Por eso el observer usa `method_exists`.
     if (!\interface_exists(RequestInterface::class)) {
         interface RequestInterface
         {
@@ -651,12 +670,12 @@ namespace {
     }
 }
 
-// ── Global translation ────────────────────────────────────────────────────────
+// ── Traducción global ────────────────────────────────────────────────────────
 //
-// The real Magento `__()` interpolates `%1`, `%2`... and returns a `Phrase`.
-// Only the second part is needed here: the tests check the TEXT, not the
-// translation mechanism, and a fake interpolation that swallowed an argument
-// would let a message with missing data pass.
+// El `__()` real de Magento interpola `%1`, `%2`… y devuelve un `Phrase`. Aquí
+// sólo hace falta lo segundo: los tests comprueban el TEXTO, no el mecanismo de
+// traducción, y una interpolación de mentira que se comiera un argumento haría
+// pasar en verde un mensaje al que le falta un dato.
 
 namespace {
     if (!\function_exists('__')) {

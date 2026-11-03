@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Minimal stubs for the capabilities report cron. Declared only when the real framework is not loaded.
+// Stubs mínimos para el cron de reporte de capacidades: sólo se declaran si el framework real no está cargado.
 
 namespace Magento\Framework\App\Config\Storage {
     if (!\interface_exists(WriterInterface::class)) {

@@ -1,5 +1,6 @@
 /**
- * Trusteed Setup Wizard JS mixin —  *
+ * Trusteed Setup Wizard JS mixin — Spec 050 T062.
+ *
  * Flujo OAuth-like:
  *  1. Merchant pulsa "Conectar con Trusteed →".
  *  2. Se abre un popup hacia trusteed.xyz/connect/magento.

@@ -1,44 +1,44 @@
-# User Guide: Trusteed Agentic Commerce for Magento 2
+# User Guide — Trusteed Agentic Commerce for Magento 2
 
-Version 1.3.4
+Version 1.2.1
 
 ---
 
-## Table of contents
+## Table of Contents
 
 1. [Overview](#1-overview)
-2. [How AI agent commerce works](#2-how-ai-agent-commerce-works)
-3. [Admin dashboard](#3-admin-dashboard)
-4. [My sales (Mis ventas)](#4-my-sales-mis-ventas)
-5. [Who I sell to (A quién le vendo)](#5-who-i-sell-to-a-quién-le-vendo)
+2. [How AI Agent Commerce Works](#2-how-ai-agent-commerce-works)
+3. [Admin Dashboard](#3-admin-dashboard)
+4. [My Sales (Mis ventas)](#4-my-sales-mis-ventas)
+5. [Who I Sell To (A quién le vendo)](#5-who-i-sell-to-a-quién-le-vendo)
 6. [My Rules (Mis Reglas)](#6-my-rules-mis-reglas)
-7. [Payment methods (Métodos de pago)](#7-payment-methods-métodos-de-pago)
+7. [Payment Methods (Métodos de pago)](#7-payment-methods-métodos-de-pago)
 8. [Security (Seguridad)](#8-security-seguridad)
 9. [Settings (Ajustes)](#9-settings-ajustes)
 10. [Trust Receipts](#10-trust-receipts)
-11. [Viewing agent orders in standard Magento](#11-viewing-agent-orders-in-standard-magento)
-12. [Understanding the Trust Receipt badge](#12-understanding-the-trust-receipt-badge)
-13. [HITL: human-in-the-loop approvals](#13-hitl-human-in-the-loop-approvals)
-14. [Frequently asked questions](#14-frequently-asked-questions)
+11. [Viewing Agent Orders in Standard Magento](#11-viewing-agent-orders-in-standard-magento)
+12. [Understanding the Trust Receipt Badge](#12-understanding-the-trust-receipt-badge)
+13. [HITL — Human-in-the-Loop Approvals](#13-hitl--human-in-the-loop-approvals)
+14. [Frequently Asked Questions](#14-frequently-asked-questions)
 
 ---
 
 ## 1. Overview
 
 Trusteed Agentic Commerce connects your Magento store to AI shopping assistants
-such as Claude, ChatGPT and other MCP-compatible agents. When a customer asks
+such as Claude, ChatGPT, and other MCP-compatible agents. When a customer asks
 their AI assistant to "buy a blue widget from [your store]", the agent:
 
 1. Discovers your store via the MCP manifest at `/.well-known/mcp.json`
 2. Browses your catalog and adds items to a cart
-3. Validates the order against your rules (price limits, allowed agents, manual approval)
+3. Validates the order against your rules (price limits, allowed agents, HITL thresholds)
 4. Completes the purchase and receives a cryptographically signed Trust Receipt
 
-Every step is logged and auditable, and you control it from the **Trusteed** admin menu.
+Every step is logged, auditable, and controllable from the **Trusteed** admin menu.
 
 ---
 
-## 2. How AI agent commerce works
+## 2. How AI Agent Commerce Works
 
 ```
 Customer → AI Agent → MCP Discovery → Your Magento Store
@@ -52,38 +52,38 @@ Customer → AI Agent → MCP Discovery → Your Magento Store
 
 **Key concepts:**
 
-| Term | Meaning |
-|------|---------|
-| **Agent** | An AI assistant (Claude, ChatGPT, etc.) acting on behalf of a customer |
-| **MCP** | Model Context Protocol, the open standard agents use to interact with stores |
-| **Trust Receipt** | A cryptographically signed record of each agent transaction (Ed25519) |
-| **Rule** | A merchant-defined constraint (max order value, allowed agents, category blocklist) |
-| **HITL** | Human-in-the-Loop: agent orders that wait for your manual approval before they complete |
-| **Enforcement mode** | `observe` = log only; `enforce` = block orders that violate rules |
+| Term                 | Meaning                                                                         |
+| -------------------- | ------------------------------------------------------------------------------- |
+| **Agent**            | An AI assistant (Claude, ChatGPT, etc.) acting on behalf of a customer          |
+| **MCP**              | Model Context Protocol — the open standard agents use to interact with stores   |
+| **Trust Receipt**    | A cryptographically signed proof of each agent transaction (Ed25519)            |
+| **Rule**             | A merchant-defined constraint (max order value, allowed agents, HITL threshold) |
+| **HITL**             | Human-in-the-Loop — orders above a threshold require your manual approval       |
+| **Enforcement mode** | `observe` = log only; `enforce` = block orders that violate rules               |
 
 ---
 
-## 3. Admin dashboard
+## 3. Admin Dashboard
 
 **Path:** Trusteed → Inicio
 
 The dashboard is your starting point. It shows:
 
-- Connection status: a green banner confirms your store is connected to Trusteed
-- Store ID: your unique identifier in the Trusteed network
-- Quick links: shortcuts to the four main sections
+- **Connection status** — green banner confirms your store is connected to Trusteed
+- **Store ID** — your unique identifier in the Trusteed network
+- **Quick links** — shortcuts to the four main sections
 
 ### Connection banner states
 
-| Banner | Meaning |
-|--------|---------|
-| Green "Your store is connected" | Store is live and receiving agent traffic |
-| Yellow "Connection pending" | Setup Wizard not completed. Go to Trusteed → Configuración |
-| Red "Store disconnected" | API credentials invalid or Trusteed API unreachable |
+| Banner                          | Meaning                                                     |
+| ------------------------------- | ----------------------------------------------------------- |
+| Green "Your store is connected" | Store is live and receiving agent traffic                   |
+| Yellow "Connection pending"     | Setup Wizard not completed — go to Trusteed → Configuración |
+| Red "Store disconnected"        | API credentials invalid or Trusteed API unreachable         |
 
 ---
 
-## 4. My sales (Mis ventas)
+## 4. My Sales (Mis ventas)
 
 **Path:** Trusteed → Mis ventas
 
@@ -96,11 +96,11 @@ Lists agent-placed orders with:
 - Order number (links to standard Magento order view)
 - Agent identity (AI platform + customer)
 - Order total
-- Trust Receipt, with a detail view
+- Trust Receipt status (PENDING / ISSUED / VERIFIED)
 - Date
 
 Orders placed by agents appear here **and** in the standard **Sales → Orders** list.
-They are normal Magento orders and go through your standard fulfillment workflow.
+They are normal Magento orders — they go through your standard fulfillment workflow.
 
 ### AI sales tab
 
@@ -119,9 +119,9 @@ enforcement decision for each agent order.
 
 ---
 
-## 5. Who I sell to (A quién le vendo)
+## 5. Who I Sell To (A quién le vendo)
 
-**Path:** Trusteed → A quién le vendo
+**Path:** Trusteed → Agentes
 
 Manage which AI agents are allowed to purchase in your store.
 
@@ -155,7 +155,7 @@ You can configure minimum trust levels in **Mis Reglas**.
 
 ## 6. My Rules (Mis Reglas)
 
-**Path:** Trusteed → Mis Reglas
+**Path:** Trusteed → Reglas
 
 Rules define how agent orders are evaluated before they are placed. Each rule can
 be in `observe` mode (log only) or `enforce` mode (block violations).
@@ -172,23 +172,23 @@ be in `observe` mode (log only) or `enforce` mode (block violations).
 | R030      | Simple Controls                  | Basic max-amount and allowed-country controls in a single rule                      |
 | R032      | Category Blocklist               | Blocks agent purchases in categories you list (alcohol, tobacco, weapons, adult)    |
 | R035      | Max Order Value                  | Caps the total amount of an agent order                                             |
-| R042      | Max Orders Per Agent Per Day     | Caps successful orders per agent per 24 h. Complements R011, which counts failures |
+| R042      | Max Orders Per Agent Per Day     | Caps successful orders per agent per 24 h — complements R011, which counts failures |
 | R043      | Agent Checkout Approval Required | Requires your manual approval for **every** agent order via the HITL flow           |
 
 Codes and names above are the canonical ones. A rule code means the same thing on
-every platform, so `R035` is the amount cap everywhere. Don't guess what a code does
-from its number. The engine ships 46 rules in total, and this table is the subset
-merchants configure most often.
+every platform, so `R035` is the amount cap everywhere — do not read a code by its
+number. The engine ships **46** rules in total; this table is the subset merchants
+configure most often.
 
 ### Rule modes
 
-In `observe` mode the rule evaluates and logs its verdict, but never blocks an order.
-Use it when you first deploy a rule, to see its impact before you enforce it. In
-`enforce` mode the rule blocks or escalates the orders that violate it.
+- **Observe**: the rule evaluates and logs its verdict, but never blocks an order.
+  Use this when initially deploying a rule to understand its impact before enforcing.
+- **Enforce**: the rule blocks or escalates orders that violate it.
 
 ### Switching a rule to enforce mode
 
-1. Navigate to **Trusteed → Mis Reglas**
+1. Navigate to **Trusteed → Reglas**
 2. Click the rule you want to enforce
 3. Toggle **Mode** from `observe` to `enforce`
 4. Click **Save**
@@ -199,14 +199,14 @@ Use it when you first deploy a rule, to see its impact before you enforce it. In
 
 ---
 
-## 7. Payment methods (Métodos de pago)
+## 7. Payment Methods (Métodos de pago)
 
 **Path:** Trusteed → Métodos de pago
 
 Configure the order in which Trusteed attempts to charge agent orders:
 
-1. Primary method: tried first (e.g., x402 micropayment protocol)
-2. Fallback method: tried if the primary fails (e.g., stored card on file)
+1. **Primary method** — tried first (e.g., x402 micropayment protocol)
+2. **Fallback method** — tried if the primary fails (e.g., stored card on file)
 
 When an agent places an order, Trusteed tries the primary method. If it fails, it
 falls back to the next method in sequence. If all methods fail, the order is not
@@ -257,12 +257,7 @@ Shows the health of the webhook delivery pipeline:
 
 ### Enforcement system failure mode
 
-Controls what happens when the Trusteed API is temporarily unreachable.
-
-First, the module checks the last rules snapshot it pulled against a small set of
-rules it can evaluate on its own: the country check of R014, R018, R019, R020, R025,
-R027, R028, R029 and R030. If one of them matches, the order is blocked whatever the
-mode. If none matches, the mode decides:
+Controls what happens when the Trusteed API is temporarily unreachable:
 
 | Mode      | Behavior                                                                                                               |
 | --------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -271,13 +266,14 @@ mode. If none matches, the mode decides:
 
 When the API is unreachable this module falls back to its bundled offline
 evaluator (`Enforcement/OfflineSafetyValveEvaluator.php`), which decides nine
-rules on its own: R014 (country dimension only, because the cancellation-history
-dimension needs a backend lookup), R018, R019, R020, R025, R027, R028, R029 and
-R030. Those nine keep working under either mode above.
+rules on its own: **R014** (country dimension only — the cancellation-history
+dimension needs a backend lookup), **R018**, **R019**, **R020**, **R025**,
+**R027**, **R028**, **R029** and **R030**. Those nine keep working under either
+mode above.
 
-Every other rule needs the backend, including R001 and R007. Under `observe` they
-are skipped. Under `enforce` the order is blocked by the setting above rather than
-evaluated.
+Every other rule needs the backend, **including R001 and R007** — under
+`observe` they are skipped, and under `enforce` the order is blocked by the
+setting above rather than evaluated.
 
 ### Payment method order
 
@@ -289,16 +285,9 @@ See [Payment Methods](#7-payment-methods-métodos-de-pago).
 
 **Path:** Trust Receipts → Verify Receipt
 
-Trust Receipts are cryptographically signed records of agent transactions. They use
+Trust Receipts are cryptographically signed proofs of agent transactions. They use
 Ed25519 signatures (RFC 8037) and are issued by the Trusteed API after each
 successful agent order.
-
-> **Separate module.** The **Trust Receipts** menu (Verify Receipt, Self-Test and
-> Audit Log) and the order badge described in section 12 belong to the Trusteed Trust
-> Receipt Verifier module (Composer package `trusteed/trust-verifier-for-magento`,
-> Magento module `Trusteed_TrustVerifier`). Install it alongside Trusteed Agentic
-> Commerce to get them. Without it, the order still stores its receipt address in the
-> `trusteed_receipt_uri` field.
 
 ### What a Trust Receipt contains
 
@@ -315,24 +304,25 @@ successful agent order.
 2. Paste the JWS string from a customer's receipt
 3. Click **Verify**
 
-Verification returns one of three results. VERIFIED means the signature is valid and
-the receipt is authentic and unaltered. INVALID means the signature does not match,
-so the receipt may have been altered. INDETERMINATE means verification could not
-complete, for example because the JWKS endpoint is unreachable.
+Results:
+
+- **VERIFIED** — signature is valid, receipt is authentic and untampered
+- **INVALID** — signature does not match; receipt may have been altered
+- **INDETERMINATE** — verification could not complete (e.g., JWKS endpoint unreachable)
 
 ### Self-Test
 
 **Trust Receipts → Self-Test** runs the built-in conformance suite against your
 installation to confirm the verifier is working correctly with known test vectors.
 
-### Audit log
+### Audit Log
 
 **Trust Receipts → Audit Log** shows every verification attempt with verdict,
 latency, and the admin user who performed the verification.
 
 ---
 
-## 11. Viewing agent orders in standard Magento
+## 11. Viewing Agent Orders in Standard Magento
 
 Agent orders are normal Magento orders and appear in **Sales → Orders** alongside
 human-placed orders. They are distinguished by:
@@ -340,46 +330,55 @@ human-placed orders. They are distinguished by:
 - The **Trusteed** label in the order source column
 - The `trusteed_receipt_uri` field visible in the order detail page
 
-Fulfill, invoice and ship agent orders exactly as you would any other order.
+You fulfill, invoice, and ship agent orders exactly as you would any other order.
 When you ship an order, Trusteed is automatically notified via the webhook outbox.
 
 ---
 
-## 12. Understanding the Trust Receipt badge
+## 12. Understanding the Trust Receipt Badge
 
-This badge comes from the Trusteed Trust Receipt Verifier module (see section 10).
+On the order detail page (**Sales → Orders → [Order]**), a Trust Receipt badge
+shows the receipt status:
 
-On the order detail page (**Sales → Orders → [Order]**), the module adds a green badge
-to the page header when the order has a Trust Receipt address stored. The badge reads
-**VERIFIED · Order** followed by the order status: Completed, Refunded, Cancelled,
-On Hold or Processing.
+| Badge        | Meaning                                                   |
+| ------------ | --------------------------------------------------------- |
+| **PENDING**  | Order created; receipt not yet issued by Trusteed         |
+| **ISSUED**   | Receipt issued and URI stored on the order                |
+| **VERIFIED** | Receipt has been verified via the Trust Receipts verifier |
 
-The badge only tells you that the order has a receipt address. It does not check the
-signature. To check the signature, paste the receipt into **Trust Receipts → Verify
-Receipt**.
-
----
-
-## 13. HITL: human-in-the-loop approvals
-
-When rule **R043** is active in `enforce` mode and an agent order needs approval, the
-order is not created. Instead:
-
-1. The module freezes the cart, so the shopper's intent is recorded as pending
-   merchant approval
-2. The agent receives the message "Your order is pending review and requires merchant
-   approval before it can be completed"
-
-The module only freezes the cart. The approval decision itself is handled through
-your Trusteed dashboard, not through a screen in the Magento admin.
-
-### Configuring the HITL rule
-
-R043 sends every agent order to manual approval. It has no amount threshold. The only setting is `ttlMinutes`, how long the approval window stays open (60 minutes by default). You set it in **Trusteed → Mis Reglas**.
+The badge links directly to the Trust Receipts → Verify Receipt page with the
+receipt URI pre-populated.
 
 ---
 
-## 14. Frequently asked questions
+## 13. HITL — Human-in-the-Loop Approvals
+
+When rule **R043** is active in `enforce` mode and an agent order exceeds your
+configured HITL threshold, the order is not created automatically. Instead:
+
+1. The agent receives a "pending merchant approval" response
+2. The order appears in **Trusteed → Mis ventas** with status **HITL_PENDING**
+3. You receive a notification in the Magento admin notification bell
+
+### Approving a pending order
+
+1. Open **Trusteed → Mis ventas**
+2. Click the order with status **HITL_PENDING**
+3. Review the order details and agent identity
+4. Click **Approve** to create the order, or **Reject** to cancel it
+
+Approved orders proceed through normal Magento order processing. Rejected orders
+are logged in the audit trail and the agent is notified.
+
+### Configuring the HITL threshold
+
+The threshold is configured in your Trusteed account dashboard at
+[trusteed.xyz/dashboard/agent-trust](https://trusteed.xyz/dashboard/agent-trust).
+It is applied globally across all platforms that connect to your store.
+
+---
+
+## 14. Frequently Asked Questions
 
 **Q: Do agent orders count toward my Magento analytics and reports?**
 
@@ -388,20 +387,18 @@ Yes. Agent orders are standard Magento orders and appear in all standard reports
 
 **Q: Can agents apply discount codes?**
 
-Agents can apply the discount codes your store accepts. Rule **R017**
-(`discount-anomaly-applied`) caps the number of discount codes on a cart and the total
-discount depth, so you can stop carts with unusual discounts.
+Only discount codes that have been explicitly allowlisted in your Trusteed rules.
+By default, agents cannot apply arbitrary coupon codes (rule `R017.coupon-discount-anomaly`).
 
 **Q: What happens to agent orders if Trusteed is down?**
 
-The module first checks the local rules described in **Settings**. If none matches,
-your **Enforcement failure mode** setting decides. In `observe` mode, orders proceed
-normally. In `enforce` mode (the default), orders are blocked until connectivity is
-restored.
+This depends on your **Enforcement failure mode** setting (see Settings). In
+`observe` mode, orders proceed normally. In `enforce` mode, agent orders are blocked
+until connectivity is restored.
 
 **Q: Can I limit which products agents can purchase?**
 
-Yes. Configure rule **R032 (Category Blocklist)** in **Mis Reglas**. It blocks the
+Yes — configure rule **R032 (Category Blocklist)** in **Mis Reglas**. It blocks the
 categories you list. (`R007` is a different rule: it blocks agents carrying a
 cross-merchant abuse signal.)
 
@@ -417,7 +414,7 @@ No. Agents receive product and pricing information but are never given customer 
 Order confirmation data is provided to the agent after a successful purchase, scoped
 to what is necessary for the customer to receive their purchase confirmation.
 
-**Q: How do I open a support case?**
+**Q: How do I get a support case reviewed?**
 
 Email support@trusteed.xyz with your Store ID (visible on **Trusteed → Inicio**),
 the order ID or Trust Receipt URI, and a description of the issue.

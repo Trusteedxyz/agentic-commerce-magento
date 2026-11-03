@@ -8,7 +8,7 @@ $setupUrl    = $block->getSetupUrl();
 
     <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 20px;"><?= $block->escapeHtml(__('My sales')) ?></h1>
 
-    <!-- Tab bar -->
+    <!-- ── Barra de pestañas ── -->
     <div id="amcp-ventas-tabs" style="display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:24px;">
         <?php
         $tabs = [
@@ -29,7 +29,7 @@ $setupUrl    = $block->getSetupUrl();
         <?php endforeach; ?>
     </div>
 
-    <!-- My orders -->
+    <!-- ── Mis pedidos ── -->
     <div id="amcp-tab-orders" class="amcp-tab-panel">
 
         <?php if (!$isConnected): ?>
@@ -70,7 +70,7 @@ $setupUrl    = $block->getSetupUrl();
         <?php endif; ?>
     </div>
 
-    <!-- AI sales -->
+    <!-- ── Ventas IA ── -->
     <div id="amcp-tab-receipts" class="amcp-tab-panel" style="display:none;">
         <h2 style="font-size:16px;font-weight:700;color:#111827;margin:0 0 12px;">
             <?= $block->escapeHtml(__('Sales receipts for automated buyers')) ?>
@@ -108,7 +108,7 @@ $setupUrl    = $block->getSetupUrl();
         </div>
     </div>
 
-    <!-- Keys -->
+    <!-- ── Claves ── -->
     <div id="amcp-tab-keys" class="amcp-tab-panel" style="display:none;">
         <h2 style="font-size:16px;font-weight:700;color:#111827;margin:0 0 12px;"><?= $block->escapeHtml(__('Security seal')) ?></h2>
         <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
@@ -129,7 +129,7 @@ $setupUrl    = $block->getSetupUrl();
         </div>
     </div>
 
-    <!-- Audit log -->
+    <!-- ── Auditoría ── -->
     <div id="amcp-tab-audit" class="amcp-tab-panel" style="display:none;">
         <h2 style="font-size:16px;font-weight:700;color:#111827;margin:0 0 12px;"><?= $block->escapeHtml(__('Activity log')) ?></h2>
         <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
@@ -178,7 +178,7 @@ $setupUrl    = $block->getSetupUrl();
         }
     };
 
-    // Activate the first tab on load
+    // Activar primera pestaña al cargar
     amcpSwitchTab('orders');
 })();
 </script>

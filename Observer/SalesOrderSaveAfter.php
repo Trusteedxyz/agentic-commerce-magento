@@ -67,6 +67,10 @@ class SalesOrderSaveAfter implements ObserverInterface
             $agentDid = null;
         }
 
+        // Canal de la marca WebMCP (CheckoutSubmitBefore la deja en ALLOW); solo valores conocidos.
+        $channel = $this->checkoutSession->getData(CheckoutSubmitBefore::SESSION_AGENT_CHANNEL_FOR_ORDER);
+        $channelPayload = $channel === 'webmcp' ? ['agent_channel' => 'webmcp'] : [];
+
         try {
             $this->outboxRepository->insert([
                 'event_id' => $this->generateUuid(),
@@ -75,13 +79,13 @@ class SalesOrderSaveAfter implements ObserverInterface
                 'increment_id' => (string)$order->getIncrementId(),
                 'composite_id' => $compositeId,
                 'store_view_code' => $order->getStore()->getCode() ?: 'default',
-                'payload' => json_encode([
+                'payload' => json_encode(array_merge([
                     'grand_total' => $order->getGrandTotal(),
                     'status' => $order->getStatus(),
                     'state' => $state,
                     'customer_email' => null, // PII omitted from webhook payload
                     'agent_did' => $agentDid,
-                ]),
+                ], $channelPayload)),
                 'updated_at' => $order->getUpdatedAt() ?? date('c'),
                 'secret_version' => (int)($this->scopeConfig->getValue(
                     'trusteed_general/general/webhook_secret_version',

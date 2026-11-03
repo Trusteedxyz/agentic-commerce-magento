@@ -51,6 +51,16 @@
                     <comment>Injects storefront JavaScript bridge. Auto-disabled on Hyvä/PWA Studio themes.</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+                <field id="browser_agent_signature_mode" translate="label comment" type="select" sortOrder="15" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Browser agent signature (Web Bot Auth)</label>
+                    <comment>Verifies RFC 9421 signatures of browser agents at checkout. Observe: verify and log only (default). Enforce: a verified signature raises the agent identity; a spoofed one marks an anonymous agent.</comment>
+                    <source_model>Trusteed\AgenticCommerce\Model\Config\Source\BrowserAgentSignatureMode</source_model>
+                </field>
+                <field id="webmcp_checkout_tools" translate="label comment" type="select" sortOrder="17" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>WebMCP checkout tools</label>
+                    <comment>Registers get_checkout / update_checkout / complete_checkout in the checkout page for browser agents and enables the trusteed/webmcp/checkout endpoint. Off by default. Never places an order: the buyer confirms.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
                 <field id="phase_b_enabled" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Enable Phase B (Embedded SPA)</label>
                     <comment>Reserved for future Phase B release. Do not enable unless instructed.</comment>

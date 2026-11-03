@@ -7,8 +7,8 @@ namespace Trusteed\AgenticCommerce\Test\Unit\View;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Text shown to the merchant contains no long dashes.
- * Covers the translatable strings in the admin templates and the i18n CSV files.
+ * C6 (654ff1b7b): el texto que ve el comerciante no lleva rayas largas.
+ * Cubre las cadenas traducibles de las plantillas del admin y los CSV de i18n.
  */
 final class NoEmDashInUserFacingCopyTest extends TestCase
 {

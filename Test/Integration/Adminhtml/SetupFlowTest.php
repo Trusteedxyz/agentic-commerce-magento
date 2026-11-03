@@ -9,7 +9,7 @@ use Magento\TestFramework\TestCase\AbstractBackendController;
 /**
  * Integration test: Admin setup wizard flow.
  *
- *  — verifies:
+ * Spec 050 T067 — verifies:
  *   - IntrospectToken with valid token returns {"valid": true}
  *   - IntrospectToken with master/admin token returns {"valid": false, "error": "master_token_rejected"}
  *   - Save.php with Hyvä theme sets trusteed/webmcp/enabled = 0

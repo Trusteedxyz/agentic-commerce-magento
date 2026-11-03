@@ -14,7 +14,7 @@ use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
 use Psr\Log\LoggerInterface;
 
 /**
- * `/.well-known/ucp` discovery hop.
+ * `/.well-known/ucp` discovery hop (Task 9, UCP-1 biversion publication).
  *
  * Mirrors the WooCommerce (`includes/discovery/ucp-wellknown.php`) and
  * PrestaShop (`src/Discovery/UcpWellknownResolver.php`) resolvers: this
@@ -26,9 +26,9 @@ use Psr\Log\LoggerInterface;
  *
  * Fails closed to 404 when `merchant_id` is not configured, so an agent is
  * never redirected to a store-less URL. `api_base_url` is admin-configurable,
- * so it is checked against {@see ApiBaseUrlValidator}, the same SSRF/HTTPS
+ * so it is checked against {@see ApiBaseUrlValidator} — the same SSRF/HTTPS
  * guard `EnforcementClient::isOutboundAuthorized()` applies to every other
- * outbound call this module makes, before it is ever used as a redirect
+ * outbound call this module makes — before it is ever used as a redirect
  * target.
  */
 class UcpProfile implements HttpGetActionInterface

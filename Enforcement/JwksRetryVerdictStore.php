@@ -7,18 +7,17 @@ namespace Trusteed\AgenticCommerce\Enforcement;
 use Magento\Framework\App\CacheInterface;
 
 /**
- * Negative cache (60 s) for the forced JWKS retry of {@see SnapshotJwsVerifier}.
+ * Plan 04 Task 29c (L3) — caché negativa (60 s) del reintento forzado del JWKS
+ * de {@see SnapshotJwsVerifier}.
  *
- * Magento keeps nothing between requests except what it asks of
- * `CacheInterface`. Without this, every checkout with a snapshot that fails to
- * verify downloaded the JWKS a second time. There is one entry per server. It
- * remembers the verdict of the LAST retry that failed to verify and for which
- * `kid`: a different `kid` (a real rotation) does not inherit it, and made-up
- * `kid`s cannot fill the cache.
+ * Magento no guarda nada entre peticiones salvo lo que pida a `CacheInterface`:
+ * sin esto, cada checkout con un snapshot que no verifica volvía a descargar el
+ * JWKS una segunda vez. La entrada es única por servidor y recuerda el
+ * veredicto del ÚLTIMO reintento que no verificó y para qué `kid`: un `kid`
+ * distinto (rotación real) no la hereda, y `kid`s inventados no llenan la caché.
  *
- * Failure tolerant: with no cache (null), a cache that throws, or garbage
- * content, everything behaves as before (the retry happens). The clock is a
- * closure so tests can control it.
+ * Tolerante a fallos: sin caché (null), con caché que lanza o con basura, todo
+ * se comporta como antes (se reintenta). El reloj es un cierre para los tests.
  *
  * @since 1.3.5
  */
@@ -34,7 +33,7 @@ final class JwksRetryVerdictStore
     ) {
     }
 
-    /** @return string|null `tampered`|`unavailable` while the entry is for this `kid` and still current. */
+    /** @return string|null `tampered`|`unavailable` mientras la entrada sea de este `kid` y siga vigente. */
     public function read(string $kid): ?string
     {
         if ($this->cache === null) {
@@ -71,7 +70,7 @@ final class JwksRetryVerdictStore
                 self::TTL_SECONDS
             );
         } catch (\Throwable) {
-            // Without the negative cache the next checkout retries, as before.
+            // Sin caché negativa el siguiente checkout reintenta, como antes.
         }
     }
 

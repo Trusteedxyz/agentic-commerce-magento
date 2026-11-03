@@ -8,39 +8,40 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Enforcement\FailurePolicy;
 
 /**
- * Agent token JWS verifier, Ed25519 offline verification for Magento.
+ * Agent token JWS verifier — Ed25519 offline verification for Magento.
  *
  * Verifies a Trusteed agent token (JWS Compact Serialization with EdDSA/Ed25519)
  * against a public key resolved from the enforcement snapshot's agentDidResolver.
  *
  * Three-state result (state field):
- *   'valid'        , signature cryptographically correct
- *   'invalid'      , signature wrong or claims rejected
- *   'indeterminate', cannot verify (no sodium, DID absent from resolver)
+ *   'valid'         — signature cryptographically correct
+ *   'invalid'       — signature wrong or claims rejected
+ *   'indeterminate' — cannot verify (no sodium, DID absent from resolver)
  *
- * Mirrors the PrestaShop and WooCommerce token verifiers.
+ * Mirrors packages/prestashop-module-agenticmcpstores/src/Enforcement/TokenVerifier.php
+ * and packages/wp-plugin/.../includes/class-token-verifier.php.
  *
- * @since 1.0.0
+ * @since 1.0.0 (spec-050 enforcement layer)
  */
 class AgentTokenVerifier
 {
     private const EXPECTED_TYP = 'trusteed-agent-token+jwt';
     private const EXPECTED_AUD = 'trusteed';
     /**
-     * Max token age from `iat` to now (seconds). The
-     * SAME number in every verifier, the 300 s the contract declares
+     * Max token age from `iat` to now (seconds). Decision 48 (2026-10-02): the
+     * SAME number in every verifier — the 300 s the contract declares
      * (`AgentTokenPayloadSchema`: `exp - iat <= 300`). It was 330 (300 + the 30 s
      * `exp` grace), which accepted tokens the server and the Shopify Function
-     * already reject. Kept in sync across
-     * languages by a parity test in the server repository.
+     * already reject. Tied across languages by
+     * packages/shared/src/enforcement/__tests__/agent-token-max-age-parity.test.ts.
      */
     private const MAX_AGE_SECONDS = 300;
 
     /**
-     * Format gate of the single-use identifier base64url
-     * characters, 16-64 chars (the canonical schema's `nonce` length; the
+     * Format gate of the single-use identifier (spec-048 P2.8): base64url
+     * characters, 16–64 chars (the canonical schema's `nonce` length; the
      * alphabet of the server's nonce-consume endpoint). Mirrors the WC and PS
-     * verifiers.
+     * verifiers (B5, 2026-10-01).
      */
     private const REPLAY_ID_RE = '/^[A-Za-z0-9_-]{16,64}$/';
 
@@ -56,10 +57,11 @@ class AgentTokenVerifier
      * @param string $merchantId   Expected merchantId claim.
      * @return array{state: string, agentDid: string, trustScore: float, error: string, kid: string, jti: string, exp: int, claims: array<string,mixed>}
      *         `claims`: the decoded payload, ONLY for a 'valid' token ([] otherwise:
-     *         a claim of an unverified token is never a signal).
-     *         `jti`/`exp` populated only for a 'valid' token. The
+     *         a claim of an unverified token is never a signal — Task 23b).
+     *         Spec-048 P2.8 — `jti`/`exp` populated only for a 'valid' token. The
      *         `jti` key holds the single-use identifier: the canonical `nonce`
-     *         claim, or the legacy `jti` claim as an alias when `nonce` is absent). Missing/malformed → INVALID with error=missing_jti|bad_jti
+     *         claim, or the legacy `jti` claim as an alias when `nonce` is absent
+     *         (B5). Missing/malformed → INVALID with error=missing_jti|bad_jti
      *         (codes kept for the `_agent_token_jti_*` attributes the server knows;
      *         they now cover the nonce).
      */
@@ -91,8 +93,8 @@ class AgentTokenVerifier
         if (($header['typ'] ?? '') !== self::EXPECTED_TYP) {
             return $this->result('invalid', '', 0.0, 'wrong_typ');
         }
-        // RFC 7515 section 4.1.11: `crit` requires understanding extensions that
-        // we do not understand and the token signer never emits. Present (even `[]`) means invalid.
+        // Task 38b — RFC 7515 §4.1.11: `crit` exige entender extensiones que no
+        // entendemos ni emite el firmante de tokens. Presente (incluso `[]`) ⇒ inválido.
         if (array_key_exists('crit', $header)) {
             return $this->result('invalid', '', 0.0, 'crit_header');
         }
@@ -113,21 +115,24 @@ class AgentTokenVerifier
             return $this->result('invalid', $did, 0.0, 'bad_payload_json');
         }
 
-        // Key-confusion guard: iss must match kid-derived DID.
+        // Key-confusion guard (HIGH-4): iss must match kid-derived DID.
         if (($payload['iss'] ?? '') !== $did) {
             return $this->result('invalid', $did, 0.0, 'iss_kid_mismatch');
         }
         if (($payload['aud'] ?? '') !== self::EXPECTED_AUD) {
             return $this->result('invalid', $did, 0.0, 'wrong_aud');
         }
-        if (isset($payload['merchantId']) && $payload['merchantId'] !== $merchantId) {
+        // SEC-238: merchantId es OBLIGATORIO (schema canónico; PrestaShop/Odoo rechazan su ausencia).
+        if (!isset($payload['merchantId']) || $payload['merchantId'] !== $merchantId) {
             return $this->result('invalid', $did, 0.0, 'merchant_id_mismatch');
         }
 
-        // `exp`, `iat` and `nonce` are REQUIRED. The canonical token schema
-        // demands them and the WooCommerce verifier already did. The two checks
-        // below used to hang off `> 0`, so a token that OMITTED the claim (or set
-        // it to 0) skipped expiry and the age cap entirely: valid forever.
+        // H4 (verificación 2026-07-28) — `exp`, `iat` y `nonce` son
+        // OBLIGATORIOS. El schema canónico los exige (`AgentTokenPayloadSchema`
+        // en packages/shared/src/enforcement/types.ts) y WooCommerce ya los
+        // exigía. Aquí las dos comprobaciones de abajo colgaban de `> 0`, así
+        // que un token que OMITÍA el claim (o lo ponía a 0) se saltaba entera
+        // la caducidad y el tope de antigüedad: válido para siempre.
         if (!isset($payload['exp']) || !is_numeric($payload['exp'])) {
             return $this->result('invalid', $did, 0.0, 'missing_exp', $kid);
         }
@@ -141,8 +146,8 @@ class AgentTokenVerifier
             return $this->result('invalid', $did, 0.0, 'expired');
         }
         $iat = (int)$payload['iat'];
-        // Future `iat` plus lifetime cap: without them, an advanced iat gives a sliding window
-        // (same guard as PrestaShop and WooCommerce): 30 s of clock tolerance and 300 s + 30 s of lifetime.
+        // `iat` futuro + tope de vida: sin ellos, un iat adelantado da una ventana deslizante
+        // (mismo guard que PrestaShop y WooCommerce): 30 s de tolerancia de reloj y 300 s + 30 s de vida.
         if (($iat - 30) > $now) {
             return $this->result('invalid', $did, 0.0, 'iat_in_future', $kid);
         }
@@ -153,7 +158,7 @@ class AgentTokenVerifier
             return $this->result('invalid', $did, 0.0, 'too_old');
         }
 
-        // Single-use identifier for backend replay protection:
+        // Spec-048 P2.8 + B5 — single-use identifier for backend replay protection:
         // the canonical `nonce` claim, or the legacy `jti` as an alias when `nonce`
         // is absent or empty (with both present `nonce` wins; a malformed `nonce`
         // is not rescued by a valid `jti`). Missing or malformed is INVALID. It is
@@ -166,8 +171,8 @@ class AgentTokenVerifier
             return $this->result('invalid', $did, 0.0, 'bad_jti', $kid);
         }
 
-        // Resolve public key from agentDidResolver (list, last well-formed entry
-        // of the DID wins, a malformed one never overrides it, or legacy map).
+        // Resolve public key from agentDidResolver (list — last well-formed entry
+        // of the DID wins, a malformed one never overrides it — or legacy map).
         $jwk = FailurePolicy::resolveAgentDidPublicKey($didResolver, $did);
         if ($jwk === null) {
             return $this->result('indeterminate', $did, 0.0, 'did_not_in_resolver', $kid);

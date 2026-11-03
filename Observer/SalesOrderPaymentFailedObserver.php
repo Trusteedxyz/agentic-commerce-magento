@@ -11,7 +11,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * �� Magento checkout-failure emitter.
+ * Spec-048 P0b — Magento checkout-failure emitter.
  *
  * Observes `sales_order_payment_failed` (dispatched by Magento core when a
  * payment attempt fails) and POSTs a HMAC-signed payload to the Trusteed
@@ -66,7 +66,7 @@ class SalesOrderPaymentFailedObserver implements ObserverInterface
             if ($agentDid !== null) {
                 $body['agentDid'] = $agentDid;
             }
-            //  — idempotency key from Magento increment id
+            // Spec-048 T14 — idempotency key from Magento increment id
             // (human-readable order number, stable across retries). Falls
             // back to quote id when the order has not been created yet.
             $externalRef = $this->resolveExternalRef($order, $quote);
@@ -87,12 +87,12 @@ class SalesOrderPaymentFailedObserver implements ObserverInterface
             $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
             $this->curl->addHeader('Content-Type', 'application/json');
             $this->curl->addHeader('Accept', 'application/json');
-            $this->curl->addHeader('User-Agent', 'Trusteed-Magento/1.0');
+            $this->curl->addHeader('User-Agent', 'Trusteed-Magento/1.0 spec-048-p0b');
             $this->curl->post($url, $payload);
         } catch (\Throwable $e) {
             // Never propagate — payment-failure path must keep flowing.
             $this->logger->warning(
-                '[trusteed] checkout-failure emit exception: ' . $e->getMessage()
+                '[spec-048 P0b] checkout-failure emit exception: ' . $e->getMessage()
             );
         }
     }
@@ -132,7 +132,7 @@ class SalesOrderPaymentFailedObserver implements ObserverInterface
     }
 
     /**
-     *  — resolve an idempotency key. Prefer order increment id
+     * Spec-048 T14 — resolve an idempotency key. Prefer order increment id
      * (stable, human-friendly); fall back to quote id when the order has
      * not been persisted yet (early failure path).
      */

@@ -8,23 +8,23 @@ use PHPUnit\Framework\TestCase;
 use Trusteed\AgenticCommerce\Enforcement\FailurePolicy;
 
 /**
- * Consumes the shared fixture of the main flow
- * (Test/fixtures/platform-flow-conformance.json),
- * the same one that validates the TS reference `platform-flow.ts`.
+ * Consume el fixture compartido del flujo principal
+ * (packages/shared/src/enforcement/__fixtures__/platform-flow-conformance.json),
+ * el mismo que valida la referencia TS `platform-flow.ts`.
  *
- * Each block counts the vectors it EXECUTES (a plain "green" is not enough: a
- * block that runs nothing also comes out green). `serverRouting` does not apply
- * to Magento: `EnforcementClient::evaluate()` does not evaluate any rule locally
- * and always asks the server, so there is no routing decision to port; a test
- * checks that the fixture carries no vector for Magento.
+ * Cada bloque cuenta los vectores que EJECUTA (no basta con «verde»: un bloque
+ * que no corre nada también sale verde). `serverRouting` no aplica a Magento:
+ * `EnforcementClient::evaluate()` no evalúa ninguna regla localmente y pregunta
+ * siempre al servidor, así que no hay decisión de enrutado que portar; un test
+ * comprueba que el fixture no trae ningún vector para Magento.
  */
 final class FailurePolicyConformanceTest extends TestCase
 {
     private static function fixture(): array
     {
-        $path = __DIR__ . '/../../fixtures/platform-flow-conformance.json';
+        $path = __DIR__ . '/../../../../shared/src/enforcement/__fixtures__/platform-flow-conformance.json';
         $json = json_decode((string) file_get_contents($path), true);
-        self::assertIsArray($json, 'the fixture must be reachable');
+        self::assertIsArray($json, 'el fixture tiene que ser alcanzable desde el monorepo');
         return $json;
     }
 
@@ -79,7 +79,7 @@ final class FailurePolicyConformanceTest extends TestCase
         self::assertSame([['ruleCode' => 'R030', 'enabled' => true, 'appliesTo' => 'ALL']], $out, 'reindexado desde 0');
     }
 
-    /** The 21 vectors against the pure port, which compares EXACTLY like the reference. */
+    /** Los 21 vectores contra el port puro, que compara EXACTAMENTE como la referencia. */
     public function testUnavailableDecisionVectors(): void
     {
         $run = 0;
@@ -95,10 +95,10 @@ final class FailurePolicyConformanceTest extends TestCase
     }
 
     /**
-     * The port normalizes its mode against ITS vocabulary
-     * (enforce|observe) before calling the policy. A value from another
-     * vocabulary (`permissive`, `balanced`, `strict`) is "unresolved" and
-     * fails closed for an agent; it never touches a human.
+     * CARRY de la Task 1: el port normaliza su modo contra SU vocabulario
+     * (enforce|observe) antes de llamar a la política. Un valor de otro
+     * vocabulario (`permissive`, `balanced`, `strict`) es «no resuelto» y
+     * cierra a un agente; a un humano nunca lo toca.
      */
     public function testFailureModeNormalizationAgainstThisVocabulary(): void
     {
@@ -149,7 +149,7 @@ final class FailurePolicyConformanceTest extends TestCase
         self::assertSame('BLOCK', FailurePolicy::decideUnavailable(true, null, false), 'no resuelto cierra a un agente');
     }
 
-    /** An internal failure does not depend on the mode: agent BLOCK, human ALLOW. */
+    /** Task 27c (M6): una avería propia no depende del modo: agente BLOCK, humano ALLOW. */
     public function testAnInternalErrorHoldsAnAgentAndNeverAHuman(): void
     {
         self::assertSame('BLOCK', FailurePolicy::decideOnInternalError(true));

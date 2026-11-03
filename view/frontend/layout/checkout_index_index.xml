@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  Tools WebMCP del checkout. Solo la página de checkout y solo con
+  trusteed_general/features/webmcp_checkout_tools = 1. cacheable="false": el bloque imprime la
+  clave de formulario de la sesión, así que la página no puede entrar en la caché de página completa.
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="trusteed.webmcp.checkout.tools"
+                   template="Trusteed_AgenticCommerce::webmcp/checkout-tools.phtml"
+                   ifconfig="trusteed_general/features/webmcp_checkout_tools"
+                   cacheable="false">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Trusteed\AgenticCommerce\ViewModel\CheckoutToolsConfig</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

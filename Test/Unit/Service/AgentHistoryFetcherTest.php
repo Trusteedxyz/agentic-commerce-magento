@@ -18,10 +18,10 @@ use Psr\Log\LoggerInterface;
 require_once __DIR__ . '/../../../Service/AgentHistoryFetcher.php';
 
 /**
- * AgentHistoryFetcher::failedCheckoutCount.
+ * Spec-048 Residuales T20 — AgentHistoryFetcher::failedCheckoutCount.
  *
  * Verifies the Magento helper correctly wires up the backend
- * `GET /api/v1/checkout-failures/count` endpoint.
+ * `GET /api/v1/checkout-failures/count` endpoint introduced in spec-048 T20.
  *
  * Cases covered:
  *   - backend response 200 + count=5 → returns 5
@@ -32,7 +32,7 @@ require_once __DIR__ . '/../../../Service/AgentHistoryFetcher.php';
  *   - missing endpoint config → returns null (no curl issued)
  *   - empty agent hash / zero window → returns null short-circuit
  *
- * Pure unit test; depends on `Test/Unit/stubs/MagentoFrameworkStubs.php` for
+ * Pure unit test — depends on `Test/Unit/stubs/MagentoFrameworkStubs.php` for
  * the Magento framework surface area when running outside a full Magento env.
  */
 final class AgentHistoryFetcherTest extends TestCase
@@ -216,7 +216,7 @@ final class AgentHistoryFetcherTest extends TestCase
         self::assertStringContainsString('windowSeconds=900', (string) $curl->lastUrl);
     }
 
-    // ── a read failure is recorded, not mistaken for "no data" ─────────────
+    // ── Task 38b (2): una avería de lectura se anota, no se confunde con «sin dato» ──
 
     /** @return array<string,array{0:int,1:string,2:?\Throwable}> */
     public static function readFailureCases(): array
@@ -227,7 +227,7 @@ final class AgentHistoryFetcherTest extends TestCase
             '200 sin JSON'      => [200, '<html>gateway</html>', null],
             '200 sin count'     => [200, '{"other":1}', null],
             '200 count no int'  => [200, '{"count":"many"}', null],
-            'network exception' => [0, '', new \RuntimeException('Operation timed out')],
+            'excepción de red'  => [0, '', new \RuntimeException('Operation timed out')],
         ];
     }
 
@@ -238,7 +238,7 @@ final class AgentHistoryFetcherTest extends TestCase
 
         self::assertNull($svc->failedCheckoutCount(str_repeat('a', 64), 300));
         self::assertSame(['failed_checkout_count'], $svc->takeReadFailures());
-        self::assertSame([], $svc->takeReadFailures(), 'takeReadFailures empties the list');
+        self::assertSame([], $svc->takeReadFailures(), 'takeReadFailures vacía la lista');
     }
 
     public function test_no_data_is_not_a_failure(): void
@@ -248,7 +248,7 @@ final class AgentHistoryFetcherTest extends TestCase
         self::assertSame(0, $svc->failedCheckoutCount(str_repeat('b', 64), 300), 'un cero real sigue siendo un cero');
         self::assertSame([], $svc->takeReadFailures());
 
-        // Not configured / arguments that need no network call: nobody to ask, so it is not a failure.
+        // Sin configurar / argumentos que no piden red: no hay a quién preguntar, no es una avería.
         $svc = $this->buildFetcher($curl, []);
         self::assertNull($svc->failedCheckoutCount(str_repeat('b', 64), 300));
         self::assertNull($svc->failedCheckoutCount('', 300));
@@ -293,13 +293,13 @@ final class AgentHistoryFetcherTest extends TestCase
 
         $hash = str_repeat('d', 64);
         $make($this->curlDouble(500, ''))->failedCheckoutCount($hash, 300);
-        self::assertSame([], $store, 'a failure is not stored as "no signal" for 60 s');
+        self::assertSame([], $store, 'un fallo no se guarda como «sin señal» 60 s');
 
         $ok = $this->curlDouble(200, json_encode(['count' => 3]));
         $fetcher = $make($ok);
         self::assertSame(3, $fetcher->failedCheckoutCount($hash, 300));
         self::assertSame(3, $fetcher->failedCheckoutCount($hash, 300));
-        self::assertSame(1, $ok->getCallCount, 'a success is cached');
+        self::assertSame(1, $ok->getCallCount, 'el acierto sí se cachea');
 
         foreach ($store as $k => $_) {
             $store[$k] = 'basura';

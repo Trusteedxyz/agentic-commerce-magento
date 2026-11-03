@@ -5,33 +5,32 @@ declare(strict_types=1);
 namespace Trusteed\AgenticCommerce\Enforcement;
 
 /**
- * Resolves the agent identity of a checkout in Magento.
+ * Identidad del agente en Magento (auditoría spec-048 2026-09-27, C2; D4 del
+ * plan 04).
  *
- * Earlier code read two session keys (`trusteed_agent_did`,
- * `trusteed_agent_token`) that nothing ever wrote, so every checkout looked
- * organic. The order is placed over REST
- * (`/V1/guest-carts/:id/payment-information`), from both the Luma checkout and
- * the WebMCP bridge, so the signal travels in headers of that request. The
- * session is still read as a fallback.
+ * Antes se leían dos claves de sesión (`trusteed_agent_did`,
+ * `trusteed_agent_token`) que nada escribía: todo checkout salía orgánico. El
+ * pedido se coloca por REST (`/V1/guest-carts/:id/payment-information`), tanto
+ * desde el checkout Luma como desde el bridge WebMCP, así que la señal viaja en
+ * cabeceras de esa petición. La sesión se sigue leyendo como respaldo.
  *
- * Threat model: any client can set these headers, so they may only tighten
- * treatment, never relax it.
+ * Modelo de amenaza. Estas cabeceras las puede poner CUALQUIER cliente, así que
+ * sólo pueden endurecer el trato, nunca aligerarlo:
  *
- * - No `X-Trusteed-Agent-*` header with a value (and no session) means human.
- * - Any of them with a value means agent, valid or not. A DID or token that is
- *   malformed or too long is dropped (it is neither forwarded nor recorded) but
- *   the checkout is still treated as agentic. A rejected token is flagged in
- *   `tokenRejected` so the observer treats it as an invalid token.
- * - A well-formed DID is NOT authenticated: only the token verifies it. It is
- *   the same kind of signal as the `?agent_id=` parameter in WooCommerce.
- *   Without a VALID token for that DID it is not sent as `agentId` (see
- *   bindToken()).
- * - A third party posing as an agent on someone else's purchase would have to
- *   add headers to the buyer's REST request, which only code already running
- *   in the buyer's browser (XSS, an extension) can do. Even then it only
- *   subjects the purchase to the agent rules; it unlocks nothing.
+ * - Sin ninguna cabecera `X-Trusteed-Agent-*` con valor (ni sesión) ⇒ humano.
+ * - Cualquiera de ellas con valor ⇒ agente, sea válido o no. Un DID o token con
+ *   forma inválida o demasiado largo se descarta (no viaja ni se registra) pero
+ *   el checkout sigue siendo agéntico; un token rechazado se marca en
+ *   `tokenRejected` para que el observer lo trate como token inválido.
+ * - Un DID bien formado NO está autenticado: sólo el token lo verifica. Es la
+ *   misma clase de señal que el `?agent_id=` de WooCommerce. Sin token VÁLIDO
+ *   de ese DID no viaja como `agentId` (Task 16, ver bindToken()).
+ * - B9-inverso (un tercero haciendo pasar por agente la compra de otra
+ *   persona): exige añadir cabeceras a la petición REST del comprador, lo que
+ *   sólo consigue quien ya ejecuta código en su navegador (XSS, extensión). Y
+ *   aun así sólo lo somete a las reglas de agente; no le abre nada.
  *
- * No framework dependencies, so it can be tested without Magento.
+ * Sin dependencias del framework: testeable sin Magento.
  *
  * @since 1.3.5
  */
@@ -41,7 +40,7 @@ final class AgentIdentityResolver
     public const HEADER_AGENT_ID     = 'X-Trusteed-Agent-Id';
     public const HEADER_AGENT_ORIGIN = 'X-Trusteed-Agent-Origin';
 
-    /** Length ceiling, applied before any regular expression. */
+    /** Techo de longitud antes de aplicar ninguna expresión regular. */
     public const MAX_DID_LENGTH   = 512;
     public const MAX_TOKEN_LENGTH = 8192;
 
@@ -49,7 +48,7 @@ final class AgentIdentityResolver
     private const JWS_RE       = '/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]*$/';
 
     /**
-     * @param array<string,mixed> $headers Request headers (name to value).
+     * @param array<string,mixed> $headers Cabeceras de la petición (nombre ⇒ valor).
      * @return array{did:string, token:string, agentic:bool, tokenRejected:bool}
      */
     public static function resolve(array $headers, string $sessionDid, string $sessionToken): array
@@ -103,18 +102,18 @@ final class AgentIdentityResolver
     }
 
     /**
-     * Ties the verified token to the declared DID.
+     * Ties the verified token to the declared DID (fix ronda 1, IMPORTANT 2).
      *
-     * `did` is ONLY the identity a VALID token proves ('' otherwise). A declared
-     * DID never travels as `agentId` on its own: the server and the local
-     * history projection key the agent's history on it, so a declared-only DID
-     * would let an agent inherit another DID's history or burn a victim's. The
-     * caller sends such a checkout as an ANONYMOUS agent (`agentId: null`,
-     * `endpointClass: agentic_endpoint`).
+     * `did` is ONLY the identity a VALID token proves ('' otherwise). Task 16
+     * (security review): a declared DID never travels as `agentId` on its own
+     * — the server and the local history projection key the agent's history
+     * on it, so a declared-only DID let an agent inherit another DID's history
+     * or burn a victim's. The caller sends such a checkout as an ANONYMOUS
+     * agent (`agentId: null`, `endpointClass: agentic_endpoint`).
      *
-     * - Token VALID but for a different DID than the declared one: INVALID, no DID.
-     * - Token VALID and no declared DID: the token's (verified) DID.
-     * - Token not VALID (INVALID, INDETERMINATE): no DID.
+     * - Token VALID but for another DID than the declared one ⇒ INVALID, no DID.
+     * - Token VALID and no declared DID ⇒ the token's (verified) DID.
+     * - Token not VALID (INVALID, INDETERMINATE) ⇒ no DID.
      *
      * @return array{state:string, did:string, mismatch:bool}
      */

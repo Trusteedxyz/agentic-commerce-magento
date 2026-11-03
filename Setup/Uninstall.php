@@ -13,32 +13,33 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Model\Config\SecretReader;
 
 /**
- * Deregisters the merchant from Trusteed when the module is uninstalled.
+ * Da de baja el comercio en Trusteed al desinstalar el módulo — 2026-09-05.
  *
- * ## The gap it closes
+ * ## El agujero que cierra
  *
- * Magento has nothing equivalent to Shopify's `app/uninstalled`, not even an
- * uninstall file. When the module was removed, the merchant stayed published
- * in `/.well-known/merchant-index.json` and `/api/v1/stores/directory`, with
- * its MCP endpoint still advertised and its trust score being recalculated
- * over a catalog nobody syncs anymore. There was no other removal signal.
+ * Magento no tenía nada equivalente al `app/uninstalled` de Shopify, ni
+ * siquiera un fichero de desinstalación. Al quitar el módulo, el comercio
+ * seguía publicado en `/.well-known/merchant-index.json`, en
+ * `/api/v1/stores/directory` y con su endpoint MCP anunciado, con la
+ * puntuación de confianza recalculándose sobre un catálogo que ya nadie
+ * sincroniza. No existía ninguna otra señal de baja.
  *
- * ## Real scope, without overstating it
+ * ## Alcance real, y conviene no exagerarlo
  *
- * `UninstallInterface` is invoked by `bin/magento module:uninstall`. An
- * administrator who deletes the files by hand does NOT go through here. This
- * notice covers the orderly uninstall; the unorderly one is covered by the
- * heartbeat sweep, which does not depend on anyone notifying.
+ * `UninstallInterface` la invoca `bin/magento module:uninstall`. Un
+ * administrador que borre los ficheros a mano NO pasa por aquí. Este aviso
+ * cubre la desinstalación ordenada; la desordenada la cubre el barrido por
+ * latido, que no depende de que nadie avise.
  *
- * ## Why this credential
+ * ## Por qué esta credencial
  *
- * `embed_secret` is the per-connection S2S secret, stored encrypted in config
- * and the only DURABLE one the module keeps at the moment (the panel tokens
- * are session-bound and no longer exist here). It is the same one the backend
- * validates for its S2S auth, so no new auth is added.
+ * `embed_secret` es el secreto S2S por conexión, guardado cifrado en config y
+ * el único DURADERO que el módulo conserva en este momento — los tokens del
+ * panel son de sesión y aquí ya no existen. Es el mismo que valida
+ * `createAgenticToolsS2SAuth` en el backend, así que no se añade auth nueva.
  *
- * It never throws: an uninstall cannot fail because our backend does not
- * answer.
+ * No lanza: una desinstalación no puede fallar porque nuestro backend no
+ * conteste.
  */
 class Uninstall implements UninstallInterface
 {
@@ -65,9 +66,9 @@ class Uninstall implements UninstallInterface
         try {
             $this->notifyTrusteed();
         } catch (\Throwable $e) {
-            // See the class docblock: the notice must never block the uninstall.
+            // Ver la cabecera: el aviso nunca puede impedir la desinstalación.
             $this->logger->warning(
-                '[trusteed] uninstall: could not deregister the store: ' . $e->getMessage()
+                '[trusteed] uninstall: no se pudo dar de baja el comercio: ' . $e->getMessage()
             );
         }
 
@@ -81,7 +82,7 @@ class Uninstall implements UninstallInterface
 
         if ($merchantId === '' || $secret === '') {
             $this->logger->info(
-                '[trusteed] uninstall: no credentials configured, nothing to deregister'
+                '[trusteed] uninstall: sin credenciales configuradas, no hay baja que dar'
             );
             return;
         }
@@ -99,8 +100,8 @@ class Uninstall implements UninstallInterface
             return;
         }
 
-        // Short timeout: this runs while the administrator waits for
-        // `module:uninstall` to finish.
+        // Plazo corto: esto corre mientras el administrador espera a que
+        // termine `module:uninstall`.
         $this->curl->setTimeout(10);
         $this->curl->addHeader('Content-Type', 'application/json');
         $this->curl->addHeader('Accept', 'application/json');
@@ -108,12 +109,12 @@ class Uninstall implements UninstallInterface
         $this->curl->post(rtrim($apiBase, '/') . self::ENDPOINT_PATH, $payload);
 
         if ($this->curl->getStatus() === 200) {
-            $this->logger->info('[trusteed] uninstall: store deregistered from Trusteed');
+            $this->logger->info('[trusteed] uninstall: comercio dado de baja en Trusteed');
             return;
         }
 
         $this->logger->warning(
-            '[trusteed] uninstall: deregistration returned HTTP ' . $this->curl->getStatus()
+            '[trusteed] uninstall: la baja devolvió HTTP ' . $this->curl->getStatus()
             . '. El comercio puede seguir publicado hasta el barrido por latido.'
         );
     }

@@ -8,10 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Trusteed\AgenticCommerce\Enforcement\FailurePolicy;
 
 /**
- * "History unavailable" for a verified agent is decided by the merchant's
- * mode, the same as "the evaluator did not answer". enforce (and any
- * unresolved value) fails closed; observe lets it through and continues
- * without the signal.
+ * Task 38b (2) — «historial no disponible» de un agente verificado: lo decide el
+ * modo del comerciante, igual que «el evaluador no contestó». enforce (y cualquier
+ * valor no resuelto) cierra; observe abre y sigue sin la señal.
  */
 final class FailurePolicyHistoryUnavailableTest extends TestCase
 {
@@ -24,10 +23,10 @@ final class FailurePolicyHistoryUnavailableTest extends TestCase
 
     public function testItAgreesWithTheModuleVocabularyEndToEnd(): void
     {
-        // What the merchant configures, normalized as in production.
+        // Lo que configura el comerciante, normalizado como en producción.
         self::assertSame('BLOCK', FailurePolicy::decideOnHistoryUnavailable(FailurePolicy::normalizeFailureMode(null)), 'ausente = enforce');
         self::assertSame('BLOCK', FailurePolicy::decideOnHistoryUnavailable(FailurePolicy::normalizeFailureMode('')));
-        self::assertSame('BLOCK', FailurePolicy::decideOnHistoryUnavailable(FailurePolicy::normalizeFailureMode('permissive')), 'a mode from another platform does not open here');
+        self::assertSame('BLOCK', FailurePolicy::decideOnHistoryUnavailable(FailurePolicy::normalizeFailureMode('permissive')), 'un modo de otra plataforma no abre aquí');
         self::assertSame('ALLOW', FailurePolicy::decideOnHistoryUnavailable(FailurePolicy::normalizeFailureMode(' Observe ')));
     }
 

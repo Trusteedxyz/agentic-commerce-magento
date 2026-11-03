@@ -10,7 +10,7 @@ use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Cron\ReportCapabilities;
 use Trusteed\AgenticCommerce\Service\CapabilitiesReporter;
 
-/** The capabilities report is repeated by cron, not only at install time. */
+/** C7 (8b6de3808): el reporte de capacidades se repite por cron, no sólo en la instalación. */
 final class ReportCapabilitiesTest extends TestCase
 {
     public static function setUpBeforeClass(): void

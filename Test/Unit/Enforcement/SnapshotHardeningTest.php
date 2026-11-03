@@ -15,13 +15,13 @@ use Trusteed\AgenticCommerce\Enforcement\SnapshotPayloadDecoder;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 
 /**
- * The snapshot before it is trusted, with the REAL `EnforcementClient` and
- * `SnapshotJwsVerifier`.
+ * Plan 04 Task 29c (L3 y L6) — el snapshot antes de fiarse de él, con el
+ * `EnforcementClient` y el `SnapshotJwsVerifier` REALES.
  *
- * - Negative cache (60 s, fake clock, test `CacheInterface`) of the forced JWKS
- *   retry. Each request uses a new client (Magento only keeps between requests
- *   what it asks of the cache) and shares the cache.
- * - `validUntil` handling, body size cap and `crit` header rejection.
+ * - L3: caché negativa (60 s, reloj falso, `CacheInterface` de prueba) del
+ *   reintento forzado del JWKS. Cada petición usa un cliente nuevo (Magento
+ *   sólo guarda entre peticiones lo que pida a la caché) y comparte la caché.
+ * - L6a: `validUntil`. L6b: tope de tamaño. L6c: cabecera `crit`.
  */
 final class SnapshotHardeningTest extends TestCase
 {
@@ -43,7 +43,7 @@ final class SnapshotHardeningTest extends TestCase
 
     private string $platformSecret = '';
     private string $platformPublic = '';
-    /** @var list<string> JWKS bodies, the last one repeats; '' means 503. */
+    /** @var list<string> JWKS bodies, la última se repite; '' ⇒ 503. */
     private array $jwksBodies = [];
     private string $snapshotBody = '';
     private int $snapshotStatus = 200;
@@ -52,7 +52,7 @@ final class SnapshotHardeningTest extends TestCase
     protected function setUp(): void
     {
         if (!\defined('TRUSTEED_MAGENTO_UNIT_STUBS')) {
-            self::markTestSkipped('local stub harness; does not apply with the real framework');
+            self::markTestSkipped('arnés de stubs locales; con el framework real no aplica');
         }
         $this->clock = self::T0;
         $this->store = [];
@@ -70,7 +70,7 @@ final class SnapshotHardeningTest extends TestCase
         $this->snapshotStatus = 200;
     }
 
-    // ── harness ──────────────────────────────────────────────────────────
+    // ── arnés ────────────────────────────────────────────────────────────
 
     private static function b64(string $d): string
     {
@@ -168,7 +168,7 @@ final class SnapshotHardeningTest extends TestCase
         return true;
     }
 
-    /** One REQUEST: new client (no memory of its own), same cache and clock. */
+    /** Una PETICIÓN: cliente nuevo (sin memoria propia), misma caché y reloj. */
     private function pull(?CacheInterface $cache = null, bool $noCache = false): array
     {
         $t = $this;
@@ -226,20 +226,20 @@ final class SnapshotHardeningTest extends TestCase
         return $this->clock;
     }
 
-    // ── Negative cache ───────────────────────────────────────────────────
+    // ── L3 ───────────────────────────────────────────────────────────────
 
     public function testTheForcedJwksRetryIsNotRepeatedByTheNextRequestsWithinTheWindow(): void
     {
         $this->tamper();
 
         self::assertSame('tampered', $this->pull()['status']);
-        self::assertSame(2, $this->jwksDownloads(), 'request 1: download + forced retry');
+        self::assertSame(2, $this->jwksDownloads(), 'petición 1: descarga + reintento forzado');
 
-        // From here the NORMAL download is served from the positive copy (300 s);
-        // this test only counts the forced retry.
+        // Task 38b (3): desde aquí la descarga NORMAL la sirve la copia positiva (300 s);
+        // lo que esta prueba cuenta es sólo el reintento forzado.
         $this->clock = self::T0 + 30;
         self::assertSame('tampered', $this->pull()['status']);
-        self::assertSame(2, $this->jwksDownloads(), 'request 2: no normal download (copy) and no retry (negative)');
+        self::assertSame(2, $this->jwksDownloads(), 'petición 2: ni descarga normal (copia) ni reintento (negativa)');
 
         $this->clock = self::T0 + 59;
         self::assertSame('tampered', $this->pull()['status']);
@@ -252,7 +252,7 @@ final class SnapshotHardeningTest extends TestCase
 
     public function testTheEntryCarriesItsOwnExpiryWhenTheCacheBackendKeepsItLonger(): void
     {
-        // A backend that ignores the lifetime (or extends it) does not stretch the 60 s window.
+        // Un backend que ignora la vida útil (o la prolonga) no alarga la ventana de 60 s.
         $this->cacheKeepsForever = true;
         $this->tamper();
         $this->pull();
@@ -260,14 +260,14 @@ final class SnapshotHardeningTest extends TestCase
         $this->clock = self::T0 + 61;
         $this->urls = [];
         self::assertSame('tampered', $this->pull()['status']);
-        self::assertSame(1, $this->jwksDownloads(), 'negative window expired: only the retry (the positive copy is still valid)');
+        self::assertSame(1, $this->jwksDownloads(), 'vencida la ventana negativa: sólo el reintento (la copia positiva sigue vigente)');
     }
 
     public function testAJwksThatAnswersWithoutTheKidThenDiesIsRememberedAsUnavailableNotTampered(): void
     {
-        // Request 1: the normal download does not carry the `kid`; the forced retry does not answer.
-        // Request 2: the normal download again lacks it; the retry (which would answer
-        // with the same list, i.e. "tampered") must not happen.
+        // Petición 1: la descarga normal no trae el `kid`; el reintento forzado no responde.
+        // Petición 2: la descarga normal vuelve a no traerlo; el reintento (que respondería
+        // con la misma lista, o sea «manipulado») no debe hacerse.
         $other = self::jwks('another-kid', $this->platformPublic);
         $this->jwksBodies = [$other, '', $other];
 
@@ -287,7 +287,7 @@ final class SnapshotHardeningTest extends TestCase
         self::assertSame('tampered', $this->pull()['status']);
 
         $rotated = sodium_crypto_sign_keypair();
-        // With the positive copy still valid there is no normal download: the first download is the forced retry.
+        // Con la copia positiva vigente no hay descarga normal: la primera descarga es el reintento forzado.
         $this->jwksBodies = [
             (string) json_encode(['keys' => [
                 ['kty' => 'OKP', 'crv' => 'Ed25519', 'kid' => self::KID, 'x' => self::b64($this->platformPublic)],
@@ -298,8 +298,8 @@ final class SnapshotHardeningTest extends TestCase
         $this->snapshotBody = $this->sign(['alg' => 'EdDSA', 'kid' => 'snap-rotated'], $this->payload(), sodium_crypto_sign_secretkey($rotated));
 
         $this->clock = self::T0 + 5;
-        self::assertSame('ok', $this->pull()['status'], 'a rotation is not tampering');
-        self::assertSame(1, $this->jwksDownloads(), 'only the forced retry');
+        self::assertSame('ok', $this->pull()['status'], 'una rotación no es manipulación');
+        self::assertSame(1, $this->jwksDownloads(), 'sólo el reintento forzado');
     }
 
     public function testAVerifiableSnapshotIsNeverBlockedByARememberedFailure(): void
@@ -327,7 +327,7 @@ final class SnapshotHardeningTest extends TestCase
         $this->cacheThrows = true;
         self::assertSame('tampered', $this->pull()['status']);
         self::assertSame('tampered', $this->pull()['status']);
-        self::assertSame(4, $this->jwksDownloads(), 'without a cache it retries');
+        self::assertSame(4, $this->jwksDownloads(), 'sin caché se reintenta');
 
         $this->cacheThrows = false;
         $this->garbage = true;
@@ -336,7 +336,7 @@ final class SnapshotHardeningTest extends TestCase
         self::assertSame(2, $this->jwksDownloads(), 'una entrada ilegible no cuenta');
     }
 
-    // ── Positive JWKS cache ─────────────────────────────────────────────
+    // ── Task 38b (3): caché positiva del JWKS ───────────────────────────
 
     private function validSnapshot(): void
     {
@@ -346,13 +346,13 @@ final class SnapshotHardeningTest extends TestCase
     public function testTheJwksIsDownloadedOnceAndServedFromTheCopyOnTheNextRequests(): void
     {
         self::assertSame('ok', $this->pull()['status']);
-        self::assertSame(1, $this->jwksDownloads(), 'request 1: miss, one download');
+        self::assertSame(1, $this->jwksDownloads(), 'petición 1: miss, una descarga');
 
         $this->clock = self::T0 + 10;
         self::assertSame('ok', $this->pull()['status']);
         $this->clock = self::T0 + 299;
         self::assertSame('ok', $this->pull()['status']);
-        self::assertSame(1, $this->jwksDownloads(), 'hit: no more downloads within 300 s');
+        self::assertSame(1, $this->jwksDownloads(), 'hit: ninguna descarga más dentro de los 300 s');
     }
 
     public function testTheCopyExpiresAfter300SecondsEvenIfTheBackendKeepsIt(): void
@@ -367,24 +367,24 @@ final class SnapshotHardeningTest extends TestCase
 
     public function testAnUnknownKidForcesOneRedownloadAndTheNewKeysReplaceTheCopy(): void
     {
-        $this->pull(); // copy with the KID
+        $this->pull(); // copia con KID
         $rotated = sodium_crypto_sign_keypair();
         $both    = (string) json_encode(['keys' => [
             ['kty' => 'OKP', 'crv' => 'Ed25519', 'kid' => self::KID, 'x' => self::b64($this->platformPublic)],
             ['kty' => 'OKP', 'crv' => 'Ed25519', 'kid' => 'snap-rotated', 'x' => self::b64(sodium_crypto_sign_publickey($rotated))],
         ]]);
-        $this->jwksBodies = [$both]; // the first (and only) download is the forced retry
+        $this->jwksBodies = [$both]; // la primera (y única) descarga es el reintento forzado
         $this->urls = [];
         $this->snapshotBody = $this->sign(['alg' => 'EdDSA', 'kid' => 'snap-rotated'], $this->payload(), sodium_crypto_sign_secretkey($rotated));
 
         $this->clock = self::T0 + 20;
-        self::assertSame('ok', $this->pull()['status'], 'a legitimate rotation is not blocked for 5 minutes');
-        self::assertSame(1, $this->jwksDownloads(), 'ONE re-download (the normal one was served by the copy)');
+        self::assertSame('ok', $this->pull()['status'], 'una rotación legítima no se bloquea 5 minutos');
+        self::assertSame(1, $this->jwksDownloads(), 'UNA re-descarga (la normal la sirvió la copia)');
 
         $this->urls = [];
         $this->clock = self::T0 + 40;
         self::assertSame('ok', $this->pull()['status']);
-        self::assertSame(0, $this->jwksDownloads(), 'the copy is already the new one: the rotated key is served from the cache');
+        self::assertSame(0, $this->jwksDownloads(), 'la copia ya es la nueva: la clave rotada se sirve de la caché');
         $this->validSnapshot();
         self::assertSame('ok', $this->pull()['status'], 'y la clave anterior sigue en la lista nueva');
     }
@@ -402,20 +402,20 @@ final class SnapshotHardeningTest extends TestCase
         $this->urls = [];
         $this->clock = self::T0 + 20;
         self::assertSame('tampered', $this->pull()['status']);
-        self::assertSame(0, $this->jwksDownloads(), 'the 60 s negative cache per kid still rules: no copy and no forced retry');
+        self::assertSame(0, $this->jwksDownloads(), 'la caché negativa de 60 s por kid sigue mandando: ni copia ni forzado');
     }
 
     public function testAFailedForcedRedownloadLeavesTheCopyAsItWas(): void
     {
         $this->pull();
         $rotated = sodium_crypto_sign_keypair();
-        $this->jwksBodies = ['']; // the forced retry receives 503
+        $this->jwksBodies = ['']; // el reintento forzado recibe 503
         $this->urls = [];
         $this->snapshotBody = $this->sign(['alg' => 'EdDSA', 'kid' => 'snap-rotated'], $this->payload(), sodium_crypto_sign_secretkey($rotated));
 
         $this->clock = self::T0 + 10;
         $r = $this->pull();
-        self::assertSame('unavailable', $r['status'], 'JWKS down on the retry: not tampering');
+        self::assertSame('unavailable', $r['status'], 'JWKS caído en el reintento: no es manipulación');
         self::assertSame(1, $this->jwksDownloads());
 
         $this->urls = [];
@@ -434,7 +434,7 @@ final class SnapshotHardeningTest extends TestCase
         $this->urls = [];
         $this->clock = self::T0 + 5;
         self::assertSame('ok', $this->pull()['status']);
-        self::assertSame(1, $this->jwksDownloads(), 'an empty JWKS is not cached for 5 minutes');
+        self::assertSame(1, $this->jwksDownloads(), 'un JWKS vacío no se cachea 5 minutos');
     }
 
     public function testACacheThatThrowsOrHoldsGarbageNeverBreaksVerificationAndFallsBackToDownloading(): void
@@ -442,7 +442,7 @@ final class SnapshotHardeningTest extends TestCase
         $this->cacheThrows = true;
         self::assertSame('ok', $this->pull()['status']);
         self::assertSame('ok', $this->pull()['status']);
-        self::assertSame(2, $this->jwksDownloads(), 'without a cache every request downloads, as before');
+        self::assertSame(2, $this->jwksDownloads(), 'sin caché cada petición descarga, como antes');
 
         $this->cacheThrows = false;
         $this->garbage = true;
@@ -478,7 +478,7 @@ final class SnapshotHardeningTest extends TestCase
         self::assertSame([], $b->read(), 'otro servidor no hereda la copia');
 
         $a->write([]);
-        self::assertSame([self::KID => $this->platformPublic], $a->read(), 'an empty JWKS does not replace the copy');
+        self::assertSame([self::KID => $this->platformPublic], $a->read(), 'un JWKS vacío no sustituye a la copia');
 
         $key = array_key_first($store);
         $store[$key] = (string) json_encode(['until' => self::T0 + 100, 'keys' => [self::KID => self::b64($this->platformPublic), 'short' => self::b64('abc')]]);
@@ -487,7 +487,7 @@ final class SnapshotHardeningTest extends TestCase
         self::assertSame([], $a->read(), 'vencida');
     }
 
-    // ── validUntil ───────────────────────────────────────────────────────
+    // ── L6a ──────────────────────────────────────────────────────────────
 
     public function testASnapshotWhoseValidUntilPassedIsUnavailable(): void
     {
@@ -500,25 +500,25 @@ final class SnapshotHardeningTest extends TestCase
     }
 
     /**
-     * A snapshot signed by our server ALWAYS carries `validUntil` (an ISO-8601
-     * string). Absent or unreadable is a malformed payload: "unavailable", like
-     * an expired one, and NOT tampered, because the signature verified. This
-     * replaces an earlier test that pinned the opposite ("absent is not
-     * expired"), which was prior behaviour, not an invariant.
+     * Task 38b (1) — un snapshot firmado por nuestro servidor SIEMPRE lleva
+     * `validUntil` (ISO-8601 en cadena). Ausente o ilegible es un payload
+     * malformado: «no disponible», como el caducado — NO manipulado, porque la
+     * firma verificó. Sustituye al test de la Task 29c que fijaba lo contrario
+     * («ausente no es caducado»): era la conducta previa, no un invariante.
      *
-     * @return array<string,array{0:bool,1:mixed}> [absent?, value]
+     * @return array<string,array{0:bool,1:mixed}> [ausente?, valor]
      */
     public static function unreadableValidUntil(): array
     {
         return [
             'ausente'                  => [true, null],
             'null'                     => [false, null],
-            'empty string'             => [false, ''],
+            'cadena vacía'             => [false, ''],
             'cadena de espacios'       => [false, '   '],
             'basura'                   => [false, 'not-a-date'],
             'fecha imposible'          => [false, '99999-99-99T99:99:99Z'],
-            'number in seconds'         => [false, 1900000000],
-            'number out of range'    => [false, 99999999999999999999.0],
+            'número en segundos'       => [false, 1900000000],
+            'número fuera de rango'    => [false, 99999999999999999999.0],
             'booleano'                 => [false, true],
             'lista'                    => [false, ['2099-01-01T00:00:00Z']],
             'objeto'                   => [false, ['at' => '2099-01-01T00:00:00Z']],
@@ -536,7 +536,7 @@ final class SnapshotHardeningTest extends TestCase
 
         $r = $this->pull();
 
-        self::assertSame('unavailable', $r['status'], 'the signature verified: not tampered');
+        self::assertSame('unavailable', $r['status'], 'la firma verificó: no es manipulado');
         self::assertNull($r['payload'], 'un snapshot no utilizable no entrega reglas');
         self::assertStringStartsWith('valid_until_', $r['detail']);
     }
@@ -560,7 +560,7 @@ final class SnapshotHardeningTest extends TestCase
         self::assertFalse(SnapshotPayloadDecoder::isUsable(['validUntil' => gmdate('Y-m-d\TH:i:s\Z', $now - 1)], $now));
         self::assertFalse(SnapshotPayloadDecoder::isUsable([], $now), 'ausente');
         self::assertFalse(SnapshotPayloadDecoder::isUsable(['validUntil' => 'basura'], $now), 'ilegible');
-        self::assertNull(SnapshotPayloadDecoder::validUntil(['validUntil' => 1900000000]), 'a number is not the ISO string the server emits');
+        self::assertNull(SnapshotPayloadDecoder::validUntil(['validUntil' => 1900000000]), 'un número no es la cadena ISO que emite el servidor');
     }
 
     public function testASnapshotWithAReadableFutureValidUntilIsStillServedInAnyIsoOffset(): void
@@ -571,7 +571,7 @@ final class SnapshotHardeningTest extends TestCase
         }
     }
 
-    // ── Size cap ─────────────────────────────────────────────────────────
+    // ── L6b ──────────────────────────────────────────────────────────────
 
     public function testTheOutboundRequestsAskCurlToRefuseAnOversizedBody(): void
     {
@@ -586,7 +586,7 @@ final class SnapshotHardeningTest extends TestCase
 
         $r = $this->pull();
 
-        self::assertSame('unavailable', $r['status'], 'verified would be "tampered": it has no JWS shape');
+        self::assertSame('unavailable', $r['status'], 'verificada sería «tampered»: no tiene forma de JWS');
         self::assertSame('response_too_large', $r['detail']);
         self::assertSame(0, $this->jwksDownloads());
     }
@@ -605,7 +605,7 @@ final class SnapshotHardeningTest extends TestCase
         self::assertSame('tampered', $this->pull()['status'], 'dentro del tope se examina (y no es un JWS)');
     }
 
-    // ── crit header ──────────────────────────────────────────────────────
+    // ── L6c ──────────────────────────────────────────────────────────────
 
     public function testASnapshotHeaderWithCritIsRejectedEvenWithAValidSignature(): void
     {

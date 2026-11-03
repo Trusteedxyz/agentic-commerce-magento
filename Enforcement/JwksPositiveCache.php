@@ -7,27 +7,28 @@ namespace Trusteed\AgenticCommerce\Enforcement;
 use Magento\Framework\App\CacheInterface;
 
 /**
- * POSITIVE cache (300 s) of the platform JWKS, shared between requests.
+ * Task 38b (3) — caché POSITIVA (300 s) del JWKS de la plataforma entre
+ * peticiones.
  *
- * Magento builds the enforcement client per request and only keeps what it
- * asks of `CacheInterface`. Without this, every checkout with a token
- * downloaded the whole JWKS (one more network call, up to 5 s of waiting) to
- * verify the snapshot. There is one entry per server (`api_base_url`). It holds
- * `kid => raw Ed25519 key` with its own expiry, so a store that does not
- * expire entries by TTL still will not serve it past its time.
+ * Magento construye el cliente de enforcement por petición y sólo conserva lo
+ * que se pida a `CacheInterface`: sin esto cada checkout con token descargaba
+ * el JWKS entero (una llamada de red más, hasta 5 s de espera) para verificar
+ * el snapshot. La entrada es única por servidor (`api_base_url`) y guarda
+ * `kid => clave Ed25519 en bruto` con su propio vencimiento, de modo que un
+ * almacén que no expira por TTL tampoco la sirve pasada de hora.
  *
- * This cache decides nothing about security: the verifier remains the
- * authority. A verification that does not match the copy (a `kid` that is
- * missing because of a rotation, or a signature that fails) forces ONE
- * re-download ({@see SnapshotJwsVerifier}), subject to the 60 s negative cache
- * per `kid` ({@see JwksRetryVerdictStore}). What is downloaded REPLACES the
- * copy. A failed re-download leaves it untouched.
+ * Esta caché NO decide nada de seguridad: el que manda sigue siendo el
+ * verificador. Una verificación que no cuadra con la copia (un `kid` que no
+ * está —rotación—, o una firma que no verifica) fuerza UNA re-descarga
+ * ({@see SnapshotJwsVerifier}), sujeta a la caché negativa de 60 s por `kid`
+ * ({@see JwksRetryVerdictStore}); lo descargado SUSTITUYE a la copia. Una
+ * re-descarga fallida la deja como estaba.
  *
- * Known cost: a key removed from the JWKS keeps verifying for up to 5 minutes.
+ * Coste conocido: una clave retirada del JWKS sigue verificando hasta 5 minutos.
  *
- * Failure tolerant, like the negative cache: with no cache (null), a cache that
- * throws, or garbage content, it behaves as before (the JWKS is downloaded).
- * The clock is a closure so tests can control it.
+ * Tolerante a fallos, como la negativa: sin caché (null), con caché que lanza o
+ * con basura, se comporta como antes (se descarga). El reloj es un cierre para
+ * los tests.
  *
  * @since 1.3.5
  */
@@ -35,7 +36,7 @@ final class JwksPositiveCache
 {
     public const TTL_SECONDS = 300;
 
-    /** Length of a raw Ed25519 public key (SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES). */
+    /** Longitud de una clave pública Ed25519 en bruto (SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES). */
     private const KEY_BYTES = 32;
 
     /** @param \Closure():int $now */
@@ -46,7 +47,7 @@ final class JwksPositiveCache
     ) {
     }
 
-    /** @return array<string,string> `kid => raw key`; [] means there is no current, valid copy. */
+    /** @return array<string,string> `kid => clave en bruto`; [] = no hay copia vigente y válida. */
     public function read(): array
     {
         if ($this->cache === null) {
@@ -65,7 +66,7 @@ final class JwksPositiveCache
         foreach ($entry['keys'] as $kid => $b64) {
             $rawKey = is_string($b64) ? base64_decode($b64, true) : false;
             if (!is_string($kid) || $kid === '' || $rawKey === false || strlen($rawKey) !== self::KEY_BYTES) {
-                return []; // a half-valid entry is not served: the whole JWKS is downloaded again
+                return []; // una entrada a medias no se sirve: se vuelve a descargar entera
             }
             $keys[$kid] = $rawKey;
         }
@@ -73,7 +74,7 @@ final class JwksPositiveCache
         return $keys;
     }
 
-    /** @param array<string,string> $keys `kid => raw key`; an empty array is not stored. */
+    /** @param array<string,string> $keys `kid => clave en bruto`; vacío no se guarda. */
     public function write(array $keys): void
     {
         if ($this->cache === null || $keys === []) {
@@ -90,7 +91,7 @@ final class JwksPositiveCache
                 self::TTL_SECONDS
             );
         } catch (\Throwable) {
-            // Without a copy the next checkout downloads, as before.
+            // Sin copia el siguiente checkout descarga, como antes.
         }
     }
 

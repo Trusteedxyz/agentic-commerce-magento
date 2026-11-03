@@ -1,40 +1,40 @@
-# Installation Guide: Trusteed Agentic Commerce for Magento 2
+# Installation Guide — Trusteed Agentic Commerce for Magento 2
 
-Version 1.3.4 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
+Version 1.2.1 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
 ---
 
-## Table of contents
+## Table of Contents
 
-1. [System requirements](#1-system-requirements)
-2. [Pre-installation checklist](#2-pre-installation-checklist)
+1. [System Requirements](#1-system-requirements)
+2. [Pre-Installation Checklist](#2-pre-installation-checklist)
 3. [Installation via Composer](#3-installation-via-composer)
-4. [Manual installation](#4-manual-installation)
-5. [Post-installation setup](#5-post-installation-setup)
+4. [Manual Installation](#4-manual-installation)
+5. [Post-Installation Setup](#5-post-installation-setup)
 6. [Connecting to Trusteed](#6-connecting-to-trusteed)
-7. [Verifying the installation](#7-verifying-the-installation)
-8. [Cron configuration](#8-cron-configuration)
-9. [Upgrade instructions](#9-upgrade-instructions)
+7. [Verifying the Installation](#7-verifying-the-installation)
+8. [Cron Configuration](#8-cron-configuration)
+9. [Upgrade Instructions](#9-upgrade-instructions)
 10. [Uninstallation](#10-uninstallation)
 11. [Troubleshooting](#11-troubleshooting)
 
 ---
 
-## 1. System requirements
+## 1. System Requirements
 
-| Component           | Minimum                   | Recommended    |
-| ------------------- | ------------------------- | -------------- |
-| Magento Open Source | 2.4.7                     | 2.4.8          |
-| Adobe Commerce      | 2.4.7                     | 2.4.8          |
-| PHP                 | 8.2                       | 8.3            |
-| PHP extensions      | `curl`, `json`, `openssl`, `sodium` | same |
-| MySQL / MariaDB     | 8.0 / 10.6                | MySQL 8.0      |
-| Composer            | 2.x                       | 2.7+           |
-| Cron                | Required                  | n/a            |
+| Component           | Minimum                             | Recommended |
+| ------------------- | ----------------------------------- | ----------- |
+| Magento Open Source | 2.4.7                               | 2.4.8       |
+| Adobe Commerce      | 2.4.7                               | 2.4.8       |
+| PHP                 | 8.2                                 | 8.3         |
+| PHP extensions      | `curl`, `json`, `openssl`, `sodium` | same        |
+| MySQL / MariaDB     | 8.0 / 10.6                          | MySQL 8.0   |
+| Composer            | 2.x                                 | 2.7+        |
+| Cron                | Required                            | —           |
 
-> **`ext-sodium` is required.** It performs the Ed25519 checks behind
+> **`ext-sodium` is required, not optional.** It performs the Ed25519 checks behind
 > agent token verification and enforcement-snapshot verification. Without it both
-> verifications return `indeterminate`. The connector cannot establish agent
+> verifications return `indeterminate` — the connector cannot establish agent
 > identity, so it never confirms an agent as verified. The module does **not** ship a
 > pure-PHP fallback: `paragonie/sodium_compat` is not a declared dependency, so the
 > compat branch in the code is never reachable in a normal install. `ext-sodium` is
@@ -42,7 +42,7 @@ Version 1.3.4 · Magento Open Source & Adobe Commerce 2.4.7 / 2.4.8 · PHP 8.2+
 
 ---
 
-## 2. Pre-installation checklist
+## 2. Pre-Installation Checklist
 
 Before installing, confirm:
 
@@ -63,7 +63,7 @@ Before installing, confirm:
 
 This module is **not** distributed through the Magento Marketplace, so it needs no
 Marketplace credentials of its own. You only need `repo.magento.com` authentication
-if your Magento project already pulls its own packages from there, which it
+if your Magento project already pulls its own packages from there — which it
 normally does:
 
 ```bash
@@ -79,7 +79,10 @@ project, merging it with any `repositories` entries you already have:
 ```json
 {
   "repositories": [
-    { "type": "vcs", "url": "https://github.com/Trusteedxyz/agentic-commerce-magento" }
+    {
+      "type": "vcs",
+      "url": "https://github.com/Trusteedxyz/agentic-commerce-magento"
+    }
   ]
 }
 ```
@@ -132,17 +135,17 @@ bin/magento maintenance:disable
 
 ---
 
-## 4. Manual installation
+## 4. Manual Installation
 
 Use this method if you would rather not add a Composer repository entry. Download
 the installable `.zip` from the
-[latest GitHub Release](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest).
-The attached asset is named `trusteed-agentic-commerce-magento-<version>.zip`.
+[latest GitHub Release](https://github.com/Trusteedxyz/agentic-commerce-magento/releases/latest)
+— the attached asset is named `trusteed-agentic-commerce-magento-<version>.zip`.
 
 ### 4.1 Extract the archive
 
 ```bash
-unzip trusteed-agentic-commerce-magento-1.3.4.zip -d /tmp/trusteed-module
+unzip trusteed-agentic-commerce-magento-1.2.1.zip -d /tmp/trusteed-module
 ```
 
 ### 4.2 Copy files into Magento
@@ -158,7 +161,7 @@ Follow steps 3.3 through 3.8 above.
 
 ---
 
-## 5. Post-installation setup
+## 5. Post-Installation Setup
 
 After installation the **Trusteed** menu appears in the Magento admin sidebar
 (below **Stores**).
@@ -167,32 +170,31 @@ After installation the **Trusteed** menu appears in the Magento admin sidebar
 
 Navigate to **Trusteed → Configuración** (Setup Wizard).
 
-The wizard presents four sections:
+The wizard presents three sections:
 
 | Section                        | Purpose                                                   |
 | ------------------------------ | --------------------------------------------------------- |
-| Conecta tu tienda con Trusteed | Connects the store. **Start here** (see §6)               |
-| ¿Qué tiendas quieres activar?  | Store views exposed to agents (§5.2)                      |
+| Conecta tu tienda con Trusteed | Store connection — **start here** (see §6)                |
 | Checkout Enforcement (CEL)     | Enforcement credentials and fail-mode (see §6.4)          |
 | Internal HMAC Secret           | Signs internal heartbeat calls to the Trusteed API (§5.3) |
 
 > **There is nothing to copy by hand to connect the store.** The Merchant ID,
 > integration token and webhook secret are filled in by the wizard itself
 > during the connection (§6). If you go looking for those fields in the form
-> you will not find them: they are hidden on purpose.
+> you will not find them — they are hidden on purpose.
 
-### 5.2 Configure store views
+### 5.2 Configure Store Views
 
 Under **¿Qué tiendas quieres activar?** select the store views you want to
 expose to AI agents. Agents can only browse and purchase in enabled store views.
 
 ### 5.3 Internal HMAC Secret (only if Trusteed gave you one)
 
-The HMAC secret signs internal API calls (`X-Trusteed-Signature` header, together with `X-Trusteed-Connection-Id` and `X-Trusteed-Timestamp`). **It is not
+The HMAC secret signs internal API calls (`X-Internal-Auth` header). **It is not
 self-serve and does not appear anywhere in the dashboard**: Trusteed provisions
 it and only hands it to the accounts that need it.
 
-If you were not given one, **leave the field empty and carry on**. The install
+If you were not given one, **leave the field empty and carry on** — the install
 works without it. If you were, paste it into **Internal HMAC Secret** and click
 **Guardar**.
 
@@ -206,7 +208,7 @@ is pasted by hand.**
 ### 6.1 Prerequisite: a Trusteed account
 
 You need an account at [trusteed.xyz](https://trusteed.xyz). Create one before
-continuing: the popup in the next step will ask you to sign in.
+continuing — the popup in the next step will ask you to sign in.
 
 ### 6.2 Click "Conectar con Trusteed →"
 
@@ -219,7 +221,7 @@ In the Setup Wizard (**Trusteed → Configuración**), click
    your Merchant ID.
 4. The wizard saves the form, and **your Magento server** exchanges that token
    for the real credentials (Connection ID, webhook secret, embed secret). The
-   token is never stored. It only lives for the duration of that exchange.
+   token is never stored — it only lives for the duration of that exchange.
 
 If your browser blocks popups, allow them for your back-office domain and click
 the button again.
@@ -247,8 +249,8 @@ two more credentials, provisioned separately by Trusteed:
 | Enforcement HMAC Secret     | `trusteed/enforcement/hmac_secret`     |
 
 While the **Installation ID** is empty, `EnforcementClient` lets every checkout
-through without evaluating a single rule. That is deliberate (a half-configured
-store must not block sales), but it means **you are not protected yet**. The
+through without evaluating a single rule. That is deliberate — a half-configured
+store must not block sales — but it means **you are not protected yet**. The
 module keeps an admin notice up until both values are set.
 
 If you want enforcement, ask Trusteed for those two credentials, paste them into
@@ -257,7 +259,7 @@ the module works.
 
 ---
 
-## 7. Verifying the installation
+## 7. Verifying the Installation
 
 ### 7.1 Check module status
 
@@ -290,7 +292,7 @@ Or let the module check it for you, including the webserver rewrite:
 bin/magento trusteed:check-webserver
 ```
 
-There is no `/trusteed/...` frontend route: the module's frontend `frontName` is
+There is no `/trusteed/...` frontend route — the module's frontend `frontName` is
 `nlweb`, and `/.well-known/mcp.json` is served by a dedicated router rather than
 through a frontName at all.
 
@@ -312,7 +314,7 @@ grep trusteed var/log/cron.log
 
 ---
 
-## 8. Cron configuration
+## 8. Cron Configuration
 
 The module registers two cron jobs in the `default` group:
 
@@ -335,7 +337,7 @@ requires no additional configuration.
 
 ---
 
-## 9. Upgrade instructions
+## 9. Upgrade Instructions
 
 ### From a previous 1.x version
 
@@ -346,7 +348,8 @@ bin/magento setup:di:compile
 bin/magento cache:flush
 ```
 
-Check the changelog in this package for configuration changes between versions.
+Check the Changelog in this package for any configuration changes required
+between versions.
 
 ---
 
@@ -381,12 +384,9 @@ ALTER TABLE sales_order
 
 ### 10.4 Clean up configuration
 
-```sql
-DELETE FROM core_config_data
-  WHERE path LIKE 'trusteed_general/%' OR path LIKE 'trusteed/%';
-```
-
 ```bash
+bin/magento config:delete trusteed_general/general
+bin/magento config:delete trusteed/enforcement
 bin/magento cache:flush
 ```
 
@@ -407,7 +407,7 @@ bin/magento cache:flush
 1. Verify `API Base URL` is `https://api.trusteed.xyz` (HTTPS required)
 2. Check that your server can reach the Trusteed API:
    ```bash
-   curl -sf https://api.trusteed.xyz/api/v1/health
+   curl -sf https://api.trusteed.xyz/health
    ```
 3. Verify the Integration Token is correct (no trailing spaces)
 4. Check `var/log/system.log` for `[trusteed]` entries
@@ -438,7 +438,7 @@ sudo dnf install php-sodium
 sudo systemctl restart php8.2-fpm
 ```
 
-There is no fallback: `paragonie/sodium_compat` is not a declared
+There is no fallback to fall back to: `paragonie/sodium_compat` is not a declared
 dependency of this module, so `ext-sodium` must be present. Until it is, agent token
 verification and enforcement-snapshot verification both return `indeterminate` and no
 agent is ever confirmed as verified. Confirm it is loaded with:

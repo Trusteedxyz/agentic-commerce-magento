@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Trusteed\AgenticCommerce\Enforcement;
 
 /**
- * Offline safety-valve evaluator: local PHP port of the "universal merchant
- * policy" rule subset of the platform rule catalog
+ * Offline safety-valve evaluator — local PHP port of the "universal merchant
+ * policy" rule subset from `packages/shared/src/enforcement/rule-catalog.ts`
  * (R014-country-only, R018, R019, R020, R025, R027, R028, R029, R030).
  *
  * Why this exists: `CheckoutSubmitBefore` has ZERO local per-rule
- * evaluator: every ALLOW/BLOCK verdict comes from the single remote
+ * evaluator — every ALLOW/BLOCK verdict comes from the single remote
  * `EnforcementClient::evaluate()` call. If that call fails (network error,
  * timeout, non-2xx), the merchant's own safety rules (max order amount,
  * blocked countries, business hours, PO-box block, gift-card cap...) never
- * get a chance to fire: `EnforcementClient::failClosedDecision()` falls
+ * get a chance to fire — `EnforcementClient::failClosedDecision()` falls
  * through to the blunt `failure_mode` policy (block everything / allow
  * everything) instead.
  *
@@ -22,12 +22,13 @@ namespace Trusteed\AgenticCommerce\Enforcement;
  * primary (it has richer history/DB signal for rules outside this subset).
  * This only runs when the remote call is unavailable, evaluating the last
  * `EnforcementClient::getRules()` snapshot (already request-cached) against
- * the current cart. Pure functions, no network, no DB.
+ * the current cart — pure functions, no network, no DB.
  *
  * CONFORMANCE: every method here MUST match the behavior of its TypeScript
- * counterpart in the rule catalog EXACTLY, and the WooCommerce/PrestaShop
+ * counterpart in rule-catalog.ts EXACTLY, and the WooCommerce/PrestaShop
  * plugins' equivalents (same rule subset, mirrored independently). All are
- * tested against the same fixture: `Test/fixtures/offline-safety-valve-conformance.json`. If you change one,
+ * tested against the same fixture: `packages/shared/src/enforcement/
+ * __fixtures__/offline-safety-valve-conformance.json`. If you change one,
  * update the fixture and re-run all test suites before shipping.
  */
 final class OfflineSafetyValveEvaluator
@@ -88,6 +89,13 @@ final class OfflineSafetyValveEvaluator
         return self::normalizeCountry($orderContext['billingCountry'] ?? $orderContext['shippingCountry'] ?? null);
     }
 
+    /** R014 is about DELIVERY: shippingCountry ?? billingCountry (R019/R030 keep orderCountry). */
+    private static function deliveryCountry(array $orderContext): ?string
+    {
+        return self::normalizeCountry($orderContext['shippingCountry'] ?? null)
+            ?? self::normalizeCountry($orderContext['billingCountry'] ?? null);
+    }
+
     /** trim + uppercase; empty / non-string => null (mirror of normalizeCountryCode in TS). */
     private static function normalizeCountry($value): ?string
     {
@@ -138,12 +146,12 @@ final class OfflineSafetyValveEvaluator
         return (float) $cartAttributes[$key];
     }
 
-    // ── R014 (country dimension only; cancellation history needs a DB lookup) ──
+    // ── R014 (country dimension only — cancellation-history needs a DB lookup) ──
 
     private static function evalR014(array $params, array $orderContext, array $cartAttributes): ?string
     {
         $highRisk = self::normalizeCountryList($params['highRiskCountries'] ?? self::DEFAULT_HIGH_RISK_COUNTRIES);
-        $country = self::orderCountry($orderContext);
+        $country = self::deliveryCountry($orderContext);
         if ($country !== null && in_array($country, $highRisk, true)) {
             return "delivery country {$country} is high-risk";
         }
@@ -282,7 +290,7 @@ final class OfflineSafetyValveEvaluator
         }
         if ($preset === 'estricto') {
             // Offline evaluator has no agent context (organic checkout by
-            // definition here). "estricto" REQUIRES a verified high-trust
+            // definition here) — "estricto" REQUIRES a verified high-trust
             // agent by design, so this correctly HITs for every organic cart.
             return 'strict preset requires verified high-trust agent';
         }
@@ -295,14 +303,14 @@ final class OfflineSafetyValveEvaluator
     {
         $max = $params['maxAmountCents'] ?? null;
         $cartTotalCents = (int) ($orderContext['cartTotalCents'] ?? 0);
-        // The amount is only compared against a cap of the SAME currency (no
-        // FX). Order currency absent/malformed or cap currency
-        // undeclared/malformed => compared directly (mirror of classifyMoneyCap).
+        // ee5861063 + M1: the amount is only compared against a cap of the SAME
+        // currency (no FX). Order currency absent/malformed or cap currency
+        // undeclared/malformed => compared as before (mirror of classifyMoneyCap).
         // Different currencies => not comparable; what happens depends on the
         // actor signal `orderContext['agentCheckout']` (set by the call-site):
         //   true  => agent: BLOCK "currency not comparable" (block_agent);
         //   false => person: amount skipped (country control still applies);
-        //   absent/non-bool => unknown actor: conservative, compare directly.
+        //   absent/non-bool => unknown actor: conservative, compare as before D2.
         $orderCurrency = self::normalizeCurrency($orderContext['currency'] ?? null);
         $capCurrency = self::normalizeCurrency($params['maxAmountCurrency'] ?? null);
         $agentSignal = $orderContext['agentCheckout'] ?? null;

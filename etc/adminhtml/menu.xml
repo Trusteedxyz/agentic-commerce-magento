@@ -5,7 +5,7 @@
         <add id="Trusteed_AgenticCommerce::trusteed" title="Trusteed" module="Trusteed_AgenticCommerce"
              sortOrder="80" resource="Magento_Backend::stores"/>
         <!--
-            Unified 7-entry menu: same order and wording as Shopify,
+            Unified 7-entry menu (design 2026-10-03 §4): same order and wording as Shopify,
             WooCommerce and PrestaShop. Ids, actions and ACL resources are unchanged.
             Security (trusteed/seguridad/index) and Agent Readiness (trusteed/agentreadiness/index)
             left the menu: they are intentionally NOT declared here, but their routes, controllers

@@ -15,7 +15,7 @@ use Trusteed\AgenticCommerce\Controller\Wellknown\UcpProfile;
  * Custom router matching /.well-known/mcp.json and /.well-known/ucp.
  *
  * Serves the identical signed manifest payload regardless of which
- * configured store-view domain receives the request.
+ * configured store-view domain receives the request (clarification Q1).
  *
  * Registered with sortOrder=10 in etc/frontend/di.xml so it runs
  * before the standard Magento router chain. Returns the target action
@@ -28,7 +28,7 @@ class WellKnownRouter implements RouterInterface
     private const WELL_KNOWN_PATH = '/.well-known/mcp.json';
     private const UCP_PROFILE_PATH = '/.well-known/ucp';
 
-    /** @var array<string, class-string> Path to controller action class. */
+    /** @var array<string, class-string> Path → controller action class. */
     private const ROUTES = [
         self::WELL_KNOWN_PATH => McpManifest::class,
         self::UCP_PROFILE_PATH => UcpProfile::class,

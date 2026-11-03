@@ -14,7 +14,7 @@ use Magento\Store\Model\ScopeInterface;
 use Trusteed\AgenticCommerce\Model\Config\SecretReader;
 
 /**
- * SpaShell block — Phase B Admin SPA mount support.
+ * SpaShell block — Phase B Admin SPA mount support (spec 050).
  *
  * Exposes only safe, public-facing values to the .phtml template:
  *  - Bundle URL with cache-busting v= param (or null if asset missing)

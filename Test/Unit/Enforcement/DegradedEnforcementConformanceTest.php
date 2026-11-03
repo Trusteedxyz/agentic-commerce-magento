@@ -8,20 +8,21 @@ use PHPUnit\Framework\TestCase;
 use Trusteed\AgenticCommerce\Enforcement\FailurePolicy;
 
 /**
- * The `degradedEnforcement` and `snapshotResolverShape` sections of the shared
- * fixture (Test/fixtures/platform-flow-conformance.json) against the Magento PHP port
- * (`FailurePolicy::decideDegraded` and `FailurePolicy::resolveAgentDidPublicKey`).
+ * Task 23b — secciones `degradedEnforcement` y `snapshotResolverShape` del
+ * fixture compartido (packages/shared/src/enforcement/__fixtures__/
+ * platform-flow-conformance.json) contra el port PHP de Magento
+ * (`FailurePolicy::decideDegraded` y `FailurePolicy::resolveAgentDidPublicKey`).
  *
- * Each block counts the vectors it EXECUTES: a block that runs nothing also
- * comes out green.
+ * Cada bloque cuenta los vectores que EJECUTA: un bloque que no corre nada
+ * también sale verde.
  */
 final class DegradedEnforcementConformanceTest extends TestCase
 {
     private static function fixture(): array
     {
-        $path = __DIR__ . '/../../fixtures/platform-flow-conformance.json';
+        $path = __DIR__ . '/../../../../shared/src/enforcement/__fixtures__/platform-flow-conformance.json';
         $json = json_decode((string) file_get_contents($path), true);
-        self::assertIsArray($json, 'the fixture must be reachable');
+        self::assertIsArray($json, 'el fixture tiene que ser alcanzable desde el monorepo');
         return $json;
     }
 
@@ -37,7 +38,7 @@ final class DegradedEnforcementConformanceTest extends TestCase
         return FailurePolicy::decideDegraded($v['kind'], $v['isAgentic'], $v['tokenPresent'], $mode, $v['offlineBlock']);
     }
 
-    /** The 17 Magento vectors, with the mode ALREADY resolved as the vector carries it. */
+    /** Los 17 vectores de Magento, con el modo YA resuelto que trae el vector. */
     public function testMagentoDegradedVectors(): void
     {
         $run = 0;
@@ -49,10 +50,10 @@ final class DegradedEnforcementConformanceTest extends TestCase
     }
 
     /**
-     * The same 17 going through the module's mode resolver
-     * (`normalizeFailureMode`, the one `EnforcementClient` uses): the `''` of the
-     * "unresolved" vector is here an ABSENT mode, which the module resolves to
-     * `enforce` and also fails closed; the result does not change in any vector.
+     * Los mismos 17 pasando por el resolutor de modo del módulo
+     * (`normalizeFailureMode`, el que usa `EnforcementClient`): el `''` del
+     * vector «no resuelto» es aquí un modo AUSENTE, que el módulo resuelve a
+     * `enforce` y también cierra; el resultado no cambia en ningún vector.
      */
     public function testMagentoDegradedVectorsThroughTheModuleModeResolver(): void
     {
@@ -64,7 +65,7 @@ final class DegradedEnforcementConformanceTest extends TestCase
         self::assertSame(17, $run);
     }
 
-    /** The port is literal: it also reproduces the vectors of the other ports. */
+    /** El port es literal: reproduce también los vectores de los otros ports. */
     public function testEveryPortVectorAgainstThePurePort(): void
     {
         $run = 0;
@@ -95,7 +96,7 @@ final class DegradedEnforcementConformanceTest extends TestCase
         self::assertSame($kinds, $mine);
     }
 
-    /** The 19 resolver shape vectors (list, map, malformed, others). */
+    /** Los 19 vectores de forma del resolver (lista, mapa, malformados, otros). */
     public function testSnapshotResolverShapeVectors(): void
     {
         $run = 0;
@@ -110,7 +111,7 @@ final class DegradedEnforcementConformanceTest extends TestCase
         self::assertSame(19, $run, 'vectores snapshotResolverShape ejecutados');
     }
 
-    /** The REAL `snapshotPayload` resolves its two DIDs (list, one with `kid`). */
+    /** El `snapshotPayload` REAL resuelve sus dos DIDs (lista, uno con `kid`). */
     public function testTheRealSnapshotPayloadResolvesBothDids(): void
     {
         $payload  = self::fixture()['snapshotResolverShape']['snapshotPayload'];
@@ -126,7 +127,7 @@ final class DegradedEnforcementConformanceTest extends TestCase
         self::assertSame(2, $run);
     }
 
-    /** No garbage shape throws (PHP: strings, nested lists, numeric keys). */
+    /** Ninguna forma basura lanza (PHP: cadenas, listas anidadas, claves numéricas). */
     public function testGarbageNeverThrows(): void
     {
         $did = 'did:web:agent-a.example.com';

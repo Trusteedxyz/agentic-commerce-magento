@@ -25,27 +25,23 @@ use Trusteed\AgenticCommerce\Service\AgentTokenVerifier;
 use Trusteed\AgenticCommerce\Service\EnforcementClient;
 
 /**
- * The history of a VERIFIED agent reaches the REAL observer.
+ * Task 38b (2) — el historial del agente VERIFICADO llega al observer REAL.
  *
- * Background (and why the projection is a single signal):
- * - `etc/di.xml` did not bind `historyFetcher` (optional constructor argument,
- *   so null): `projectAgentHistorySignals` returned on its first line and no
- *   signal was ever sent.
- * - Of the six remaining reads, three ask the server for routes that DO NOT
- *   EXIST (`/agents/{hash}/cross-merchant-abuse-check`,
- *   `/merchants/{id}/disputes/count`) and three read `sales_order.agent_id_hash`,
- *   a column this module neither creates (`etc/db_schema.xml`) nor writes (no
- *   observer does). Wiring them with a fail-closed failure policy would have
- *   blocked EVERY verified agent in `enforce`. Only `/checkout-failures/count`
- *   (R011) exists and is signed the way the server expects.
+ * Qué se probó antes de escribir esto (y por qué la proyección es una sola señal):
+ * - `etc/di.xml` no enlazaba `historyFetcher` (opcional de constructor ⇒ null):
+ *   `projectAgentHistorySignals` salía en su primera línea y NUNCA viajó ninguna señal.
+ * - De las seis lecturas restantes, tres piden al servidor rutas que NO EXISTEN
+ *   (`/agents/{hash}/cross-merchant-abuse-check`, `/merchants/{id}/disputes/count`:
+ *   ni una coincidencia en apps/api) y tres leen `sales_order.agent_id_hash`, columna
+ *   que este módulo ni crea (`etc/db_schema.xml`) ni escribe (ningún observer). Cablearlas
+ *   con política de avería fail-closed habría cerrado a TODO agente verificado en `enforce`.
+ *   Sólo `/checkout-failures/count` (R011) existe y firma como el servidor espera.
  *
- * Policy: a read failure is NOT "no signal" or "0": it is treated as "history
- * unavailable" ({@see \Trusteed\AgenticCommerce\Enforcement\FailurePolicy::decideOnHistoryUnavailable}).
- * It only runs for an agent with a VALID token: a human neither waits nor is
- * blocked by this call.
+ * Política: un fallo de lectura NO es «sin señal» ni «0»: se trata como «historial no
+ * disponible» ({@see \Trusteed\AgenticCommerce\Enforcement\FailurePolicy::decideOnHistoryUnavailable}).
+ * Sólo corre para un agente con token VÁLIDO: un humano no espera ni se bloquea por esta llamada.
  *
- * Local harness (stubs from `MagentoFrameworkStubs.php`); skipped when the
- * real framework is present.
+ * Arnés local (stubs de `MagentoFrameworkStubs.php`); con el framework real se salta.
  */
 final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
 {
@@ -57,13 +53,13 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
     private array $noncePosts = [];
     /** @var array{jws:string,jwks:string}|null */
     private ?array $snapshot = null;
-    /** nonce-consume answers 409 (the token was already used). */
+    /** nonce-consume responde 409 (el token ya se usó). */
     private bool $nonceReplay = false;
 
     protected function setUp(): void
     {
         if (!\defined('TRUSTEED_MAGENTO_UNIT_STUBS')) {
-            self::markTestSkipped('local stub harness; does not apply with the real framework');
+            self::markTestSkipped('arnés de stubs locales; con el framework real no aplica');
         }
         $this->posted     = [];
         $this->noncePosts = [];
@@ -71,7 +67,7 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
         $this->nonceReplay = false;
     }
 
-    // ── harness ──────────────────────────────────────────────────────────
+    // ── arnés ────────────────────────────────────────────────────────────
 
     private function config(array $extra = []): ScopeConfigInterface
     {
@@ -141,14 +137,14 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
         return rtrim(strtr(base64_encode($d), '+/', '-_'), '=');
     }
 
-    /** @return array{token:string, snapshot:array{jws:string,jwks:string}} Real token and snapshot signed with Ed25519. */
+    /** @return array{token:string, snapshot:array{jws:string,jwks:string}} Token y snapshot REALES firmados con Ed25519. */
     private static function mint(string $did, bool $badSignature = false): array
     {
         $agentKeys = sodium_crypto_sign_keypair();
         $now       = time();
         $tHeader   = self::b64url((string) json_encode(['alg' => 'EdDSA', 'typ' => 'trusteed-agent-token+jwt', 'kid' => $did . '#key-1']));
         $tBody     = self::b64url((string) json_encode([
-            'iss' => $did, 'aud' => 'trusteed', 'iat' => $now, 'exp' => $now + 120,
+            'iss' => $did, 'aud' => 'trusteed', 'merchantId' => 'merchant_xyz', 'iat' => $now, 'exp' => $now + 120,
             'nonce' => str_repeat('n', 32), 'jti' => 'jti_' . bin2hex(random_bytes(10)),
         ]));
         $signer = $badSignature ? sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair()) : sodium_crypto_sign_secretkey($agentKeys);
@@ -214,7 +210,7 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
         };
     }
 
-    /** Fake history: counts calls, returns what was configured and can simulate a read failure. */
+    /** Historial de mentira: cuenta llamadas, devuelve lo configurado y puede declarar una avería de lectura. */
     private static function history(?int $failedCount = 2, bool $fails = false, ?\Throwable $throws = null): AgentHistoryFetcher
     {
         return new class($failedCount, $fails, $throws) extends AgentHistoryFetcher {
@@ -263,7 +259,7 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
     /** @return array<string,mixed> */
     private function lastPayload(): array
     {
-        self::assertCount(1, $this->posted, 'a single evaluation sent');
+        self::assertCount(1, $this->posted, 'una sola evaluación enviada');
         $decoded = json_decode($this->posted[0], true);
         self::assertIsArray($decoded);
 
@@ -278,7 +274,7 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
         return self::request(['X-Trusteed-Agent-Token' => $minted['token']]);
     }
 
-    // ── di.xml wiring ────────────────────────────────────────────────────
+    // ── cableado en di.xml ───────────────────────────────────────────────
 
     /** @return array<string,string> */
     private static function diArguments(string $type): array
@@ -314,16 +310,16 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
 
     public function testTheHistoryFetcherDependenciesAreInjectableByType(): void
     {
-        // No constructor default except `urlValidator`, which di.xml already binds.
+        // Sin defecto en el constructor salvo `urlValidator`, que di.xml ya enlaza.
         foreach ((new \ReflectionMethod(AgentHistoryFetcher::class, '__construct'))->getParameters() as $p) {
             self::assertTrue(
                 !$p->isOptional() || array_key_exists($p->getName(), self::diArguments(AgentHistoryFetcher::class)),
-                "AgentHistoryFetcher::\${$p->getName()} is optional and is not wired in di.xml"
+                "AgentHistoryFetcher::\${$p->getName()} es opcional y no está enlazado en di.xml"
             );
         }
     }
 
-    // ── behavior ─────────────────────────────────────────────────────────
+    // ── conducta ─────────────────────────────────────────────────────────
 
     public function testAVerifiedAgentGetsItsFailedCheckoutCountProjectedFromTheVerifiedDidOnly(): void
     {
@@ -352,9 +348,9 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
                 self::fail('un fallo de lectura no abre a un agente en ' . json_encode($config));
             } catch (LocalizedException $e) {
                 self::assertStringContainsString('could not be verified', $e->getMessage());
-                self::assertStringNotContainsString('did not pass', $e->getMessage(), 'an outage is not reported as "a rule blocked you"');
+                self::assertStringNotContainsString('did not pass', $e->getMessage(), 'una avería no se publica como «una regla te bloqueó»');
             }
-            self::assertSame([], $this->posted, 'no evaluation with a signal that could not be read');
+            self::assertSame([], $this->posted, 'no se evalúa con una señal que no se pudo leer');
             self::assertSame([], $this->noncePosts, 'el jti no se gasta: el agente puede reintentar con el mismo token');
         }
     }
@@ -365,7 +361,7 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
 
         $payload = $this->lastPayload();
         self::assertSame(self::DID, $payload['agentId']);
-        self::assertArrayNotHasKey('_failed_checkout_count', $payload['orderContext']['cartAttributes'], 'neither "0" nor the signal: it could not be read');
+        self::assertArrayNotHasKey('_failed_checkout_count', $payload['orderContext']['cartAttributes'], 'ni «0» ni la señal: no se pudo leer');
     }
 
     public function testAThrowingFetcherIsAnInternalFailureAgentsDoNotPassEvenInObserve(): void
@@ -374,7 +370,7 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
             $this->posted = [];
             try {
                 $this->checkout($this->agentRequest(), self::history(0, false, new \RuntimeException('db down')), ['trusteed/enforcement/failure_mode' => $mode]);
-                self::fail('our own exception is not a permit: ' . $mode);
+                self::fail('una excepción propia no es un permiso: ' . $mode);
             } catch (LocalizedException $e) {
                 self::assertStringContainsString('could not be verified', $e->getMessage());
             }
@@ -437,11 +433,11 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
 
         self::assertContains('_failed_checkout_count', $declared);
         foreach (['_agent_revoked', '_cross_merchant_abuse', '_dispute_count', '_completed_orders', '_cancel_count', '_refund_ratio'] as $dead) {
-            self::assertNotContains($dead, $declared, "{$dead}: no route on the server or no column in sales_order; declaring it promises something that is not sent");
+            self::assertNotContains($dead, $declared, "{$dead}: sin ruta en el servidor o sin columna en sales_order; declararla es prometer lo que no se envía");
         }
     }
 
-    // ── real network calls per checkout (real fetcher) ───────────────────
+    // ── llamadas de red reales por checkout (fetcher real) ───────────────
 
     public function testAColdVerifiedCheckoutMakesExactlyOneHistoryGetAndAWarmOneNone(): void
     {
@@ -475,13 +471,13 @@ final class CheckoutSubmitBeforeHistoryWiringTest extends TestCase
         );
 
         $this->checkout($this->agentRequest(), $fetcher);
-        self::assertCount(1, $gets, 'cold: a single history network call');
+        self::assertCount(1, $gets, 'frío: una sola llamada de red de historial');
         self::assertStringContainsString('/api/v1/checkout-failures/count', $gets[0]);
         self::assertSame('1', $this->lastPayload()['orderContext']['cartAttributes']['_failed_checkout_count'] ?? null);
 
         $this->posted = [];
         $this->checkout($this->agentRequest(), $fetcher);
-        self::assertCount(1, $gets, 'warm (60 s cache): no more calls');
+        self::assertCount(1, $gets, 'caliente (caché 60 s): ninguna llamada más');
     }
 
     public function testTheRealFetcherReportsReadFailuresThatTheObserverTurnsIntoAnOutage(): void
