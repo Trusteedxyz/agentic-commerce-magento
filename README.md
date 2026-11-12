@@ -232,6 +232,12 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.7
+
+- Added: the agent-readiness panel names the new "merchant decision" probe result ("Your choice" / "Decisión tuya") instead of showing it as an unrecognised state.
+- Fixed: the "Client types" labels in the Spanish panel read "Tipos de Client" (a mixed-language leftover); they now say "Tipos de cliente".
+- Fixed: the "ChatGPT / OpenAI" client type description in the Spanish panel read as if a word was missing; it now says "los GPT creados con ChatGPT y Codex".
+
 ### 1.3.6
 
 - Added: a browser agent that checks out in your store is now recognised by its Web Bot Auth signature, and the checkout exposes WebMCP tools that mark the order as placed by an agent. The signature mode is a new setting (off by default).
