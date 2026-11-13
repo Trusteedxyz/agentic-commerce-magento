@@ -99,6 +99,17 @@ class TrustSeal
         return $state === self::STATE_ACTIVE ? 'signed' : 'pending';
     }
 
+    /**
+     * Una llamada autenticada con el token embebido de la conexión (la misma que usa la SPA de
+     * WooCommerce/PrestaShop): sirve también para `GET /v1/embed/trust/overview` (la puntuación).
+     *
+     * @return array{status: int, body: string}|null null si no se pudo emitir el token o la llamada falló
+     */
+    public function request(string $method, string $path, int $adminId): ?array
+    {
+        return $this->call($method, $path, $adminId);
+    }
+
     /** @return array{status: int, body: string}|null */
     private function call(string $method, string $path, int $adminId): ?array
     {

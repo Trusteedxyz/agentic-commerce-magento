@@ -161,4 +161,28 @@ final class ScoreNodeNormalizerTest extends TestCase
         $this->assertSame(55.7, $roundTripped['score']);
         $this->assertSame('55.7', ScoreNodeNormalizer::formatScore($roundTripped['score']));
     }
+
+    // ── fromOverview: la respuesta de GET /v1/embed/trust/overview ───────────
+
+    public function test_overview_ok_se_normaliza_con_su_decimal(): void
+    {
+        $body = (string)json_encode(['score' => ['status' => 'ready', 'score' => 61.5, 'scoreCap' => 65]]);
+
+        $this->assertSame(
+            ['status' => 'ready', 'score' => 61.5, 'scoreCap' => 65.0, 'confidenceLevel' => null, 'nextMilestone' => null],
+            ScoreNodeNormalizer::fromOverview(200, $body)
+        );
+    }
+
+    public function test_overview_que_no_es_2xx_no_da_puntuacion(): void
+    {
+        $this->assertNull(ScoreNodeNormalizer::fromOverview(401, '{"error":"unauthorized"}'));
+        $this->assertNull(ScoreNodeNormalizer::fromOverview(500, ''));
+    }
+
+    public function test_overview_sin_nodo_score_o_que_no_es_json_no_da_puntuacion(): void
+    {
+        $this->assertNull(ScoreNodeNormalizer::fromOverview(200, '{"receipts":[]}'));
+        $this->assertNull(ScoreNodeNormalizer::fromOverview(200, 'no es json'));
+    }
 }

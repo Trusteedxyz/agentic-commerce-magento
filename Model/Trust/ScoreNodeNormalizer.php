@@ -107,4 +107,23 @@ final class ScoreNodeNormalizer
                 : null,
         ];
     }
+
+    /**
+     * Una respuesta de `GET /v1/embed/trust/overview`: la puntuación normalizada, o null si no es 2xx
+     * o no trae el nodo `score` (la pantalla degrada a «Preparando tu puntuación»).
+     *
+     * @return array{status: string, score: float|null, scoreCap: float|null, confidenceLevel: string|null, nextMilestone: string|null}|null
+     */
+    public static function fromOverview(int $status, string $body): ?array
+    {
+        if ($status < 200 || $status >= 300) {
+            return null;
+        }
+        $data = json_decode($body, true);
+        if (!is_array($data) || !isset($data['score']) || !is_array($data['score'])) {
+            return null;
+        }
+
+        return self::normalize($data['score']);
+    }
 }

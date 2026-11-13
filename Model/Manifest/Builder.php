@@ -61,6 +61,9 @@ class Builder
     private const CACHE_KEY = 'TRUSTEED_MANIFEST';
     private const CACHE_LIFETIME = 300;
     private const CACHE_TAG = 'TRUSTEED_MANIFEST';
+    /** Lo lee la tarjeta «Catálogo publicado» del panel (Block\Adminhtml\Health\Tab). Sin etiqueta: invalidar el manifiesto no la borra. */
+    private const BUILT_AT_CACHE_KEY = 'TRUSTEED_MANIFEST_LAST_BUILT_AT';
+    private const BUILT_AT_LIFETIME = 2592000;
 
     private const CONFIG_API_BASE = 'trusteed_general/general/api_base_url';
     private const CONFIG_MERCHANT_ID = 'trusteed_general/general/merchant_id';
@@ -122,6 +125,8 @@ class Builder
             [self::CACHE_TAG],
             self::CACHE_LIFETIME
         );
+        // Solo llega aquí si la firma salió bien (buildAndSign lanza si falla).
+        $this->cache->save((string)time(), self::BUILT_AT_CACHE_KEY, [], self::BUILT_AT_LIFETIME);
 
         // T021b: emit analytics event (fire-and-forget; failure must not block response)
         try {

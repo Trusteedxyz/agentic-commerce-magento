@@ -6,12 +6,13 @@ namespace Trusteed\AgenticCommerce\Block\Adminhtml\Health;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
+use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
-use Magento\Framework\HTTP\Client\Curl;
 use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Model\Config\SecretReader;
+use Trusteed\AgenticCommerce\Model\Embed\TrustSeal;
 use Trusteed\AgenticCommerce\Model\Storefront\ThemeDetector;
 use Trusteed\AgenticCommerce\Model\Trust\ScoreNodeNormalizer;
 use Trusteed\AgenticCommerce\Model\Webhook\OutboxRepository;
@@ -34,8 +35,6 @@ class Tab extends Template
     private const TABLE_WEBHOOK_DELIVERY = 'trusteed_webhook_outbox';
     private const SCORE_CACHE_KEY = 'TRUSTEED_TRUST_SCORE_OVERVIEW';
     private const SCORE_CACHE_TTL = 300;
-    private const SCORE_HTTP_TIMEOUT = 6;
-    private const CONFIG_API_BASE = 'trusteed_general/general/api_base_url';
     private const CONFIG_INTEGRATION_TOKEN = 'trusteed_general/general/integration_token';
     private const CONFIG_MERCHANT_ID = 'trusteed_general/general/merchant_id';
 
@@ -46,9 +45,10 @@ class Tab extends Template
         private readonly ThemeDetector $themeDetector,
         private readonly ResourceConnection $resource,
         private readonly ScopeConfigInterface $scopeConfig,
-        private readonly Curl $curlClient,
         private readonly LoggerInterface $logger,
         private readonly SecretReader $secretReader,
+        private readonly TrustSeal $trustSeal,
+        private readonly AuthSession $authSession,
         array $data = [],
     ) {
         parent::__construct($context, $data);
@@ -93,38 +93,26 @@ class Tab extends Template
             }
         }
 
-        $apiBase = rtrim((string)$this->scopeConfig->getValue(self::CONFIG_API_BASE), '/');
-        $token = $this->secretReader->read(self::CONFIG_INTEGRATION_TOKEN);
-        $merchantId = (string)$this->scopeConfig->getValue(self::CONFIG_MERCHANT_ID);
-
-        if ($apiBase === '' || $token === '' || $merchantId === '') {
+        $adminUser = $this->authSession->getUser();
+        $adminId = $adminUser ? (int)$adminUser->getId() : 0;
+        if (!$this->isConnected() || $adminId <= 0) {
             return null;
         }
 
         try {
-            $url = $apiBase . '/api/v1/trust/overview?merchantId=' . rawurlencode($merchantId);
-            $this->curlClient->setTimeout(self::SCORE_HTTP_TIMEOUT);
-            $this->curlClient->addHeader('Accept', 'application/json');
-            $this->curlClient->addHeader('Authorization', 'Bearer ' . $token);
-            $this->curlClient->get($url);
-
-            $status = (int)$this->curlClient->getStatus();
-            if ($status < 200 || $status >= 300) {
-                $this->logger->info('Trusteed: trust/overview returned non-2xx', ['status' => $status]);
+            // Con el token embebido de la conexión, como la SPA de WooCommerce y PrestaShop. El token de
+            // integración de Magento no es una credencial de Trusteed: con él la API respondía 401 y la
+            // pantalla se quedaba en «Preparando tu puntuación» para siempre.
+            $res = $this->trustSeal->request('GET', '/v1/embed/trust/overview', $adminId);
+            if ($res === null) {
                 return null;
             }
+            $result = ScoreNodeNormalizer::fromOverview($res['status'], $res['body']);
+            if ($result === null) {
+                $this->logger->info('Trusteed: trust/overview sin puntuación', ['status' => $res['status']]);
 
-            $body = (string)$this->curlClient->getBody();
-            $data = json_decode($body, true);
-            if (!is_array($data) || !isset($data['score']) || !is_array($data['score'])) {
                 return null;
             }
-
-            // F1-4b — the previous inline parse used `is_int(...) ? (int)... : null`,
-            // which discarded every decimal score the v4.1 engine emits (see
-            // ScoreNodeNormalizer's docblock). Normalisation now lives in a pure,
-            // unit-tested class instead of being re-derived at each call site.
-            $result = ScoreNodeNormalizer::normalize($data['score']);
 
             $this->cache->save(
                 json_encode($result, JSON_THROW_ON_ERROR),

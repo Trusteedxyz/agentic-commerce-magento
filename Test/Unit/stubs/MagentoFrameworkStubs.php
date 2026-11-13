@@ -109,6 +109,10 @@ namespace Magento\Framework\HTTP\Client {
             {
             }
 
+            public function setHeaders(array $headers): void
+            {
+            }
+
             public function post(string $url, $body): void
             {
             }
