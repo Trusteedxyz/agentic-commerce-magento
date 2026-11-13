@@ -35,6 +35,7 @@ class Issue extends Action implements HttpPostActionInterface
     // Reuse the connector wizard values so Paco never sees a duplicate config UI.
     private const CONFIG_API_BASE = 'trusteed_general/general/api_base_url';
     private const CONFIG_MERCHANT_ID = 'trusteed_general/general/merchant_id';
+    private const CONFIG_CONNECTION_ID = 'trusteed_general/general/connection_id';
 
     /**
      * Per-connection embed secret provisioned by the onboarding exchange
@@ -117,10 +118,18 @@ class Issue extends Action implements HttpPostActionInterface
                 ->setData(['error' => 'api_base_url_not_allowed']);
         }
 
+        // La API busca el secreto de embed por connection_id (el alta lo guarda con
+        // ownerId = connection_id): sin él no lo encuentra y responde
+        // 401 merchant_not_configured, y todo el panel dice «No podemos conectar».
+        $connectionId = trim((string) ($this->scopeConfig->getValue(
+            self::CONFIG_CONNECTION_ID,
+            ScopeInterface::SCOPE_STORE
+        ) ?? ''));
         $payload = [
             'merchant_id' => $merchantId,
             'magento_admin_id' => (string) $adminId,
             'capability_attestation' => 'admin_trusteed',
+            ...($connectionId !== '' ? ['connection_id' => $connectionId] : []),
         ];
         $body = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 

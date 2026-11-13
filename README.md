@@ -232,6 +232,10 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.10
+
+- Fixed: **the Trusteed screens in the Magento admin load again.** Every page (Home, My sales, My rules, Settings…) showed "We can't connect to Trusteed right now": the module asked Trusteed for its panel access token without saying which connection it belongs to, so Trusteed could not find the store's secret and refused. It now sends the connection id.
+
 ### 1.3.9
 
 - Fixed: after connecting, the module now stores the id of your Trusteed **store** (not your merchant account) as `merchant_id`. With the account id, the checkout rules and the rule snapshot answered "403 cross_merchant_access_denied" and agent checkouts were evaluated as if the rules service were down.
