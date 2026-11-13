@@ -32,7 +32,7 @@
         <add id="Trusteed_AgenticCommerce::ajustes" title="Settings" module="Trusteed_AgenticCommerce"
              sortOrder="70" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/ajustes/index" resource="Trusteed_AgenticCommerce::config"/>
-        <add id="Trusteed_AgenticCommerce::setup_wizard" title="Setup Wizard" module="Trusteed_AgenticCommerce"
+        <add id="Trusteed_AgenticCommerce::setup_wizard" title="Connect your store" module="Trusteed_AgenticCommerce"
              sortOrder="90" parent="Trusteed_AgenticCommerce::trusteed"
              action="trusteed/setup/wizard" resource="Trusteed_AgenticCommerce::config"/>
     </menu>

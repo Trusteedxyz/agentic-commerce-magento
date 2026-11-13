@@ -6,7 +6,7 @@
         <item name="js_config" xsi:type="array">
             <item name="provider" xsi:type="string">trusteed_setup_form.trusteed_setup_form_data_source</item>
         </item>
-        <item name="label" xsi:type="string" translate="true">Trusteed Setup Wizard</item>
+        <item name="label" xsi:type="string" translate="true">Connect your store to Trusteed</item>
         <item name="template" xsi:type="string">templates/form/collapsible</item>
     </argument>
 
@@ -14,7 +14,7 @@
         <buttons>
             <button name="save">
                 <class>primary</class>
-                <label translate="true">Guardar</label>
+                <label translate="true">Save</label>
             </button>
         </buttons>
         <namespace>trusteed_setup_form</namespace>
@@ -121,14 +121,14 @@
         <settings>
             <collapsible>true</collapsible>
             <opened>false</opened>
-            <label translate="true">Internal HMAC Secret</label>
+            <label translate="true">Extra security key (optional)</label>
         </settings>
         <field name="internal_hmac_secret" formElement="input">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Internal HMAC Secret</label>
+                <label translate="true">Extra security key (optional)</label>
                 <dataScope>internal_hmac_secret</dataScope>
-                <notice translate="true">Optional. Only if Trusteed gave you one; leave empty otherwise. Used to sign internal heartbeat requests. Keep secret.</notice>
+                <notice translate="true">Optional. Only fill this in if Trusteed gave you a key; leave it empty otherwise.</notice>
             </settings>
         </field>
     </fieldset>
@@ -139,22 +139,22 @@
         <settings>
             <collapsible>true</collapsible>
             <opened>false</opened>
-            <label translate="true">Checkout Enforcement (CEL)</label>
+            <label translate="true">Checkout protection</label>
         </settings>
         <field name="enforcement_installation_id" formElement="input">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Enforcement Installation ID</label>
+                <label translate="true">Protection ID</label>
                 <dataScope>enforcement_installation_id</dataScope>
-                <notice translate="true">Provided by Trusteed. Required to activate the agentic checkout enforcement layer.</notice>
+                <notice translate="true">Filled in automatically when you connect your store. It switches on the protection of agent checkouts.</notice>
             </settings>
         </field>
         <field name="enforcement_hmac_secret" formElement="input">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Enforcement HMAC Secret</label>
+                <label translate="true">Protection key</label>
                 <dataScope>enforcement_hmac_secret</dataScope>
-                <notice translate="true">Provided by Trusteed. Leave blank to keep the existing secret. Keep this value confidential.</notice>
+                <notice translate="true">Filled in automatically when you connect your store. Leave it empty to keep the current one.</notice>
             </settings>
         </field>
     </fieldset>
@@ -164,14 +164,14 @@
         <settings>
             <collapsible>true</collapsible>
             <opened>true</opened>
-            <label translate="true">Conecta tu tienda con Trusteed</label>
+            <label translate="true">Connect your store to Trusteed</label>
         </settings>
 
         <container name="connect_button_container">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="component" xsi:type="string">Magento_Ui/js/form/components/button</item>
-                    <item name="title" xsi:type="string" translate="true">Conectar con Trusteed →</item>
+                    <item name="title" xsi:type="string" translate="true">Connect with Trusteed →</item>
                     <item name="actions" xsi:type="array">
                         <item name="0" xsi:type="array">
                             <item name="targetName" xsi:type="string">trusteed_setup_form.trusteed_setup_form</item>
@@ -188,7 +188,7 @@
         <settings>
             <collapsible>true</collapsible>
             <opened>false</opened>
-            <label translate="true">¿Qué tiendas quieres activar?</label>
+            <label translate="true">Which stores do you want to activate?</label>
         </settings>
 
         <field name="store_view_selection" formElement="multiselect">
@@ -198,10 +198,10 @@
                 </item>
             </argument>
             <settings>
-                <label translate="true">Mis tiendas</label>
+                <label translate="true">My stores</label>
                 <dataType>text</dataType>
                 <dataScope>store_view_selection</dataScope>
-                <notice translate="true">Elige qué tiendas verán los compradores cuando usen asistentes de IA.</notice>
+                <notice translate="true">Choose which stores shoppers will see when they use AI assistants.</notice>
             </settings>
             <formElements>
                 <multiselect>

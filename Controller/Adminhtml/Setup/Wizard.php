@@ -33,7 +33,7 @@ class Wizard extends Action implements HttpGetActionInterface
     {
         $resultPage = $this->resultPageFactory->create();
         $resultPage->setActiveMenu('Trusteed_AgenticCommerce::setup_wizard');
-        $resultPage->getConfig()->getTitle()->prepend(__('Trusteed — Setup Wizard'));
+        $resultPage->getConfig()->getTitle()->prepend('Trusteed — ' . __('Connect your store'));
         return $resultPage;
     }
 }

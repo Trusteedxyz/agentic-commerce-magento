@@ -65,4 +65,38 @@ class ConnectExchangeTest extends TestCase
         $this->assertStringContainsString('some_new_error', ConnectExchange::refusalMessage('some_new_error'));
         $this->assertStringContainsString('without a reason', ConnectExchange::refusalMessage(''));
     }
+
+    public function testProvisionEndpointAddsApiPrefixOnce(): void
+    {
+        $this->assertSame(
+            'https://api.trusteed.xyz/api/v1/enforcement/installations/provision',
+            ConnectExchange::provisionEndpoint('https://api.trusteed.xyz/')
+        );
+        $this->assertSame(
+            'https://api.trusteed.xyz/api/v1/enforcement/installations/provision',
+            ConnectExchange::provisionEndpoint('https://api.trusteed.xyz/api/v1')
+        );
+    }
+
+    public function testProvisionBodyUsesTheTrusteedStoreIdAndMagento(): void
+    {
+        $this->assertSame(
+            ['merchantId' => 'store-1', 'platform' => 'MAGENTO', 'connectionId' => 'conn-1'],
+            ConnectExchange::provisionBody('store-1', 'conn-1')
+        );
+    }
+
+    public function testParseProvisionAcceptsOnly201WithUuidAndSecret(): void
+    {
+        $ok = json_encode(['installationId' => '849f7ba0-b417-46a1-b5df-c4d0d999bdcd', 'hmacSecret' => 's3cret']);
+        $this->assertSame(
+            ['installation_id' => '849f7ba0-b417-46a1-b5df-c4d0d999bdcd', 'hmac_secret' => 's3cret'],
+            ConnectExchange::parseProvision(201, (string)$ok)
+        );
+        $this->assertNull(ConnectExchange::parseProvision(200, (string)$ok));
+        $this->assertNull(ConnectExchange::parseProvision(401, '{"error":"unauthenticated"}'));
+        $this->assertNull(ConnectExchange::parseProvision(201, 'no json'));
+        $this->assertNull(ConnectExchange::parseProvision(201, '{"installationId":"x","hmacSecret":"s"}'));
+        $this->assertNull(ConnectExchange::parseProvision(201, '{"installationId":"849f7ba0-b417-46a1-b5df-c4d0d999bdcd","hmacSecret":""}'));
+    }
 }

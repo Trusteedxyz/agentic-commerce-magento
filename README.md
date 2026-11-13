@@ -232,6 +232,11 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.11
+
+- Added: **the module now sets up checkout protection by itself.** When you connect your store, it asks Trusteed for the protection ID and key and saves them. Before, the setup asked you to paste both by hand from a place most merchants do not have, and without them the protection did not run.
+- Changed: the setup page speaks plainly ("Extra security key (optional)", "Checkout protection", "Protection ID", "Connect your store") instead of internal terms, and it no longer mixes English and Spanish. Spanish translation included.
+
 ### 1.3.10
 
 - Fixed: **the Trusteed screens in the Magento admin load again.** Every page (Home, My sales, My rules, Settings…) showed "We can't connect to Trusteed right now": the module asked Trusteed for its panel access token without saying which connection it belongs to, so Trusteed could not find the store's secret and refused. It now sends the connection id.

@@ -190,11 +190,28 @@ class Save extends Action implements HttpPostActionInterface
             $data['webhook_secret'] = $exchanged['webhook_secret'];
             $data['embed_secret'] = $exchanged['embed_secret'];
 
-            // La instalación de enforcement y /v1/rules/* pertenecen a la TIENDA
-            // de Trusteed, no al comerciante: con el id del comerciante en
-            // `merchant_id`, evaluate y snapshot dan 403 cross_merchant_access_denied.
+            // La instalación de enforcement y /v1/rules/* pertenecen a la TIENDA de
+            // Trusteed, no al comerciante: con el id del comerciante en `merchant_id`,
+            // evaluate y snapshot dan 403 cross_merchant_access_denied.
             if ($exchanged['store_id'] !== '') {
                 $data['merchant_id'] = $exchanged['store_id'];
+            }
+
+            // El Installation ID y el secreto HMAC del enforcement se piden aquí, con el
+            // secreto de embed recién recibido: antes había que pegarlos a mano desde
+            // un sitio que el comerciante no tiene, y sin ellos el enforcement no corre.
+            // Un fallo no tumba la conexión: queda el aviso del módulo y el log.
+            if ($exchanged['store_id'] !== '') {
+                $provisioned = $this->provisionEnforcement(
+                    $apiBase,
+                    $exchanged['store_id'],
+                    $exchanged['connection_id'],
+                    $exchanged['embed_secret']
+                );
+                if ($provisioned !== null) {
+                    $data['enforcement_installation_id'] = $provisioned['installation_id'];
+                    $data['enforcement_hmac_secret'] = $provisioned['hmac_secret'];
+                }
             }
 
             // Defence in depth: drop the single-use token so no later branch can
@@ -414,6 +431,57 @@ class Save extends Action implements HttpPostActionInterface
             'embed_secret' => $embedSecret,
             'store_id' => $storeId,
         ];
+    }
+
+    /**
+     * Pide a Trusteed las credenciales de enforcement de esta tienda. Nunca lanza.
+     *
+     * @return array{installation_id: string, hmac_secret: string}|null
+     */
+    private function provisionEnforcement(
+        string $apiBase,
+        string $trusteedStoreId,
+        string $connectionId,
+        string $embedSecret
+    ): ?array {
+        try {
+            $endpoint = ConnectExchange::provisionEndpoint($apiBase);
+            if (!str_starts_with($endpoint, 'https://')) {
+                return null;
+            }
+            $body = json_encode(
+                ConnectExchange::provisionBody($trusteedStoreId, $connectionId),
+                JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+            );
+            $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
+            $this->curl->setOption(CURLOPT_TIMEOUT, self::EXCHANGE_TIMEOUT_SECONDS);
+            $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, self::EXCHANGE_TIMEOUT_SECONDS);
+            $this->curl->setOption(CURLOPT_FOLLOWLOCATION, false);
+            $this->curl->setOption(CURLOPT_MAXREDIRS, 0);
+            $this->curl->setOption(CURLOPT_SSL_VERIFYPEER, true);
+            $this->curl->setOption(CURLOPT_SSL_VERIFYHOST, 2);
+            $this->curl->setOption(CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+            $this->curl->setOption(CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
+            $this->curl->setHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'X-Embed-Magento-Secret' => $embedSecret,
+            ]);
+            $this->curl->post($endpoint, $body);
+            $status = (int)$this->curl->getStatus();
+            $parsed = ConnectExchange::parseProvision($status, (string)$this->curl->getBody());
+            if ($parsed === null) {
+                $this->logger->warning('[Trusteed][enforcement-provision] not provisioned', ['status' => $status]);
+            }
+
+            return $parsed;
+        } catch (\Throwable $e) {
+            $this->logger->warning('[Trusteed][enforcement-provision] transport failure', [
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     private function applyHyvaGuard(): bool

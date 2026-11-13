@@ -16,6 +16,7 @@ final class ConnectExchange
 {
     private const PATH = '/platform/magento/validate-connect-token';
     private const API_PREFIX = '/api/v1';
+    private const PROVISION_PATH = '/enforcement/installations/provision';
 
     public static function endpoint(string $apiBase): string
     {
@@ -53,6 +54,58 @@ final class ConnectExchange
         return $body;
     }
 
+    /** POST que entrega el Installation ID y el secreto HMAC del enforcement. */
+    public static function provisionEndpoint(string $apiBase): string
+    {
+        $base = rtrim($apiBase, '/');
+        if (!str_ends_with($base, self::API_PREFIX)) {
+            $base .= self::API_PREFIX;
+        }
+
+        return $base . self::PROVISION_PATH;
+    }
+
+    /**
+     * `merchantId` es el id de la TIENDA en Trusteed (el `store_id` del canje), no el del
+     * comerciante: con éste la API responde 401 como si el secreto fuera erróneo.
+     *
+     * @return array<string, string>
+     */
+    public static function provisionBody(string $trusteedStoreId, string $connectionId): array
+    {
+        return [
+            'merchantId' => $trusteedStoreId,
+            'platform' => 'MAGENTO',
+            'connectionId' => $connectionId,
+        ];
+    }
+
+    /**
+     * Lee la respuesta de la provisión. Sólo vale un 201 con un UUID de instalación y un
+     * secreto no vacío; cualquier otra cosa devuelve null (la conexión sigue válida, pero
+     * el enforcement queda sin credenciales y el módulo lo avisa).
+     *
+     * @return array{installation_id: string, hmac_secret: string}|null
+     */
+    public static function parseProvision(int $status, string $rawBody): ?array
+    {
+        if ($status !== 201) {
+            return null;
+        }
+        $decoded = json_decode($rawBody, true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+        $id = trim((string)($decoded['installationId'] ?? ''));
+        $secret = (string)($decoded['hmacSecret'] ?? '');
+        $uuid = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        if (preg_match($uuid, $id) !== 1 || $secret === '') {
+            return null;
+        }
+
+        return ['installation_id' => $id, 'hmac_secret' => $secret];
+    }
+
     /**
      * La API responde 200 con `{valid:false, error}` cuando rechaza el canje; sin
      * esto el comerciante veía «did not return the expected connection
@@ -62,7 +115,7 @@ final class ConnectExchange
     {
         return match ($code) {
             'token_invalid_or_expired' =>
-                'The connection code has expired or was already used. Click "Conectar con Trusteed" again.',
+                'The connection code has expired or was already used. Click «Connect with Trusteed» again.',
             'store_url_owned_by_another_merchant' =>
                 'This store URL is already connected to another Trusteed account. Sign in with that account, or contact support.',
             'invalid_store_url' => 'The store URL must be https and publicly reachable.',
