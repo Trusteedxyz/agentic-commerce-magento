@@ -22,6 +22,17 @@ define(["jquery", "mage/translate"], function ($, $t) {
   var POPUP_TIMEOUT_MS = 300000; // 5 min máximo para que el merchant autorice
   var MSG_TYPE = "trusteed:magento:connected";
 
+  /**
+   * Idioma del back office (<html lang>, que sigue el idioma de interfaz del admin) para que la ventana de
+   * conexión de trusteed.xyz salga en el mismo idioma. Solo en/es; cualquier otro, no se manda.
+   */
+  function connectLang() {
+    var l = String(document.documentElement.lang || "").toLowerCase();
+    if (/^en([-_]|$)/.test(l)) return "en";
+    if (/^es([-_]|$)/.test(l)) return "es";
+    return "";
+  }
+
   return function (Component) {
     return Component.extend({
       defaults: {
@@ -79,7 +90,8 @@ define(["jquery", "mage/translate"], function ($, $t) {
           "?origin=" +
           encodeURIComponent(origin) +
           "&state=" +
-          encodeURIComponent(this.connectState);
+          encodeURIComponent(this.connectState) +
+          (connectLang() ? "&lang=" + connectLang() : "");
 
         var left = Math.round(
           window.screenX + (window.outerWidth - POPUP_WIDTH) / 2

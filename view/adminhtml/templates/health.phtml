@@ -2,6 +2,7 @@
 /** @var \Trusteed\AgenticCommerce\Block\Adminhtml\Health\Tab $block */
 
 use Trusteed\AgenticCommerce\Model\Trust\ConfidenceLabel;
+use Trusteed\AgenticCommerce\Model\Trust\MilestoneText;
 use Trusteed\AgenticCommerce\Model\Trust\ScoreNodeNormalizer;
 
 $manifestAge    = $block->getManifestAge();
@@ -127,9 +128,10 @@ $queueOk    = $outboxLag < 300 && $deadCount === 0;
                 <div style="font-size:14px;color:#374151;margin-bottom:8px;">
                     <?= $block->escapeHtml(__('Confidence:')) ?> <?= $block->escapeHtml(confidenceLabel($trustScore['confidenceLevel'] ?? null, $scoreCapVal)) ?>
                 </div>
-                <?php if (!empty($trustScore['nextMilestone'])): ?>
+                <?php $milestoneSource = MilestoneText::source($trustScore['nextMilestone'] ?? null); ?>
+                <?php if ($milestoneSource !== null): ?>
                     <div style="font-size:13px;color:#374151;background:rgba(255,255,255,0.6);border:1px solid rgba(0,0,0,0.05);border-radius:8px;padding:8px 12px;">
-                        <strong><?= $block->escapeHtml(__('Next step:')) ?></strong> <?= $block->escapeHtml($trustScore['nextMilestone']) ?>
+                        <strong><?= $block->escapeHtml(__('Next step:')) ?></strong> <?= $block->escapeHtml(__($milestoneSource)) ?>
                     </div>
                 <?php endif; ?>
             <?php endif; ?>

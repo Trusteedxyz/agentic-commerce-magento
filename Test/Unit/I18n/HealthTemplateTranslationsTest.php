@@ -6,9 +6,11 @@ namespace Trusteed\AgenticCommerce\Test\Unit\I18n;
 
 use PHPUnit\Framework\TestCase;
 use Trusteed\AgenticCommerce\Model\Trust\ConfidenceLabel;
+use Trusteed\AgenticCommerce\Model\Trust\MilestoneText;
 
 require_once __DIR__ . '/../../../Model/Trust/ScoreNodeNormalizer.php';
 require_once __DIR__ . '/../../../Model/Trust/ConfidenceLabel.php';
+require_once __DIR__ . '/../../../Model/Trust/MilestoneText.php';
 
 /**
  * Toda cadena de «¿Cómo va mi tienda?» tiene su traducción: si el CSV traduce otra cadena (p. ej. «New store
@@ -32,6 +34,9 @@ final class HealthTemplateTranslationsTest extends TestCase
                 $strings[] = ConfidenceLabel::parts($level, $cap)[0];
             }
         }
+
+        // Los textos del «Próximo paso» también se componen fuera del .phtml.
+        $strings = [...$strings, ...MilestoneText::sourceStrings()];
 
         return array_values(array_unique($strings));
     }
