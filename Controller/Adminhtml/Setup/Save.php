@@ -190,6 +190,13 @@ class Save extends Action implements HttpPostActionInterface
             $data['webhook_secret'] = $exchanged['webhook_secret'];
             $data['embed_secret'] = $exchanged['embed_secret'];
 
+            // La instalación de enforcement y /v1/rules/* pertenecen a la TIENDA
+            // de Trusteed, no al comerciante: con el id del comerciante en
+            // `merchant_id`, evaluate y snapshot dan 403 cross_merchant_access_denied.
+            if ($exchanged['store_id'] !== '') {
+                $data['merchant_id'] = $exchanged['store_id'];
+            }
+
             // Defence in depth: drop the single-use token so no later branch can
             // ever treat it as a long-lived credential.
             unset($data['connect_token']);
@@ -395,10 +402,17 @@ class Save extends Action implements HttpPostActionInterface
             throw new \RuntimeException('Trusteed did not return the expected connection credentials.');
         }
 
+        // Id de la tienda en Trusteed (UUID). Una API anterior no lo devuelve: vacío.
+        $storeId = is_array($decoded) ? trim((string)($decoded['store_id'] ?? '')) : '';
+        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $storeId)) {
+            $storeId = '';
+        }
+
         return [
             'connection_id' => $connectionId,
             'webhook_secret' => $webhookSecret,
             'embed_secret' => $embedSecret,
+            'store_id' => $storeId,
         ];
     }
 

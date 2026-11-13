@@ -232,6 +232,11 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.9
+
+- Fixed: after connecting, the module now stores the id of your Trusteed **store** (not your merchant account) as `merchant_id`. With the account id, the checkout rules and the rule snapshot answered "403 cross_merchant_access_denied" and agent checkouts were evaluated as if the rules service were down.
+- Added: the "Trusteed" integration also gets the permissions to invoice an order and add a comment to it, which Trusteed's demo purchases use to leave a paid order in your store.
+
 ### 1.3.8
 
 - Fixed: **"Conectar con Trusteed" now completes the connection.** Four things stopped it: the form posted to a URL that does not exist (404), the optional "Internal HMAC Secret" was mandatory, the code exchange called a route without the `/api/v1` prefix and left out the store URL, store id and integration token the API requires, and the browser dropped the pop-up's link to the store so the code never arrived (fixed on the Trusteed side).

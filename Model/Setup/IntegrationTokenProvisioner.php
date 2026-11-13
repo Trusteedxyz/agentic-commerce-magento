@@ -46,6 +46,9 @@ class IntegrationTokenProvisioner
         'Magento_Sales::sales_operation',
         'Magento_Sales::sales_order',
         'Magento_Sales::actions_view',
+        // Demo con pedido nativo (1.3.9): facturar el pedido y anotar la referencia del cobro.
+        'Magento_Sales::invoice',
+        'Magento_Sales::comment',
     ];
 
     public function __construct(
