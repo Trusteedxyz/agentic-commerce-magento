@@ -28,6 +28,8 @@
         <argument name="data" xsi:type="array">
             <item name="js_config" xsi:type="array">
                 <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+                <!-- Sin esto el formulario envía a «undefinedback/edit» (404): la `urls.save` del proveedor sale de `submit_url`. -->
+                <item name="submit_url" xsi:type="url" path="trusteed/setup/save"/>
             </item>
         </argument>
         <settings>
@@ -126,10 +128,7 @@
                 <dataType>text</dataType>
                 <label translate="true">Internal HMAC Secret</label>
                 <dataScope>internal_hmac_secret</dataScope>
-                <validation>
-                    <rule name="required-entry" xsi:type="boolean">true</rule>
-                </validation>
-                <notice translate="true">Used to sign internal heartbeat requests. Keep secret.</notice>
+                <notice translate="true">Optional. Only if Trusteed gave you one; leave empty otherwise. Used to sign internal heartbeat requests. Keep secret.</notice>
             </settings>
         </field>
     </fieldset>

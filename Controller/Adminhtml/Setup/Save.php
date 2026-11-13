@@ -14,6 +14,10 @@ use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\HTTP\Client\Curl;
+use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\UrlInterface;
+use Trusteed\AgenticCommerce\Model\Setup\ConnectExchange;
+use Trusteed\AgenticCommerce\Model\Setup\IntegrationTokenProvisioner;
 use Trusteed\AgenticCommerce\Model\Manifest\Builder as ManifestBuilder;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
 use Trusteed\AgenticCommerce\Model\Storefront\ThemeDetector;
@@ -64,8 +68,9 @@ class Save extends Action implements HttpPostActionInterface
 
     /**
      * Connect-token exchange contract (cross-platform onboarding):
-     *   POST {api_base}/platform/magento/validate-connect-token
-     *   body: { "connect_token": "<single-use>" }
+     *   POST {api_base}/api/v1/platform/magento/validate-connect-token
+     *   body: { connect_token, store_url (https), store_id, integration_token,
+     *           store_view_codes, currency }  — see {@see ConnectExchange}
      *   200 : { "connection_id", "webhook_secret", "embed_secret" }
      *
      * The backend stores webhook_secret + embed_secret in its SecretVault keyed by
@@ -73,7 +78,6 @@ class Save extends Action implements HttpPostActionInterface
      * embed_secret (encrypted). The connect_token is single-use and is NEVER
      * persisted as a long-lived secret — it only ever lives in this request.
      */
-    private const VALIDATE_CONNECT_TOKEN_PATH = '/platform/magento/validate-connect-token';
     private const EXCHANGE_TIMEOUT_SECONDS = 10;
 
     /**
@@ -100,6 +104,8 @@ class Save extends Action implements HttpPostActionInterface
         private readonly LoggerInterface $logger,
         private readonly ApiBaseUrlValidator $urlValidator,
         private readonly Curl $curl,
+        private readonly StoreManagerInterface $storeManager,
+        private readonly IntegrationTokenProvisioner $integrationTokens,
     ) {
         parent::__construct($context);
     }
@@ -309,12 +315,24 @@ class Save extends Action implements HttpPostActionInterface
             throw new \RuntimeException('API base URL not allowed for connect-token exchange.');
         }
 
-        $endpoint = $apiBase . self::VALIDATE_CONNECT_TOKEN_PATH;
+        $endpoint = ConnectExchange::endpoint($apiBase);
         if (!str_starts_with($endpoint, 'https://')) {
             throw new \RuntimeException('Connect-token exchange endpoint must be HTTPS.');
         }
 
-        $body = json_encode(['connect_token' => $connectToken], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $store = $this->storeManager->getDefaultStoreView() ?? $this->storeManager->getStore();
+        $storeViewCodes = array_values(array_map(
+            static fn($view) => (string)$view->getCode(),
+            array_filter($this->storeManager->getStores(), static fn($view) => (bool)$view->getIsActive())
+        ));
+        $body = json_encode(ConnectExchange::body(
+            $connectToken,
+            (string)$store->getBaseUrl(UrlInterface::URL_TYPE_WEB, true),
+            (string)$store->getCode(),
+            $this->integrationTokens->accessToken(),
+            $storeViewCodes,
+            (string)$store->getBaseCurrencyCode()
+        ), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
         try {
             $this->curl->setOption(CURLOPT_RETURNTRANSFER, true);
@@ -358,6 +376,10 @@ class Save extends Action implements HttpPostActionInterface
                 'exception' => $e->getMessage(),
             ]);
             throw new \RuntimeException('Trusteed returned an invalid response while connecting.');
+        }
+
+        if (is_array($decoded) && ($decoded['valid'] ?? null) === false) {
+            throw new \RuntimeException(ConnectExchange::refusalMessage((string)($decoded['error'] ?? '')));
         }
 
         $connectionId = is_array($decoded) ? trim((string)($decoded['connection_id'] ?? '')) : '';

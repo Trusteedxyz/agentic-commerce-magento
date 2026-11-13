@@ -232,6 +232,12 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.8
+
+- Fixed: **"Conectar con Trusteed" now completes the connection.** Four things stopped it: the form posted to a URL that does not exist (404), the optional "Internal HMAC Secret" was mandatory, the code exchange called a route without the `/api/v1` prefix and left out the store URL, store id and integration token the API requires, and the browser dropped the pop-up's link to the store so the code never arrived (fixed on the Trusteed side).
+- Added: the module creates the "Trusteed" integration in Magento with only the permissions the connector reads (catalog, stock, store settings, orders) and enables integration tokens as Bearer tokens. Before, you had to create it by hand in System → Integrations.
+- Changed: if Trusteed refuses the connection, the panel says why (expired code, URL already linked to another account, invalid URL) instead of a generic error.
+
 ### 1.3.7
 
 - Added: the agent-readiness panel names the new "merchant decision" probe result ("Your choice" / "Decisión tuya") instead of showing it as an unrecognised state.
