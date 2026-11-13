@@ -53,6 +53,24 @@ class SignaturePublisher
      * Publish a webhook entry to MCPWebStore.
      * Returns true on success, false on failure.
      */
+    /**
+     * La API valida `updated_at` como fecha ISO 8601 con `Z`; Magento guarda `Y-m-d H:i:s`
+     * (UTC). Con el formato de MySQL el sobre entero se rechazaba con 400
+     * invalid_envelope y ningún pedido llegaba a Trusteed.
+     */
+    public static function toIsoUtc(?string $value): string
+    {
+        try {
+            $date = ($value === null || trim($value) === '')
+                ? new \DateTimeImmutable('now', new \DateTimeZone('UTC'))
+                : new \DateTimeImmutable($value, new \DateTimeZone('UTC'));
+        } catch (\Throwable) {
+            $date = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        }
+
+        return $date->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
+    }
+
     public function publish(array $entry): bool
     {
         $apiBase = rtrim((string)$this->scopeConfig->getValue('trusteed_general/general/api_base_url'), '/');
@@ -128,7 +146,7 @@ class SignaturePublisher
             'increment_id' => $entry['increment_id'],
             'composite_id' => $entry['composite_id'],
             'store_view_code' => $entry['store_view_code'] ?? 'default',
-            'updated_at' => $entry['updated_at'] ?? date('c'),
+            'updated_at' => self::toIsoUtc($entry['updated_at'] ?? null),
             'payload' => json_decode((string)$entry['payload'], true) ?? [],
         ], JSON_THROW_ON_ERROR);
 

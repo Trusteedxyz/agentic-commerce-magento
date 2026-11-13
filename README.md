@@ -232,6 +232,10 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.12
+
+- Fixed: **orders now reach Trusteed.** Three problems kept every order stuck in the module's delivery queue: the queue worker failed on a query that MariaDB and MySQL reject, the order event carried an empty agent field that Trusteed refused, and its date was not in the format Trusteed expects. A human checkout never made it to Trusteed; now each order moves from "pending" to "delivered".
+
 ### 1.3.11
 
 - Added: **the module now sets up checkout protection by itself.** When you connect your store, it asks Trusteed for the protection ID and key and saves them. Before, the setup asked you to paste both by hand from a place most merchants do not have, and without them the protection did not run.

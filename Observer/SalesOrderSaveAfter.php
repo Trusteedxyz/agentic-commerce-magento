@@ -79,13 +79,15 @@ class SalesOrderSaveAfter implements ObserverInterface
                 'increment_id' => (string)$order->getIncrementId(),
                 'composite_id' => $compositeId,
                 'store_view_code' => $order->getStore()->getCode() ?: 'default',
+                // `agent_did` solo viaja si hay agente: la API lo valida como texto y un
+                // `null` hace rechazar TODO el sobre (400 invalid_envelope), así que una
+                // compra humana nunca llegaba a Trusteed.
                 'payload' => json_encode(array_merge([
                     'grand_total' => $order->getGrandTotal(),
                     'status' => $order->getStatus(),
                     'state' => $state,
                     'customer_email' => null, // PII omitted from webhook payload
-                    'agent_did' => $agentDid,
-                ], $channelPayload)),
+                ], $agentDid !== null ? ['agent_did' => $agentDid] : [], $channelPayload)),
                 'updated_at' => $order->getUpdatedAt() ?? date('c'),
                 'secret_version' => (int)($this->scopeConfig->getValue(
                     'trusteed_general/general/webhook_secret_version',

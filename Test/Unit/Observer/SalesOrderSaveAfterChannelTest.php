@@ -73,4 +73,10 @@ final class SalesOrderSaveAfterChannelTest extends TestCase
     {
         self::assertArrayNotHasKey('agent_channel', $this->runWith('<script>'));
     }
+
+    public function testHumanOrderPayloadOmitsAgentDidInsteadOfSendingNull(): void
+    {
+        // La API valida agent_did como texto: un null rechaza todo el sobre (400).
+        self::assertArrayNotHasKey('agent_did', $this->runWith(null));
+    }
 }

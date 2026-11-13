@@ -67,8 +67,8 @@ class OutboxRepository
                AND (locked_until IS NULL OR locked_until < ?)
                AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
              ORDER BY created_at ASC
-             LIMIT ?",
-            [$lockExpiry, $lockOwner, $now, self::MAX_RETRIES, $now, $now, $limit]
+             LIMIT {$limit}",
+            [$lockExpiry, $lockOwner, $now, self::MAX_RETRIES, $now, $now]
         );
 
         return $conn->fetchAll(
@@ -148,8 +148,8 @@ class OutboxRepository
              FROM {$table}
              WHERE status = 'dead'
              ORDER BY updated_at DESC
-             LIMIT ?",
-            [$limit]
+             LIMIT {$limit}",
+            []
         );
     }
 
