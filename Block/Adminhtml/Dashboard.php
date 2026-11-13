@@ -6,7 +6,9 @@ namespace Trusteed\AgenticCommerce\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
+use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Trusteed\AgenticCommerce\Model\Embed\TrustSeal;
 
 class Dashboard extends Template
 {
@@ -18,6 +20,9 @@ class Dashboard extends Template
     public function __construct(
         Context $context,
         private readonly ScopeConfigInterface $scopeConfig,
+        // Obligatorios: en Magento un parámetro con valor por defecto null se inyecta como null.
+        private readonly TrustSeal $trustSeal,
+        private readonly AuthSession $authSession,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -42,6 +47,38 @@ class Dashboard extends Template
             return 0;
         }
         return count(explode(',', $views));
+    }
+
+    private ?string $sealState = null;
+
+    /** Estado real del sello de confianza (`active`, `inactive`, `unknown`); una sola consulta por página. */
+    public function getSealState(): string
+    {
+        if ($this->sealState !== null) {
+            return $this->sealState;
+        }
+        $adminUser = $this->authSession->getUser();
+        $adminId = $adminUser ? (int)$adminUser->getId() : 0;
+
+        return $this->sealState = ($this->isConnected() && $adminId > 0)
+            ? $this->trustSeal->state($adminId)
+            : TrustSeal::STATE_UNKNOWN;
+    }
+
+    /** `signed` solo con el sello activo; con cualquier otro estado, `pending`. */
+    public function getGuaranteeKey(): string
+    {
+        return TrustSeal::guaranteeKey($this->getSealState());
+    }
+
+    public function getActivateUrl(): string
+    {
+        return $this->getUrl('trusteed/protection/activate');
+    }
+
+    public function getDashboardUrl(): string
+    {
+        return $this->getUrl('trusteed/dashboard/index');
     }
 
     public function getSetupUrl(): string

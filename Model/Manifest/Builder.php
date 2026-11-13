@@ -12,6 +12,7 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Model\Config\SecretReader;
+use Trusteed\AgenticCommerce\Model\Security\InternalHmacKeys;
 use Trusteed\AgenticCommerce\Model\Security\InternalHmacSigner;
 
 /**
@@ -93,6 +94,7 @@ class Builder
         private readonly SecretReader $secretReader,
         private readonly Curl $curlClient,
         private readonly InternalHmacSigner $internalHmacSigner,
+        private readonly ?InternalHmacKeys $internalHmacKeys = null,
     ) {}
 
     /**
@@ -315,13 +317,10 @@ class Builder
             );
         }
 
-        $internalSecret = $this->secretReader->read(
-            self::CONFIG_INTERNAL_HMAC_SECRET,
-            ScopeInterface::SCOPE_STORE
-        );
-        if ($internalSecret === '') {
+        $keys = $this->internalHmacKeys ?? new InternalHmacKeys($this->secretReader, $this->internalHmacSigner);
+        if ($keys->candidates() === []) {
             throw new ManifestSigningException(
-                'internal_hmac_secret is not configured or failed to decrypt'
+                'no signing key available (connect the store to Trusteed first)'
             );
         }
 
@@ -330,35 +329,36 @@ class Builder
             throw new ManifestSigningException('Failed to encode manifest payload to JSON');
         }
 
-        $timestamp = (string)time();
-        // M4 (audit 2026-06-01): delegate to the single shared canonical signer
-        // so manifest-sign + event + lag-heartbeat all share ONE HMAC scheme.
-        $authHeaders = $this->internalHmacSigner->buildHeaders(
-            $internalSecret,
-            $connectionId,
-            'POST',
-            self::SIGN_PATH,
-            $rawBody,
-            $timestamp
-        );
-
         $endpoint = $apiBaseUrl . self::SIGN_PATH;
 
         try {
-            $this->curlClient->setTimeout(self::SIGN_TIMEOUT_SECONDS);
-            $this->curlClient->addHeader('Content-Type', 'application/json');
-            $this->curlClient->addHeader('Accept', 'application/json');
-            foreach ($authHeaders as $name => $value) {
-                $this->curlClient->addHeader($name, $value);
-            }
-            $this->curlClient->post($endpoint, $rawBody);
+            // La clave derivada de la conexión primero; un 401 reintenta UNA vez con el
+            // `internal_hmac_secret` antiguo si existe (instalaciones con secreto tecleado a mano).
+            $status = $keys->withFallback(function (string $key) use ($connectionId, $rawBody, $endpoint): int {
+                $timestamp = (string)time();
+                $authHeaders = $this->internalHmacSigner->buildHeaders(
+                    $key,
+                    $connectionId,
+                    'POST',
+                    self::SIGN_PATH,
+                    $rawBody,
+                    $timestamp
+                );
+                $this->curlClient->setTimeout(self::SIGN_TIMEOUT_SECONDS);
+                $this->curlClient->setHeaders(array_merge(
+                    ['Content-Type' => 'application/json', 'Accept' => 'application/json'],
+                    $authHeaders
+                ));
+                $this->curlClient->post($endpoint, $rawBody);
+
+                return (int)$this->curlClient->getStatus();
+            });
         } catch (\Throwable $e) {
             throw new ManifestSigningException(
                 'Failed to reach manifest-sign endpoint: ' . $e->getMessage()
             );
         }
 
-        $status = $this->curlClient->getStatus();
         if ($status < 200 || $status >= 300) {
             throw new ManifestSigningException(
                 "Manifest-sign endpoint returned HTTP {$status}"

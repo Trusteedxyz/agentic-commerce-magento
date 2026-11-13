@@ -47,6 +47,9 @@
     <!-- api_base_url: oculto, pre-rellenado con producción -->
     <fieldset name="step_api_connection">
         <settings>
+            <additionalClasses>
+                <class name="trusteed-hidden-step">true</class>
+            </additionalClasses>
             <collapsible>false</collapsible>
             <opened>false</opened>
             <label translate="true"/>
@@ -62,6 +65,9 @@
     <!-- merchant_id: oculto, se rellena al conectar -->
     <fieldset name="step_merchant_id">
         <settings>
+            <additionalClasses>
+                <class name="trusteed-hidden-step">true</class>
+            </additionalClasses>
             <collapsible>false</collapsible>
             <opened>false</opened>
             <label translate="true"/>
@@ -77,6 +83,9 @@
     <!-- integration_token: oculto, se rellena automáticamente via postMessage -->
     <fieldset name="step_token_hidden">
         <settings>
+            <additionalClasses>
+                <class name="trusteed-hidden-step">true</class>
+            </additionalClasses>
             <collapsible>false</collapsible>
             <opened>false</opened>
             <label translate="true"/>
@@ -92,6 +101,9 @@
     <!-- Hidden identifiers populated post-OAuth by wizard-mixin.js -->
     <fieldset name="step_connection_ids">
         <settings>
+            <additionalClasses>
+                <class name="trusteed-hidden-step">true</class>
+            </additionalClasses>
             <collapsible>false</collapsible>
             <opened>false</opened>
             <label translate="true"/>
@@ -112,23 +124,6 @@
             <settings>
                 <dataType>text</dataType>
                 <dataScope>webhook_secret_secret_id</dataScope>
-            </settings>
-        </field>
-    </fieldset>
-
-    <!-- Internal HMAC secret (Gap #8 heartbeat) -->
-    <fieldset name="step_internal_hmac">
-        <settings>
-            <collapsible>true</collapsible>
-            <opened>false</opened>
-            <label translate="true">Extra security key (optional)</label>
-        </settings>
-        <field name="internal_hmac_secret" formElement="input">
-            <settings>
-                <dataType>text</dataType>
-                <label translate="true">Extra security key (optional)</label>
-                <dataScope>internal_hmac_secret</dataScope>
-                <notice translate="true">Optional. Only fill this in if Trusteed gave you a key; leave it empty otherwise.</notice>
             </settings>
         </field>
     </fieldset>

@@ -8,6 +8,7 @@ use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Trusteed\AgenticCommerce\Model\Config\SecretReader;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
+use Trusteed\AgenticCommerce\Model\Security\InternalHmacKeys;
 use Trusteed\AgenticCommerce\Model\Security\InternalHmacSigner;
 use Trusteed\AgenticCommerce\Model\Webhook\OutboxRepository;
 use Psr\Log\LoggerInterface;
@@ -31,6 +32,7 @@ class EmitLagHeartbeat
         // guaranteed a non-null guard via etc/di.xml. When null the callout
         // fails closed.
         private readonly ?ApiBaseUrlValidator $urlValidator = null,
+        private readonly ?InternalHmacKeys $internalHmacKeys = null,
     ) {}
 
     public function execute(): void
@@ -39,16 +41,15 @@ class EmitLagHeartbeat
         $merchantId = (string)$this->scopeConfig->getValue('trusteed_general/general/merchant_id');
         $connectionId = (string)$this->scopeConfig->getValue('trusteed_general/general/connection_id');
         $token = $this->secretReader->read('trusteed_general/general/integration_token');
-        $internalSecret = $this->secretReader->read('trusteed_general/general/internal_hmac_secret');
+        $keys = $this->internalHmacKeys ?? new InternalHmacKeys($this->secretReader, $this->internalHmacSigner);
 
         if (empty($apiBase) || empty($merchantId)) {
             return;
         }
 
-        if (empty($internalSecret)) {
+        if ($keys->candidates() === []) {
             $this->logger->warning(
-                'Trusteed lag heartbeat skipped: internal_hmac_secret not configured. ' .
-                'Provision via Magento admin → Stores → Configuration → Trusteed → General → Internal HMAC Secret.'
+                'Trusteed lag heartbeat skipped: no signing key yet (connect the store to Trusteed first).'
             );
             return;
         }
@@ -94,24 +95,26 @@ class EmitLagHeartbeat
         // Sign with the SAME shared signer + `internal_hmac_secret` and emit the
         // canonical X-Trusteed-* headers. The previous bare HMAC(rawBody) scheme
         // (X-Internal-Auth / X-Internal-Timestamp) now 401s in production.
-        $timestamp = (string)time();
-        $authHeaders = $this->internalHmacSigner->buildHeaders(
-            $internalSecret,
-            $connectionId,
-            'POST',
-            self::HEARTBEAT_PATH,
-            (string)$payload,
-            $timestamp
-        );
-
         try {
-            $this->curlClient->setTimeout(5);
-            $this->curlClient->addHeader('Content-Type', 'application/json');
-            $this->curlClient->addHeader('Authorization', "Bearer {$token}");
-            foreach ($authHeaders as $name => $value) {
-                $this->curlClient->addHeader($name, $value);
-            }
-            $this->curlClient->post($apiBase . self::HEARTBEAT_PATH, (string)$payload);
+            $keys->withFallback(function (string $key) use ($connectionId, $payload, $token, $apiBase): int {
+                $timestamp = (string)time();
+                $authHeaders = $this->internalHmacSigner->buildHeaders(
+                    $key,
+                    $connectionId,
+                    'POST',
+                    self::HEARTBEAT_PATH,
+                    (string)$payload,
+                    $timestamp
+                );
+                $this->curlClient->setTimeout(5);
+                $this->curlClient->setHeaders(array_merge(
+                    ['Content-Type' => 'application/json', 'Authorization' => "Bearer {$token}"],
+                    $authHeaders
+                ));
+                $this->curlClient->post($apiBase . self::HEARTBEAT_PATH, (string)$payload);
+
+                return (int)$this->curlClient->getStatus();
+            });
         } catch (\Throwable $e) {
             $this->logger->warning('Trusteed lag heartbeat failed', ['error' => $e->getMessage()]);
         }

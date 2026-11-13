@@ -40,6 +40,9 @@ namespace Trusteed\AgenticCommerce\Model\Security;
  */
 class InternalHmacSigner
 {
+    /** Etiqueta de la derivación de la clave por conexión (común con la API). */
+    public const KEY_DERIVATION_LABEL = 'trusteed-internal-hmac-v1';
+
     /** Header carrying the MagentoStoreConnection id (authoritative identity). */
     public const HEADER_CONNECTION_ID = 'X-Trusteed-Connection-Id';
 
@@ -48,6 +51,17 @@ class InternalHmacSigner
 
     /** Header carrying the canonical signature: `hmac-sha256=<hex>`. */
     public const HEADER_SIGNATURE = 'X-Trusteed-Signature';
+
+    /**
+     * Clave HMAC interna POR CONEXIÓN: HMAC-SHA256 de una etiqueta fija con el `webhook_secret` de
+     * la conexión como CLAVE (tercer argumento de hash_hmac). Es el HEX de 64 caracteres, como
+     * CADENA, el secreto con el que se firma después. Idéntico byte a byte a la derivación de la API
+     * (vector común en specs/050-magento-integration/fixtures/internal-hmac-key-derivation.json).
+     */
+    public function deriveConnectionKey(string $webhookSecret): string
+    {
+        return hash_hmac('sha256', self::KEY_DERIVATION_LABEL, $webhookSecret);
+    }
 
     /**
      * Compute the canonical HMAC-SHA256 signature (lowercase hex) for a request.

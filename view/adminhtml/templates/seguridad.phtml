@@ -3,44 +3,62 @@
 $isConnected = $block->isConnected();
 $merchantId  = $block->getMerchantId();
 $setupUrl    = $block->getSetupUrl();
+$sealState   = $isConnected ? $block->getSealState() : 'unknown';
+// «Todos los pedidos están firmados» solo se afirma con el sello activo (clave de firma): con otro
+// estado, el texto dice lo que falta. El estado sale de la API, no se supone.
+$signed = $block->getGuaranteeKey() === 'signed';
 ?>
 <div style="padding:24px;max-width:900px;font-family:system-ui,-apple-system,sans-serif;">
 
-    <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 4px;">Seguridad</h1>
+    <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 4px;"><?= $block->escapeHtml(__('Security')) ?></h1>
     <p style="color:#6b7280;font-size:14px;margin:0 0 24px;">
-        Cómo Trusteed protege tu tienda y a tus compradores.
+        <?= $block->escapeHtml(__('How Trusteed protects your store and your shoppers.')) ?>
     </p>
 
     <?php if (!$isConnected): ?>
     <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:20px 24px;">
-        <strong style="color:#92400e;">Tu tienda aún no está conectada.</strong>
+        <strong style="color:#92400e;"><?= $block->escapeHtml(__('Your store is not connected yet.')) ?></strong>
         <a href="<?= $block->escapeUrl($setupUrl) ?>"
-           style="color:#92400e;font-weight:600;"> Conectar ahora →</a>
+           style="color:#92400e;font-weight:600;"> <?= $block->escapeHtml(__('Connect now →')) ?></a>
     </div>
     <?php else: ?>
 
     <!-- Estado de seguridad general -->
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;gap:16px;align-items:center;">
+    <?php if ($signed): ?>
+    <div id="trusteed-security-status" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;gap:16px;align-items:center;">
         <span style="font-size:36px;">🛡️</span>
         <div>
-            <div style="font-weight:700;color:#166534;font-size:16px;">Tu tienda está protegida</div>
+            <div style="font-weight:700;color:#166534;font-size:16px;"><?= $block->escapeHtml(__('Your store is protected')) ?></div>
             <div style="font-size:13px;color:#166534;margin-top:4px;">
-                ID de conexión: <code style="background:#dcfce7;padding:2px 6px;border-radius:4px;font-size:12px;"><?= $block->escapeHtml(substr($merchantId, 0, 8)) ?>…</code>
+                <?= $block->escapeHtml(__('Connection ID:')) ?> <code style="background:#dcfce7;padding:2px 6px;border-radius:4px;font-size:12px;"><?= $block->escapeHtml(substr($merchantId, 0, 8)) ?>…</code>
             </div>
         </div>
     </div>
+    <?php else: ?>
+    <div id="trusteed-security-status" style="background:#fff3cd;border:1px solid #ffc107;border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;gap:16px;align-items:center;">
+        <span style="font-size:36px;">🛡️</span>
+        <div>
+            <div style="font-weight:700;color:#856404;font-size:16px;"><?= $block->escapeHtml(__('Your store is connected, but your protection is not active yet')) ?></div>
+            <div style="font-size:13px;color:#856404;margin-top:4px;">
+                <a href="<?= $block->escapeUrl($block->getDashboardUrl()) ?>" style="color:#856404;font-weight:600;"><?= $block->escapeHtml(__('Activate it from Home →')) ?></a>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Garantías de seguridad -->
-    <h2 style="font-size:15px;font-weight:600;color:#374151;margin:0 0 12px;">Qué hace Trusteed para protegerte</h2>
+    <h2 style="font-size:15px;font-weight:600;color:#374151;margin:0 0 12px;"><?= $block->escapeHtml(__('What Trusteed does to protect you')) ?></h2>
 
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
         <?php
         $garantias = [
-            ['🔐', 'Todos los pedidos están firmados digitalmente', 'Cada pedido de un agente lleva una firma criptográfica que garantiza que no ha sido manipulado.'],
-            ['🔒', 'La conexión usa HTTPS cifrado', 'Todas las comunicaciones entre Magento y Trusteed viajan cifradas. Nadie puede interceptarlas.'],
-            ['👤', 'Los datos de tus clientes no salen de Magento', 'Trusteed no almacena ni transmite correos, teléfonos ni direcciones de tus compradores.'],
-            ['🚨', 'Alertas ante comportamientos sospechosos', 'Si un agente intenta hacer algo raro (muchos pedidos en poco tiempo, precios anómalos…) Trusteed lo bloquea automáticamente.'],
-            ['📋', 'Registro de todos los pedidos de agentes', 'Cada transacción queda registrada con quién la hizo, cuándo y qué compró. Tienes visibilidad total.'],
+            $signed
+                ? ['🔐', __('Every order is digitally signed'), __('Each agent order carries a cryptographic signature that proves it has not been tampered with.')]
+                : ['🔐', __('Orders will be signed once you activate your protection'), __('Activate your protection from Home so that each agent order carries a cryptographic signature.')],
+            ['🔒', __('The connection uses encrypted HTTPS'), __('All communication between Magento and Trusteed is encrypted. Nobody can intercept it.')],
+            ['👤', __('Your customers\' data does not leave Magento'), __('Trusteed does not store or transmit the emails, phone numbers or addresses of your shoppers.')],
+            ['🚨', __('Alerts on suspicious behaviour'), __('If an agent tries something odd (many orders in a short time, unusual prices…), Trusteed blocks it automatically.')],
+            ['📋', __('Every agent order is recorded'), __('Each transaction is logged with who made it, when and what they bought. You have full visibility.')],
         ];
         foreach ($garantias as [$emoji, $titulo, $desc]): ?>
         <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;display:flex;gap:14px;align-items:flex-start;">
@@ -55,9 +73,10 @@ $setupUrl    = $block->getSetupUrl();
 
     <!-- Contacto de seguridad -->
     <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;font-size:13px;color:#991b1b;">
-        🚨 <strong>¿Detectas algo raro?</strong> Escríbenos inmediatamente a
+        🚨 <strong><?= $block->escapeHtml(__('Noticed something odd?')) ?></strong>
+        <?= $block->escapeHtml(__('Write to us right away at')) ?>
         <a href="mailto:hola@trusteed.xyz" style="color:#991b1b;font-weight:600;">hola@trusteed.xyz</a>
-        o usa el chat de soporte. Respondemos en menos de 2 horas.
+        <?= $block->escapeHtml(__('or use the support chat. We reply in under 2 hours.')) ?>
     </div>
 
     <?php endif; ?>

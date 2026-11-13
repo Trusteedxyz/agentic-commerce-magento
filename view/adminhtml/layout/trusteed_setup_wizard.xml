@@ -3,6 +3,9 @@
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
+            <!-- Los cuatro bloques de campos ocultos dejaban un hueco en blanco bajo el botón Guardar. -->
+            <block class="Magento\Framework\View\Element\Template" name="trusteed.wizard.styles"
+                   template="Trusteed_AgenticCommerce::wizard_styles.phtml"/>
             <uiComponent name="trusteed_setup_form"/>
         </referenceContainer>
     </body>

@@ -31,7 +31,7 @@ class Index extends Action implements HttpGetActionInterface
     public function execute(): Page
     {
         $page = $this->resultPageFactory->create();
-        $page->getConfig()->getTitle()->prepend(__('Trusteed — ¿Pueden comprar aquí los agentes?'));
+        $page->getConfig()->getTitle()->prepend('Trusteed — ' . __('¿Pueden comprar aquí los agentes?'));
         return $page;
     }
 }

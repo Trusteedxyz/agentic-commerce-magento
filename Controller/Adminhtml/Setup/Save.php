@@ -17,6 +17,7 @@ use Magento\Framework\HTTP\Client\Curl;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\UrlInterface;
 use Trusteed\AgenticCommerce\Model\Setup\ConnectExchange;
+use Trusteed\AgenticCommerce\Model\Setup\ConnectionData;
 use Trusteed\AgenticCommerce\Model\Setup\IntegrationTokenProvisioner;
 use Trusteed\AgenticCommerce\Model\Manifest\Builder as ManifestBuilder;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
@@ -186,37 +187,17 @@ class Save extends Action implements HttpPostActionInterface
         if ($connectToken !== '') {
             $exchanged = $this->exchangeConnectToken($apiBase, $connectToken);
 
-            $data['connection_id'] = $exchanged['connection_id'];
-            $data['webhook_secret'] = $exchanged['webhook_secret'];
-            $data['embed_secret'] = $exchanged['embed_secret'];
-
-            // La instalación de enforcement y /v1/rules/* pertenecen a la TIENDA de
-            // Trusteed, no al comerciante: con el id del comerciante en `merchant_id`,
-            // evaluate y snapshot dan 403 cross_merchant_access_denied.
-            if ($exchanged['store_id'] !== '') {
-                $data['merchant_id'] = $exchanged['store_id'];
-            }
-
-            // El Installation ID y el secreto HMAC del enforcement se piden aquí, con el
-            // secreto de embed recién recibido: antes había que pegarlos a mano desde
-            // un sitio que el comerciante no tiene, y sin ellos el enforcement no corre.
+            // El Installation ID y el secreto HMAC del enforcement se piden aquí, con el secreto de embed
+            // recién recibido: antes había que pegarlos a mano desde un sitio que el comerciante no tiene.
             // Un fallo no tumba la conexión: queda el aviso del módulo y el log.
-            if ($exchanged['store_id'] !== '') {
-                $provisioned = $this->provisionEnforcement(
-                    $apiBase,
-                    $exchanged['store_id'],
-                    $exchanged['connection_id'],
-                    $exchanged['embed_secret']
-                );
-                if ($provisioned !== null) {
-                    $data['enforcement_installation_id'] = $provisioned['installation_id'];
-                    $data['enforcement_hmac_secret'] = $provisioned['hmac_secret'];
-                }
-            }
+            $provisioned = $exchanged['store_id'] !== ''
+                ? $this->provisionEnforcement($apiBase, $exchanged['store_id'], $exchanged['connection_id'], $exchanged['embed_secret'])
+                : null;
 
-            // Defence in depth: drop the single-use token so no later branch can
-            // ever treat it as a long-lived credential.
-            unset($data['connect_token']);
+            // Qué se guarda tras el canje (ConnectionData): incluye el token de integración que el módulo
+            // acaba de crear. Sin guardarlo, una instalación limpia decía «Aún no has conectado tu tienda»
+            // y la cola de envíos no podía autenticarse. `accessToken()` reutiliza la integración existente.
+            $data = ConnectionData::afterExchange($data, $exchanged, $this->integrationTokens->accessToken(), $provisioned);
         }
 
         if (isset($data['merchant_id'])) {

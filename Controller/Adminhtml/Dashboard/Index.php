@@ -15,7 +15,7 @@ class Index extends Action implements HttpGetActionInterface
     protected function _isAllowed(): bool { return $this->_authorization->isAllowed(self::RESOURCE); }
     public function execute(): Page {
         $page = $this->resultPageFactory->create();
-        $page->getConfig()->getTitle()->prepend(__('Trusteed — Inicio'));
+        $page->getConfig()->getTitle()->prepend('Trusteed — ' . __('Inicio'));
         return $page;
     }
 }

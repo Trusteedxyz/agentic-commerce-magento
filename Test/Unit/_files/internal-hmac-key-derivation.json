@@ -1,0 +1,23 @@
+{
+  "_comment": "Vector común API (Node) y módulo Magento (PHP) de la clave HMAC interna por conexión. Plan 2026-11-13. Los valores son de PRUEBA (no son secretos reales). Verificado con Node 22 y PHP 8.3.",
+  "derivation": {
+    "label": "trusteed-internal-hmac-v1",
+    "webhook_secret": "not-a-real-webhook-secret-for-tests-0123456789abcdef",
+    "derived_key_hex": "efafc6917969c6331335bbcf72a090ad576eb867471481229196bb241fdbd44c",
+    "node": "createHmac('sha256', webhook_secret).update(label, 'utf8').digest('hex')",
+    "php": "hash_hmac('sha256', $label, $webhookSecret)  // la CLAVE es el TERCER argumento",
+    "note": "derived_key_hex (los 64 caracteres hex, como CADENA) es el secreto con el que se firma la petición, igual que hoy se pasa el Internal HMAC Secret."
+  },
+  "signature": {
+    "method": "POST",
+    "path": "/api/v1/internal/magento/manifest/sign",
+    "sorted_query": "",
+    "timestamp": "1794600000",
+    "raw_body": "{\"schema_version\":\"1\",\"store_views\":[{\"code\":\"default\",\"base_url\":\"https://shop.example.test\"}],\"updated_at\":\"2026-11-13T12:00:00+00:00\"}",
+    "body_sha256_hex": "27e6cff39b4e00e2c91e6cc058e10bc10d84e98ec1bfe7a08ef647e99032b690",
+    "signing_string": "POST\n/api/v1/internal/magento/manifest/sign\n\n1794600000\n27e6cff39b4e00e2c91e6cc058e10bc10d84e98ec1bfe7a08ef647e99032b690",
+    "signature_hex": "8fb5ef269e5795f697055a81416948bcc521fdac68646a04bd4cbf96c1629904",
+    "header_value": "hmac-sha256=8fb5ef269e5795f697055a81416948bcc521fdac68646a04bd4cbf96c1629904",
+    "note": "signing_string = method \\n path \\n sorted_query \\n timestamp \\n sha256_hex(raw_body). signature = HMAC-SHA256(derived_key_hex, signing_string)."
+  }
+}

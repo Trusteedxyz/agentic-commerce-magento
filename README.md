@@ -232,6 +232,13 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.13
+
+- Fixed: **a clean install now stays connected.** After connecting a store with no previous data, the module did not keep the integration token it had just created, so Home and the whole panel said "You have not connected your store yet" and the delivery queue could not sign in. It is now saved when you connect.
+- Added: **"Activate my protection".** Home shows a button to activate your trust seal (the key Trusteed signs your sales with). It is an explicit step you take, like in the WooCommerce and PrestaShop modules; nothing activates it for you. The Security page now says whether your orders are signed according to the real state, instead of always claiming it.
+- Added: **catalog publishing and the delay heartbeat work without a secret you cannot get.** The module signs its internal calls with a key derived from your own connection; the old "Internal HMAC Secret" field is gone from the setup page (a stored one still works as a fallback).
+- Changed: the setup page is tidier (no blank gap), the support window and the page titles are translated, and "Trust Receipts" is written the same in English and Spanish. Lines of text that overlapped in "Who I sell to" and "My rules" no longer do.
+
 ### 1.3.12
 
 - Fixed: **orders now reach Trusteed.** Three problems kept every order stuck in the module's delivery queue: the queue worker failed on a query that MariaDB and MySQL reject, the order event carried an empty agent field that Trusteed refused, and its date was not in the format Trusteed expects. A human checkout never made it to Trusteed; now each order moves from "pending" to "delivered".

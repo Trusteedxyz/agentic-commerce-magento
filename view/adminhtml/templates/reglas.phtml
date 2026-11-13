@@ -101,6 +101,18 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
             #amcp-root .text-2xl,
             #amcp-root [class*="text-2xl"] { font-size: 26px !important; }
 
+            /* Al subir los tamaños de letra de arriba, el interlineado fijo de las clases
+               de Tailwind (leading-*, text-xs/sm) se queda corto y las líneas se pisaban
+               («Tipos de cliente», introducción de Mis reglas). Interlineado proporcional. */
+            #amcp-root p,
+            #amcp-root label,
+            #amcp-root li,
+            #amcp-root .text-xs,
+            #amcp-root .text-sm,
+            #amcp-root [class*="text-xs"],
+            #amcp-root [class*="text-sm"],
+            #amcp-root [class*="leading-"] { line-height: 1.5 !important; }
+
             /* La SPA viene con contenedores estrechos (max-w-2xl/3xl/4xl/5xl/md)
                pensados para Shopify Admin. En Magento backend hay mucho ancho
                disponible: aprovechamos el margen para no ver todo apretado. */

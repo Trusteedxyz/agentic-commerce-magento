@@ -11,6 +11,7 @@ use Magento\Framework\Module\ModuleListInterface;
 use Psr\Log\LoggerInterface;
 use Trusteed\AgenticCommerce\Model\Config\SecretReader;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
+use Trusteed\AgenticCommerce\Model\Security\InternalHmacKeys;
 use Trusteed\AgenticCommerce\Model\Security\InternalHmacSigner;
 
 class EmitInstallEvent implements DataPatchInterface
@@ -37,6 +38,7 @@ class EmitInstallEvent implements DataPatchInterface
         // guaranteed a non-null guard via etc/di.xml. When null the callout
         // fails closed.
         private readonly ?ApiBaseUrlValidator $urlValidator = null,
+        private readonly ?InternalHmacKeys $internalHmacKeys = null,
     ) {}
 
     /**
@@ -50,20 +52,20 @@ class EmitInstallEvent implements DataPatchInterface
         $merchantId = (string)($this->scopeConfig->getValue('trusteed_general/general/merchant_id') ?? '');
         $connectionId = (string)($this->scopeConfig->getValue('trusteed_general/general/connection_id') ?? '');
         $token = $this->secretReader->read('trusteed_general/general/integration_token');
-        $internalSecret = $this->secretReader->read('trusteed_general/general/internal_hmac_secret');
+        $keys = $this->internalHmacKeys ?? new InternalHmacKeys($this->secretReader, $this->internalHmacSigner);
 
         if (empty($apiBase) || empty($merchantId) || $token === '') {
             // Not configured yet (or decrypt failed) — skip event, wizard will emit on first save
             return $this;
         }
 
-        if ($internalSecret === '' || $connectionId === '') {
+        if ($keys->candidates() === [] || $connectionId === '') {
             // The backend event sink requires the canonical internal HMAC
-            // (connection_id + internal_hmac_secret). Without them the request
+            // (connection_id + a signing key derived from the connection). Without them the request
             // would 401 — skip rather than emit an unsigned request. The wizard
             // re-emits analytics once the connection is fully provisioned.
             $this->logger->warning(
-                'Skipping magento.module.installed event: connection_id/internal_hmac_secret not yet provisioned'
+                'Skipping magento.module.installed event: connection not yet provisioned (no connection_id or signing key)'
             );
             return $this;
         }
@@ -105,26 +107,31 @@ class EmitInstallEvent implements DataPatchInterface
         // manifest-sign (M4 unification). H2 (FR-A-003): additionally present the
         // granted scope + claimed merchant so the backend can enforce
         // per-platform scope (observe mode by default, non-breaking).
-        $timestamp = (string)time();
-        $authHeaders = $this->internalHmacSigner->buildHeaders(
-            $internalSecret,
-            $connectionId,
-            'POST',
-            self::EVENT_PATH,
-            (string)$payload,
-            $timestamp
-        );
-
         try {
-            $this->curlClient->addHeader('Authorization', "Bearer {$token}");
-            $this->curlClient->addHeader('Content-Type', 'application/json');
-            foreach ($authHeaders as $name => $value) {
-                $this->curlClient->addHeader($name, $value);
-            }
-            // H2 observe-mode readiness headers (FR-A-003).
-            $this->curlClient->addHeader('X-Trusteed-Scope', self::GRANTED_SCOPE);
-            $this->curlClient->addHeader('X-Trusteed-Merchant-Id', $merchantId);
-            $this->curlClient->post($apiBase . self::EVENT_PATH, (string)$payload);
+            $keys->withFallback(function (string $key) use ($connectionId, $payload, $token, $merchantId, $apiBase): int {
+                $timestamp = (string)time();
+                $authHeaders = $this->internalHmacSigner->buildHeaders(
+                    $key,
+                    $connectionId,
+                    'POST',
+                    self::EVENT_PATH,
+                    (string)$payload,
+                    $timestamp
+                );
+                $this->curlClient->setHeaders(array_merge(
+                    [
+                        'Authorization' => "Bearer {$token}",
+                        'Content-Type' => 'application/json',
+                        // H2 observe-mode readiness headers (FR-A-003).
+                        'X-Trusteed-Scope' => self::GRANTED_SCOPE,
+                        'X-Trusteed-Merchant-Id' => $merchantId,
+                    ],
+                    $authHeaders
+                ));
+                $this->curlClient->post($apiBase . self::EVENT_PATH, (string)$payload);
+
+                return (int)$this->curlClient->getStatus();
+            });
         } catch (\Throwable $e) {
             // Non-fatal — analytics event loss is acceptable
             $this->logger->warning(
