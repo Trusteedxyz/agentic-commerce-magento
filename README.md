@@ -232,6 +232,9 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.17
+- Fixed: **the receipt detail panel no longer fills the whole screen.** Opening an agent order in "My sales" showed the "Receipt detail" panel across the full width, underneath Magento's side menu, with the start of every line cut off. It now opens as a side panel on top of the page.
+
 ### 1.3.16
 - Fixed: **the "Next step" of your score is now a sentence, not a code.** The panel showed "milestone.cold_start"; it now shows the same wording as the WooCommerce and PrestaShop modules, in your language.
 - Fixed: **the connection window opens in the language of your back office.** Before, it followed the browser, so an English admin could get a Spanish window.

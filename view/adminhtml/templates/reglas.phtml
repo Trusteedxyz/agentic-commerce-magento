@@ -134,6 +134,18 @@ if (strpos($requestUri, '/trusteed/pagos/') !== false) {
                 max-width: 100% !important;
                 width: 100%;
             }
+
+            /* Los paneles laterales y las ventanas de la SPA (capa fija a pantalla completa, p. ej. «Detalle de Receipt»)
+               se dimensionan con max-w-*: la regla de arriba los ensanchaba a toda la pantalla y el panel quedaba por
+               debajo del menú y de la cabecera de Magento, con el texto cortado. Conservan su ancho, y la capa va por
+               encima del menú (z-index 700) y de la cabecera. */
+            #amcp-root .fixed.inset-0.z-50 { z-index: 100000 !important; }
+            #amcp-root .fixed .max-w-md { max-width: 28rem !important; }
+            #amcp-root .fixed .max-w-2xl { max-width: 42rem !important; }
+            #amcp-root .fixed .max-w-3xl { max-width: 48rem !important; }
+            #amcp-root .fixed .max-w-4xl { max-width: 56rem !important; }
+            #amcp-root .fixed .max-w-5xl { max-width: 64rem !important; }
+            #amcp-root .fixed .max-w-6xl { max-width: 72rem !important; }
         </style>
 
         <div id="amcp-root"
