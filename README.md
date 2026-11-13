@@ -232,6 +232,9 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.18
+- Fixed: **no English left in the Spanish panel.** "Receipt detail" now reads "Detalle del recibo", "Order ID" reads "ID de pedido" and the operators block is translated.
+
 ### 1.3.17
 - Fixed: **the receipt detail panel no longer fills the whole screen.** Opening an agent order in "My sales" showed the "Receipt detail" panel across the full width, underneath Magento's side menu, with the start of every line cut off. It now opens as a side panel on top of the page.
 
