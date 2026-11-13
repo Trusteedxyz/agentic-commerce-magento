@@ -232,6 +232,9 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 1.3.15
+- Fixed: **the confidence label and the score now show the same cap.** The panel said "70 out of 70" with "New store (cap 65)" underneath, because the label wrote its own fixed number. The label now takes the cap from the score itself, and it is translated in Spanish.
+
 ### 1.3.14
 - Fixed: **"Catalog published" can now turn green.** The card on "How is my store doing?" read a "last built" mark that nothing ever wrote, so it said "Not generated yet" even with the manifest signed and served. The module now records when the catalog manifest was last built and signed.
 - Fixed: **your store's score now loads.** The card stayed on "Preparing your score..." because the module asked for it with Magento's own integration token, which Trusteed does not accept. It now uses the same per-connection token that the WooCommerce and PrestaShop modules use.
