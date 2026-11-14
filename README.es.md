@@ -11,6 +11,12 @@ Los agentes de IA son un tipo nuevo de comprador online. Con Trusteed, la red qu
 - Acepta pagos de agentes en divisas digitales. La red Trusteed los liquida sobre el protocolo x402. Este módulo no procesa esos pagos por su cuenta, así que tu checkout de Magento sigue como está hoy. Los rails de pago se configuran en el lado de Trusteed y se muestran en el panel de administración.
 - Deja que los agentes compren en tu tienda a través de la red Trusteed, que aporta la identidad, las reglas y el recibo de cada pedido. El cobro sigue pasando por los métodos de pago que ya tienes en Magento.
 
+## Vídeo guía
+
+[![Vídeo guía: instalación y configuración de Trusteed para Magento 2](https://img.youtube.com/vi/nKYV0Pr96N8/maxresdefault.jpg)](https://youtu.be/nKYV0Pr96N8)
+
+**[Ver el screencast](https://youtu.be/nKYV0Pr96N8)**: instalación y configuración del módulo 1.3.16, unos 8 minutos.
+
 ## Capturas de pantalla
 
 | Panel de control | Ventas de agentes | Reglas de negocio |
