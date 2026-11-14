@@ -11,6 +11,12 @@ AI agents are a new kind of online shopper. With Trusteed, the network that conn
 - Accept agent payments in digital currencies. The Trusteed network settles them over the x402 protocol. This module doesn't process those payments itself, so your Magento checkout stays as it is today. The payment rails are configured on the Trusteed side and reported back to the admin panel.
 - Let agents buy from your store through the Trusteed network, which carries the identity, the rules and the receipt for each order. Payment still goes through your existing Magento payment methods.
 
+## Video guide (Spanish narration)
+
+[![Video guide (Spanish narration): installing and setting up Trusteed for Magento 2](https://img.youtube.com/vi/VoVc5h3S7PU/maxresdefault.jpg)](https://youtu.be/VoVc5h3S7PU)
+
+**[Watch the screencast](https://youtu.be/VoVc5h3S7PU)** (narrated in Spanish): step-by-step installation and setup of module 1.3.16, about 8 minutes.
+
 ## Screenshots
 
 | Dashboard | Agent Sales | Business Rules |
