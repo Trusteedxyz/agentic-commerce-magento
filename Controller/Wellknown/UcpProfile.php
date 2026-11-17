@@ -10,6 +10,7 @@ use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\Controller\Result\Raw;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
+use Trusteed\AgenticCommerce\Model\Discovery\UcpProfileRelay;
 use Trusteed\AgenticCommerce\Model\Security\ApiBaseUrlValidator;
 use Psr\Log\LoggerInterface;
 
@@ -18,9 +19,10 @@ use Psr\Log\LoggerInterface;
  *
  * Mirrors the WooCommerce (`includes/discovery/ucp-wellknown.php`) and
  * PrestaShop (`src/Discovery/UcpWellknownResolver.php`) resolvers: this
- * storefront route NEVER builds or duplicates the UCP profile body or its
- * version. It only 302-redirects to the centrally generated per-store
- * document:
+ * storefront route NEVER builds or edits the UCP profile body or its version.
+ * It relays it verbatim (HTTP 200, from the merchant's own origin: a 302 to
+ * another host is not followed by every UCP client) from the centrally
+ * generated per-store document, via {@see UcpProfileRelay}:
  *
  *   {api_base}/.well-known/ucp?store={merchant_id}
  *
@@ -42,6 +44,7 @@ class UcpProfile implements HttpGetActionInterface
         private readonly ScopeConfigInterface $scopeConfig,
         private readonly ApiBaseUrlValidator $urlValidator,
         private readonly LoggerInterface $logger,
+        private readonly UcpProfileRelay $relay,
     ) {}
 
     public function execute(): Raw
@@ -80,6 +83,17 @@ class UcpProfile implements HttpGetActionInterface
 
         $target = $apiBase . '/.well-known/ucp?store=' . rawurlencode($merchantId);
 
+        $body = $this->relay->fetch($target);
+        if ($body !== null) {
+            $result->setHttpResponseCode(200);
+            $result->setHeader('Content-Type', 'application/json; charset=utf-8', true);
+            $result->setHeader('Access-Control-Allow-Origin', '*', true);
+            $result->setHeader('Cache-Control', 'public, max-age=300', true);
+            $result->setContents($body);
+            return $result;
+        }
+
+        // Last resort (central down and no copy): the previous behaviour.
         $result->setHttpResponseCode(HttpResponse::STATUS_CODE_302);
         $result->setHeader('Location', $target, true);
         return $result;
