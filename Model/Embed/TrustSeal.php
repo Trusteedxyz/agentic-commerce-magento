@@ -110,8 +110,19 @@ class TrustSeal
         return $this->call($method, $path, $adminId);
     }
 
+    /**
+     * Igual que `request`, pero sin sesión de administrador (cron, guardado de ajustes) y con cuerpo
+     * JSON. El secreto S2S de la conexión es quien autentica; el token se emite con el id `system`.
+     *
+     * @return array{status: int, body: string}|null
+     */
+    public function requestAsSystem(string $method, string $path, string $jsonBody): ?array
+    {
+        return $this->call($method, $path, 0, $jsonBody);
+    }
+
     /** @return array{status: int, body: string}|null */
-    private function call(string $method, string $path, int $adminId): ?array
+    private function call(string $method, string $path, int $adminId, ?string $jsonBody = null): ?array
     {
         try {
             $token = $this->issueToken($adminId);
@@ -125,7 +136,12 @@ class TrustSeal
             ];
             $this->prepareCurl();
             $this->curl->setHeaders($headers);
-            if ($method === 'POST') {
+            if ($method === 'PUT') {
+                // Curl de Magento no tiene put(): se manda por la opción.
+                $this->curl->addHeader('Content-Type', 'application/json');
+                $this->curl->setOption(CURLOPT_CUSTOMREQUEST, 'PUT');
+                $this->curl->post($this->apiBase() . $path, (string)$jsonBody);
+            } elseif ($method === 'POST') {
                 $this->curl->addHeader('Content-Type', 'application/json');
                 $this->curl->post($this->apiBase() . $path, '{}');
             } else {
@@ -145,7 +161,7 @@ class TrustSeal
         $merchantId = (string)($this->scopeConfig->getValue(self::CONFIG_MERCHANT_ID, ScopeInterface::SCOPE_STORE) ?? '');
         $connectionId = trim((string)($this->scopeConfig->getValue(self::CONFIG_CONNECTION_ID, ScopeInterface::SCOPE_STORE) ?? ''));
         $embedSecret = $this->secretReader->read(self::CONFIG_EMBED_SECRET, ScopeInterface::SCOPE_STORE);
-        if ($merchantId === '' || $embedSecret === '' || $adminId <= 0) {
+        if ($merchantId === '' || $embedSecret === '' || $adminId < 0) {
             return null;
         }
         $this->prepareCurl();
@@ -156,7 +172,7 @@ class TrustSeal
         ]);
         $this->curl->post($this->apiBase() . '/v1/embed/magento/issue-token', (string)json_encode([
             'merchant_id' => $merchantId,
-            'magento_admin_id' => (string)$adminId,
+            'magento_admin_id' => $adminId > 0 ? (string)$adminId : 'system',
             'capability_attestation' => 'admin_trusteed',
             ...($connectionId !== '' ? ['connection_id' => $connectionId] : []),
         ], JSON_UNESCAPED_SLASHES));

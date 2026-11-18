@@ -67,6 +67,24 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
             </group>
+            <group id="policy_pages" translate="label" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Store policy pages</label>
+                <field id="terms_page" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Terms and conditions page</label>
+                    <comment>Choose the published page of your store. The module tells Trusteed its address. If you choose none, nothing is sent.</comment>
+                    <source_model>Trusteed\AgenticCommerce\Model\Config\Source\CmsPage</source_model>
+                </field>
+                <field id="privacy_page" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Privacy policy page</label>
+                    <comment>Choose the published page of your store. The module tells Trusteed its address. If you choose none, nothing is sent.</comment>
+                    <source_model>Trusteed\AgenticCommerce\Model\Config\Source\CmsPage</source_model>
+                </field>
+                <field id="returns_page" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Returns and withdrawal page</label>
+                    <comment>Choose the published page of your store. The module tells Trusteed its address. If you choose none, nothing is sent.</comment>
+                    <source_model>Trusteed\AgenticCommerce\Model\Config\Source\CmsPage</source_model>
+                </field>
+            </group>
         </section>
     </system>
 </config>

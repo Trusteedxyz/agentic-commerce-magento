@@ -12,5 +12,9 @@
         <job name="trusteed_report_capabilities" instance="Trusteed\AgenticCommerce\Cron\ReportCapabilities" method="execute">
             <schedule>17 * * * *</schedule>
         </job>
+        <!-- Páginas de condiciones, privacidad y devoluciones elegidas por el comercio. -->
+        <job name="trusteed_report_policy_pages" instance="Trusteed\AgenticCommerce\Cron\ReportPolicyPages" method="execute">
+            <schedule>41 3 * * *</schedule>
+        </job>
     </group>
 </config>
