@@ -8,7 +8,7 @@ AI agents are a new kind of online shopper. With Trusteed, the network that conn
 - Get signed receipts. Every transaction produces a cryptographically signed, tamper-evident receipt you can use as evidence of the purchase if there's a dispute. Aligned with eIDAS (EU) and eSIGN (USA).
 - See what agents do: how much they spend, what they buy and how often.
 - Block agents that look dangerous or cause problems.
-- Accept agent payments in digital currencies. The Trusteed network settles them over the x402 protocol. This module doesn't process those payments itself, so your Magento checkout stays as it is today. The payment rails are configured on the Trusteed side and reported back to the admin panel.
+- Digital-currency payments through the x402 protocol are in sandbox (test value only); they are not available for real purchases.
 - Let agents buy from your store through the Trusteed network, which carries the identity, the rules and the receipt for each order. Payment still goes through your existing Magento payment methods.
 
 ## Video guide
